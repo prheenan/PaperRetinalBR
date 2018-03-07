@@ -42,7 +42,13 @@ def align_single(d,min_wlc_force_fit_N,kw_wlc,brute_dict):
                                      **kw_wlc)
     # subtract off L0
     d.Separation -= L0
-    return d
+    # return the FEC with the contour length information
+    L0_info = ProcessingUtil.ContourInformation(L0,
+                                                brute_dict=brute_dict,
+                                                kw_wlc=kw_wlc,
+                                                fit_slice=fit_slice)
+    to_ret = ProcessingUtil.AlignedFEC(d,L0_info)
+    return to_ret
 
 
 def align_data(base_dir,**kw):
@@ -68,10 +74,10 @@ def run():
     step = Pipeline.Step.ALIGNED
     in_dir = Pipeline._cache_dir(base=base_dir, enum=Pipeline.Step.FILTERED)
     out_dir = Pipeline._cache_dir(base=base_dir,enum=step)
-    force = False
+    force = True
     limit = None
     min_wlc_force_fit_N = 200e-12
-    brute_dict = dict(Ns=20,ranges=((10e-9,40e-9),))
+    brute_dict = dict(Ns=100,ranges=((10e-9,100e-9),))
     kw_wlc = dict(kbT=4.1e-21, Lp=0.3e-9, K0=1000e-12)
     functor = lambda : align_data(in_dir,
                                   min_wlc_force_fit_N=min_wlc_force_fit_N,

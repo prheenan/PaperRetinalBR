@@ -7,12 +7,27 @@ from __future__ import unicode_literals
 # This file is used for importing the common utilities classes.
 import numpy as np
 import matplotlib.pyplot as plt
-import sys, argparse, enum
+import sys, argparse, enum, copy
 
 from Lib.UtilPipeline import Pipeline
 from Lib.UtilForce.FEC import FEC_Util,  FEC_Plot
+from Lib.UtilForce.UtilIgor.TimeSepForceObj import TimeSepForceObj
 from Lib.UtilForce.UtilGeneral import PlotUtilities
 
+
+class ContourInformation(object):
+    def __init__(self,L0,brute_dict,kw_wlc,fit_slice):
+        self.L0 = L0
+        self.brute_dict = brute_dict
+        self.kw_wlc = kw_wlc
+        self.fit_slice = fit_slice
+
+
+class AlignedFEC(TimeSepForceObj):
+    def __init__(self,normal_fec,L0_info):
+        super(AlignedFEC,self).__init__()
+        self.LowResData = copy.deepcopy(normal_fec.LowResData)
+        self.L0_info = L0_info
 
 def plot_data(base_dir,step,data,markevery=1):
     """
