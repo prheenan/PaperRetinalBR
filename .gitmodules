@@ -1,0 +1,6 @@
+[submodule "Code/Lib/AppIWT"]
+	path = Code/Lib/AppIWT
+	url = https://github.com/prheenan/AppIWT.git
+[submodule "Code/Lib/UtilForce"]
+	path = Code/Lib/UtilForce
+	url = https://github.com/prheenan/UtilForce.git
