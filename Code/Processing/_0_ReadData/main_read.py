@@ -44,6 +44,9 @@ def read_all_data(base_dir,limit=None):
                                       f_file_name_valid=is_valid_file,
                                       grouping_function=hao_grouping_function)
     for d in data:
+        # fix Hao's non SI units...
+        d.Force *= 1e-12
+        d.Separation *= 1e-9
         yield d
 
 def run():
@@ -60,7 +63,7 @@ def run():
     base_dir = Pipeline._base_dir_from_cmd(default=default_base)
     step = Pipeline.Step.READ
     cache_dir = Pipeline._cache_dir(base=base_dir, enum=step)
-    force = False
+    force = True
     limit = None
     functor = lambda : read_all_data(base_dir)
     data =CheckpointUtilities.multi_load(cache_dir=cache_dir,load_func=functor,

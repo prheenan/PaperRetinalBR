@@ -27,11 +27,12 @@ def plot_data(base_dir,step,data,markevery=1):
     name_func = FEC_Util.fec_name_func
     x_range = [[min(d.Separation), max(d.Separation)] for d in data]
     y_range = [[min(d.Force), max(d.Force)] for d in data]
-    xlim = [np.min(x_range), np.max(x_range)]
-    ylim = [np.min(y_range), np.max(y_range)]
+    xlim = 1e9 * np.array([np.min(x_range), np.max(x_range)])
+    ylim = 1e12 * np.array([np.min(y_range), np.max(y_range)])
     for d in data:
         f = PlotUtilities.figure()
-        FEC_Plot._fec_base_plot(d.Separation[::markevery], d.Force[::markevery])
+        FEC_Plot._fec_base_plot(d.Separation[::markevery]*1e9,
+                                d.Force[::markevery]* 1e12)
         plt.xlim(xlim)
         plt.ylim(ylim)
         PlotUtilities.lazyLabel("Extension (nm)", "Force (pN)", "")

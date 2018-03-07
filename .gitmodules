@@ -7,3 +7,6 @@
 [submodule "Code/Lib/UtilPipeline"]
 	path = Code/Lib/UtilPipeline
 	url = https://github.com/prheenan/UtilPipeline.git
+[submodule "Code/Lib/AppWLC"]
+	path = Code/Lib/AppWLC
+	url = https://github.com/prheenan/AppWLC.git

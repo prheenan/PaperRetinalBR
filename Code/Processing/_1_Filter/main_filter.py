@@ -41,7 +41,7 @@ def run():
     step = Pipeline.Step.FILTERED
     in_dir = Pipeline._cache_dir(base=base_dir, enum=Pipeline.Step.READ)
     out_dir = Pipeline._cache_dir(base=base_dir,enum=Pipeline.Step.FILTERED)
-    force = False
+    force = True
     limit = None
     n_filter_points = 100
     n_decimate = 30
