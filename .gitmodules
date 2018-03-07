@@ -4,3 +4,6 @@
 [submodule "Code/Lib/UtilForce"]
 	path = Code/Lib/UtilForce
 	url = https://github.com/prheenan/UtilForce.git
+[submodule "Code/Lib/UtilPipeline"]
+	path = Code/Lib/UtilPipeline
+	url = https://github.com/prheenan/UtilPipeline.git
