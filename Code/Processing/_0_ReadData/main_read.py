@@ -15,6 +15,7 @@ from Lib.UtilPipeline import Pipeline
 from Lib.UtilForce.FEC import FEC_Util, FEC_Plot
 from Lib.UtilForce.UtilGeneral import CheckpointUtilities
 from Lib.UtilForce.UtilGeneral import PlotUtilities
+from Processing import ProcessingUtil
 
 def is_valid_file(f):
     """
@@ -66,21 +67,7 @@ def run():
                                          force=force,
                                          limit=limit,
                                          name_func=FEC_Util.fec_name_func)
-    plot_subdir = Pipeline._plot_subdir(base_dir,step)
-
-    markevery = 100
-    name_func = FEC_Util.fec_name_func
-    x_range = [ [min(d.Separation),max(d.Separation)] for d in data]
-    y_range = [ [min(d.Force),max(d.Force)] for d in data]
-    xlim = [np.min(x_range),np.max(x_range)]
-    ylim = [np.min(y_range),np.max(y_range)]
-    for d in data:
-        f = PlotUtilities.figure()
-        FEC_Plot._fec_base_plot(d.Separation[::markevery], d.Force[::markevery])
-        plt.xlim(xlim)
-        plt.ylim(ylim)
-        PlotUtilities.lazyLabel("Extension (nm)","Force (pN)","")
-        PlotUtilities.savefig(f, plot_subdir + name_func(0, d) + ".png")
+    ProcessingUtil.plot_data(base_dir,step,data,markevery=100)
 
 
 if __name__ == "__main__":
