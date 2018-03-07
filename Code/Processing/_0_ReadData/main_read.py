@@ -12,9 +12,9 @@ import re
 
 sys.path.append("../../")
 from Lib.UtilPipeline import Pipeline
-from Lib.UtilForce.FEC import FEC_Util
+from Lib.UtilForce.FEC import FEC_Util, FEC_Plot
 from Lib.UtilForce.UtilGeneral import CheckpointUtilities
-
+from Lib.UtilForce.UtilGeneral import PlotUtilities
 
 def is_valid_file(f):
     """
@@ -57,14 +57,31 @@ def run():
     """
     default_base = "../../../Data/170321FEC/"
     base_dir = Pipeline._base_dir_from_cmd(default=default_base)
-    cache_dir = Pipeline._cache_dir(base=base_dir, enum=Pipeline.Step.READ)
+    step = Pipeline.Step.READ
+    cache_dir = Pipeline._cache_dir(base=base_dir, enum=step)
     force = False
     limit = None
     functor = lambda : read_all_data(base_dir)
-    CheckpointUtilities.multi_load(cache_dir=cache_dir,load_func=functor,
-                                   force=force,
-                                   limit=limit,
-                                   name_func=FEC_Util.fec_name_func)
+    data =CheckpointUtilities.multi_load(cache_dir=cache_dir,load_func=functor,
+                                         force=force,
+                                         limit=limit,
+                                         name_func=FEC_Util.fec_name_func)
+    plot_subdir = Pipeline._plot_subdir(base_dir,step)
+
+    markevery = 100
+    name_func = FEC_Util.fec_name_func
+    x_range = [ [min(d.Separation),max(d.Separation)] for d in data]
+    y_range = [ [min(d.Force),max(d.Force)] for d in data]
+    xlim = [np.min(x_range),np.max(x_range)]
+    ylim = [np.min(y_range),np.max(y_range)]
+    for d in data:
+        f = PlotUtilities.figure()
+        FEC_Plot._fec_base_plot(d.Separation[::markevery], d.Force[::markevery])
+        plt.xlim(xlim)
+        plt.ylim(ylim)
+        PlotUtilities.lazyLabel("Extension (nm)","Force (pN)","")
+        PlotUtilities.savefig(f, plot_subdir + name_func(0, d) + ".png")
+
 
 if __name__ == "__main__":
     run()
