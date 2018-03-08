@@ -14,6 +14,21 @@ from Lib.UtilForce.FEC import FEC_Util,  FEC_Plot
 from Lib.UtilForce.UtilIgor.TimeSepForceObj import TimeSepForceObj
 from Lib.UtilForce.UtilGeneral import PlotUtilities
 
+
+from Lib.AppIWT.Code.InverseWeierstrass import FEC_Pulling_Object
+
+class MetaPulling(FEC_Pulling_Object):
+    def __init__(self,time_sep_force,kbT=4.1e-21,**kw):
+        kw_time_sep_f = dict(Time=time_sep_force.Time,
+                              Extension=time_sep_force.Separation,
+                              Force=time_sep_force.Force,
+                              SpringConstant=time_sep_force.SpringConstant,
+                              Velocity=time_sep_force.Velocity,
+                              kT=kbT,
+                              **kw)
+        super(MetaPulling,self).__init__(**kw_time_sep_f)
+        self.Meta = time_sep_force.Meta
+
 def _processing_base(default_base="../../../Data/170321FEC/",**kw):
     return Pipeline._base_dir_from_cmd(default=default_base,**kw)
 
