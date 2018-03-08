@@ -63,7 +63,7 @@ def run():
     plt.subplot(2,1,2)
     plt.plot(q_nm,energy_obj.G_0/4.1e-21)
     plt.xlim(xlim_nm)
-    PlotUtilities.lazyLabel("Extension (nm)","$G_0$ (kbT)","")
+    PlotUtilities.lazyLabel("q (nm)","$\Delta G_\mathrm{0}$ (kbT)","")
     PlotUtilities.savefig(fig,out_dir + "out_G.png")
     pass
 

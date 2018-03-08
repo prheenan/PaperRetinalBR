@@ -10,3 +10,6 @@
 [submodule "Code/Lib/AppWLC"]
 	path = Code/Lib/AppWLC
 	url = https://github.com/prheenan/AppWLC.git
+[submodule "Code/Lib/AppWHAM"]
+	path = Code/Lib/AppWHAM
+	url = https://github.com/prheenan/AppWHAM.git
