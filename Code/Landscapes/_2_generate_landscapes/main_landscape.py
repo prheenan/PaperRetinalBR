@@ -16,13 +16,13 @@ from Lib.UtilForce.FEC import FEC_Util, FEC_Plot
 from Lib.UtilForce.UtilGeneral import CheckpointUtilities
 from Lib.UtilForce.UtilGeneral import PlotUtilities
 from Processing import ProcessingUtil
-from Lib.AppIWT.Code import WeierstrassUtil, InverseWeierstrass
+from Lib.AppWHAM.Code import WeightedHistogram, UtilWHAM
 import RetinalUtil
 
 def generate_landscape(in_dir):
     data = CheckpointUtilities.lazy_multi_load(in_dir)
-    energy_obj = \
-        InverseWeierstrass.free_energy_inverse_weierstrass(unfolding=data)
+    data = UtilWHAM.to_wham_input(data)
+    energy_obj = WeightedHistogram.wham(fwd_input=data)
     return energy_obj
 
 
@@ -61,7 +61,7 @@ def run():
     PlotUtilities.lazyLabel("","Force (pN)","")
     PlotUtilities.no_x_label(ax=ax1)
     plt.subplot(2,1,2)
-    plt.plot(q_nm,energy_obj.G_0/4.1e-21)
+    plt.plot(q_nm,energy_obj.G0/4.1e-21)
     plt.xlim(xlim_nm)
     PlotUtilities.lazyLabel("q (nm)","$\Delta G_\mathrm{0}$ (kbT)","")
     PlotUtilities.savefig(fig,out_dir + "out_G.png")
