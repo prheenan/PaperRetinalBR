@@ -29,7 +29,7 @@ class AlignedFEC(TimeSepForceObj):
         self.LowResData = copy.deepcopy(normal_fec.LowResData)
         self.L0_info = L0_info
 
-def plot_data(base_dir,step,data,markevery=1):
+def plot_data(base_dir,step,data,markevery=1,f_x = lambda x: x.Separation):
     """
     :param base_dir: where the data live
     :param step:  what step we are on
@@ -40,13 +40,13 @@ def plot_data(base_dir,step,data,markevery=1):
     """
     plot_subdir = Pipeline._plot_subdir(base_dir, step)
     name_func = FEC_Util.fec_name_func
-    x_range = [[min(d.Separation), max(d.Separation)] for d in data]
+    x_range = [[min(f_x(d)), max(f_x(d))] for d in data]
     y_range = [[min(d.Force), max(d.Force)] for d in data]
     xlim = 1e9 * np.array([np.min(x_range), np.max(x_range)])
     ylim = 1e12 * np.array([np.min(y_range), np.max(y_range)])
     for d in data:
         f = PlotUtilities.figure()
-        FEC_Plot._fec_base_plot(d.Separation[::markevery]*1e9,
+        FEC_Plot._fec_base_plot(f_x(d)[::markevery]*1e9,
                                 d.Force[::markevery]* 1e12)
         plt.xlim(xlim)
         plt.ylim(ylim)
