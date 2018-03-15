@@ -17,17 +17,24 @@ from Lib.UtilForce.UtilGeneral import CheckpointUtilities
 from Lib.UtilForce.UtilGeneral import PlotUtilities
 from Processing import ProcessingUtil
 from Lib.AppWLC.Code import WLC
+import warnings
 
 def align_single(d,min_wlc_force_fit_N,kw_wlc,brute_dict):
     force_N = d.Force
     where_GF = np.where(force_N >= min_wlc_force_fit_N)[0]
     where_above_surface = np.where(force_N >= 0)[0]
-    assert where_GF.size * where_above_surface.size > 0, \
-        "Force never above limit "
-    last_time_GF = where_GF[-1]
+    assert where_above_surface.size > 0, "Force never above surface "
+    if (where_GF.size > 0):
+        last_time_GF = where_GF[-1]
+    else:
+        msg = "For alignment, {:} never above limit of {:}N; using max".\
+            format(d.Meta.Name,min_wlc_force_fit_N)
+        warnings.warn(msg,RuntimeWarning)
+        last_time_GF = np.argmax(force_N)
     max_fit_idx = np.argmax(force_N[:last_time_GF])
     first_time_above_surface = where_above_surface[0]
-    assert first_time_above_surface < max_fit_idx , "Couldn't find fitting region"
+    assert first_time_above_surface < max_fit_idx , \
+        "Couldn't find fitting region"
     fit_slice = slice(first_time_above_surface,max_fit_idx,1)
     # slice the object to just the region we want
     obj_slice = d._slice(fit_slice)
@@ -42,6 +49,7 @@ def align_single(d,min_wlc_force_fit_N,kw_wlc,brute_dict):
                                      **kw_wlc)
     # subtract off L0
     d.Separation -= L0
+    d.ZSnsr -= L0
     # return the FEC with the contour length information
     L0_info = ProcessingUtil.ContourInformation(L0,
                                                 brute_dict=brute_dict,
