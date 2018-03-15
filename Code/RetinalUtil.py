@@ -29,8 +29,16 @@ class MetaPulling(FEC_Pulling_Object):
         super(MetaPulling,self).__init__(**kw_time_sep_f)
         self.Meta = time_sep_force.Meta
 
+class EnergyList(object):
+    def __init__(self,file_names,energies):
+        self.files_name = file_names
+        self.energies = energies
+
 def _processing_base(default_base="../../../Data/BR+Retinal/170321FEC/",**kw):
     return Pipeline._base_dir_from_cmd(default=default_base,**kw)
 
 def _landscape_base(**kw):
     return _processing_base(**kw) + "landscape_"
+    
+def _analysis_base(default_base="../../../Data/BR+Retinal/",**kw):
+    return _processing_base(default_base=default_base,**kw)
