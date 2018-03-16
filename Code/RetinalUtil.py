@@ -10,9 +10,7 @@ import matplotlib.pyplot as plt
 import sys, argparse, enum, copy
 
 from Lib.UtilPipeline import Pipeline
-from Lib.UtilForce.FEC import FEC_Util,  FEC_Plot
-from Lib.UtilForce.UtilIgor.TimeSepForceObj import TimeSepForceObj
-from Lib.UtilForce.UtilGeneral import PlotUtilities
+from Lib.AppWHAM.Code import WeightedHistogram
 from scipy.interpolate import LSQUnivariateSpline
 
 from Lib.AppIWT.Code.InverseWeierstrass import FEC_Pulling_Object
@@ -29,14 +27,16 @@ class MetaPulling(FEC_Pulling_Object):
         super(MetaPulling,self).__init__(**kw_time_sep_f)
         self.Meta = time_sep_force.Meta
 
-class EnergyList(object):
-    def __init__(self,file_names,base_dirs,energies):
-        self.files_name = file_names
-        self.base_dirs = base_dirs
-        self.energies = energies
-    @property
-    def N(self):
-        return len(self.files_name)
+class EnergyWithMeta(WeightedHistogram.LandscapeWHAM):
+    def __init__(self,file_name,base_dir,energy):
+        self.file_name = file_name
+        self.base_dir = base_dir
+        offset = energy._offset_G0_of_q
+        super(EnergyWithMeta,self).__init__(q=energy._q,
+                                            G0=energy._G0,
+                                            offset_G0_of_q=offset,
+                                            beta=energy.beta)
+
 
 def _processing_base(default_base="../../../Data/BR+Retinal/170321FEC/",**kw):
     return Pipeline._base_dir_from_cmd(default=default_base,**kw)
@@ -51,6 +51,23 @@ def _landscape_base(**kw):
 def _analysis_base(default_base="../../../Data/BR+Retinal/50/",**kw):
     return _processing_base(default_base=default_base,**kw)
 
+
+def interpolating_G0(energy_list,num_q=200,num_splines=75):
+    """
+    :param energy_list: list of energy objects to get splines from
+    :param num_q: h
+    :param num_splines:
+    :return: tuple of <q (nm) in range of all energy objects,
+                      splines for objects' energy in kcal/mol(q in nm)>
+    """
+    q_mins = [min(e.q_nm) for e in energy_list]
+    q_maxs = [max(e.q_nm) for e in energy_list]
+    q_limits = [np.max(q_mins), np.min(q_maxs)]
+    q_interp = np.linspace(*q_limits,num=num_q)
+    # get all the splines
+    splines = [spline_fit(q=e.q_nm, G0=e.G0_kcal_per_mol,num=num_splines)
+               for e in energy_list]
+    return q_interp, splines
 
 def spline_fit(q, G0, k=3, knots=None,num=100):
     if (knots is None):

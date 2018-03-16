@@ -25,24 +25,34 @@ def subdirs(base_dir_analysis):
                      and "cache" not in r]
     return filtered_dirs
 
-
+def read_in_energy(base_dir):
+    """
+    :param base_dir: where the landscape lives; should be a series of FECs of
+    about the same spring constant (e.g.  /BR+Retinal/300/170321FEC/)
+    :return: RetinalUtil.EnergyWithMeta
+    """
+    landscape_base = RetinalUtil._landscape_dir(base_dir)
+    cache_tmp = \
+        Pipeline._cache_dir(base=landscape_base,
+                            enum=Pipeline.Step.POLISH)
+    file_load = cache_tmp + "energy.pkl"
+    energy_obj = CheckpointUtilities.lazy_load(file_load)
+    obj = RetinalUtil.EnergyWithMeta(file_load,
+                                     landscape_base, energy_obj)
+    return obj
 
 def get_energy_list(base_dir_analysis):
+    """
+    :param base_dir_analysis: where we should look (e.g. BR+Retinal)
+    :return: list of RetinalUtil.EnergyWithMeta objects
+    """
     filtered_dirs = subdirs(base_dir_analysis)
-    energies, files, bases = [], [], []
+    to_ret = []
     for velocity_directory in filtered_dirs:
         fecs = subdirs(velocity_directory)
         for d in fecs:
-            landscape_base = RetinalUtil._landscape_dir(d)
-            cache_tmp = \
-                Pipeline._cache_dir(base=landscape_base,
-                                    enum=Pipeline.Step.POLISH)
-            file_load = cache_tmp + "energy.pkl"
-            energy_obj = CheckpointUtilities.lazy_load(file_load)
-            bases.append(landscape_base)
-            files.append(file_load)
-            energies.append(energy_obj)
-    return RetinalUtil.EnergyList(files,base_dirs=bases,energies=energies)
+            to_ret.append(read_in_energy(base_dir=d))
+    return to_ret
 
 def fix_axes(ax_list):
    # loop through all the axes and toss them.
@@ -67,6 +77,17 @@ def data_plot(fecs,energies):
         all_ax.append(axs_tmp)
     fix_axes(all_ax)
 
+def plot_mean_landscape(q_interp,splines,ax=None):
+    values = [s(q_interp) for s in splines]
+    mean_energy = np.mean(values, axis=0)
+    std_energy = np.std(values, axis=0)
+    ax = plt.subplot(1,1,1) if (ax is None) else ax
+    plt.plot(q_interp, mean_energy, color='c')
+    plt.fill_between(q_interp, mean_energy - std_energy,
+                     mean_energy + std_energy,
+                     color='c', alpha=0.2)
+    PlotUtilities.lazyLabel("q (nm)", "$\Delta G_0$ (kcal/mol)", "")
+
 def run():
     """
     <Description>
@@ -88,17 +109,27 @@ def run():
                                                     base_dir_analysis)
     fecs = []
     energies = []
-    for i in range(energy_list.N):
-        base_tmp = energy_list.base_dirs[i]
+    N = len(energy_list)
+    for e in energy_list:
+        base_tmp = e.base_dir
         in_dir = Pipeline._cache_dir(base=base_tmp,
                                      enum=Pipeline.Step.REDUCED)
         data = CheckpointUtilities.lazy_multi_load(in_dir)
         fecs.append(data)
-        energies.append(energy_list.energies[i])
-    n_cols = energy_list.N
-    fig = PlotUtilities.figure(((n_cols * 1.5),3.5))
-    data_plot(fecs, energies)
-    PlotUtilities.savefig(fig,out_dir + "energies.png")
+        energies.append(e)
+    n_cols = N
+    #fig = PlotUtilities.figure(((n_cols * 1.5),3.5))
+    #data_plot(fecs, energies)
+    #PlotUtilities.savefig(fig,out_dir + "energies.png")
+    # interpolate all the energies to the same grid
+    q_interp, splines =  RetinalUtil.interpolating_G0(energy_list)
+    # get an average/stdev of energy
+    fig = PlotUtilities.figure()
+    plot_mean_landscape(q_interp, splines)
+    PlotUtilities.savefig(fig,out_dir + "avg.png")
+
+
+
 
 if __name__ == "__main__":
     run()

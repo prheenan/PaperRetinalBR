@@ -47,7 +47,8 @@ def plot_landscapes(data,energy_obj,ax1=None,
     plt.sca(ax3)
     k_N_per_m = spline_G0.derivative(2)(q)
     k_pN_per_nm = k_N_per_m * 1e3
-    plt.plot(q_nm, k_pN_per_nm)
+    plt.plot(q_nm, k_pN_per_nm,linewidth=0.5)
+    plt.plot(q_nm, k_pN_per_nm,linewidth=0.5)
     PlotUtilities.lazyLabel("q (nm)", "k (pN/nm)", "")
     lim = 75
     plt.ylim(-lim, lim)
