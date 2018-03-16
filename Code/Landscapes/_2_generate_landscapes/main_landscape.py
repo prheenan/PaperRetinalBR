@@ -18,6 +18,7 @@ from Lib.UtilForce.UtilGeneral import PlotUtilities
 from Processing import ProcessingUtil
 from Lib.AppWHAM.Code import WeightedHistogram, UtilWHAM
 import RetinalUtil
+import PlotUtil
 
 def generate_landscape(in_dir):
     data = CheckpointUtilities.lazy_multi_load(in_dir)
@@ -53,35 +54,8 @@ def run():
                       orCall=functor,force=force)
     data = CheckpointUtilities.lazy_multi_load(in_dir)
     # also load all the data
-    q = energy_obj.q
-    q_nm = q * 1e9
-    xlim_nm = [min(q_nm),max(q_nm)]
-    G0_kT = energy_obj.G0/4.1e-21
-    from scipy.interpolate import LSQUnivariateSpline
-    knots = np.linspace(min(q),max(q),num=50,endpoint=True)[1:-1]
-    spline_G0 = LSQUnivariateSpline(x=q,y=energy_obj.G0,
-                                    t=knots,k=3)
-    fig = PlotUtilities.figure((3,6))
-
-    ax1 = plt.subplot(3,1,1)
-    for d in data:
-        plt.plot(d.Separation*1e9,d.Force*1e12,markevery=50)
-    plt.xlim(xlim_nm)
-    PlotUtilities.lazyLabel("","Force (pN)","")
-    PlotUtilities.no_x_label(ax=ax1)
-    ax2= plt.subplot(3,1,2)
-    plt.plot(q_nm,G0_kT)
-    plt.plot(q_nm,spline_G0(q)/4.1e-21,'r--')
-    PlotUtilities.lazyLabel("","$\Delta G_\mathrm{0}$ (kbT)","")
-    PlotUtilities.no_x_label(ax=ax2)
-    plt.xlim(xlim_nm)
-    plt.subplot(3,1,3)
-    k_N_per_m = spline_G0.derivative(2)(q)
-    k_pN_per_nm = k_N_per_m * 1e3
-    plt.plot(q_nm,k_pN_per_nm)
-    PlotUtilities.lazyLabel("q (nm)","k (pN/nm)","")
-    lim = 75
-    plt.ylim(-lim,lim)
+    fig = PlotUtilities.figure((3, 6))
+    PlotUtil.plot_landscapes(data,energy_obj)
     PlotUtilities.savefig(fig,out_dir + "out_G.png")
     pass
 

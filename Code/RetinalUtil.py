@@ -13,7 +13,7 @@ from Lib.UtilPipeline import Pipeline
 from Lib.UtilForce.FEC import FEC_Util,  FEC_Plot
 from Lib.UtilForce.UtilIgor.TimeSepForceObj import TimeSepForceObj
 from Lib.UtilForce.UtilGeneral import PlotUtilities
-
+from scipy.interpolate import LSQUnivariateSpline
 
 from Lib.AppIWT.Code.InverseWeierstrass import FEC_Pulling_Object
 
@@ -30,9 +30,13 @@ class MetaPulling(FEC_Pulling_Object):
         self.Meta = time_sep_force.Meta
 
 class EnergyList(object):
-    def __init__(self,file_names,energies):
+    def __init__(self,file_names,base_dirs,energies):
         self.files_name = file_names
+        self.base_dirs = base_dirs
         self.energies = energies
+    @property
+    def N(self):
+        return len(self.files_name)
 
 def _processing_base(default_base="../../../Data/BR+Retinal/170321FEC/",**kw):
     return Pipeline._base_dir_from_cmd(default=default_base,**kw)
@@ -42,3 +46,10 @@ def _landscape_base(**kw):
     
 def _analysis_base(default_base="../../../Data/BR+Retinal/",**kw):
     return _processing_base(default_base=default_base,**kw)
+
+
+def spline_fit(q, G0, k=3, knots=None,num=100):
+    if (knots is None):
+        knots = np.linspace(min(q), max(q), num=num, endpoint=True)[1:-1]
+    spline_G0 = LSQUnivariateSpline(x=q, y=G0,t=knots, k=k)
+    return spline_G0
