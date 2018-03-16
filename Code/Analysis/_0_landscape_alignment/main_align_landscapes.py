@@ -55,25 +55,37 @@ def get_energy_list(base_dir_analysis):
             to_ret.append(read_in_energy(base_dir=d))
     return to_ret
 
+def get_ranges(ax_list,get_x=True):
+    f = lambda x: x.get_xlim() if get_x else x.get_ylim()
+    lims = [ [f(ax[i]) for ax in ax_list] for i in range(3)]
+    to_ret = [ [np.min(l),np.max(l)] for l in lims]
+    return to_ret
+
 def fix_axes(ax_list):
    # loop through all the axes and toss them.
+   lims = [[ax[i] for ax in ax_list] for i in range(3)]
+   xlims = get_ranges(ax_list,get_x=True)
+   xlim_final = [np.min(xlims), np.max(xlims)]
+   ylims = get_ranges(ax_list,get_x=False)
    for axs in ax_list[1:]:
        for j, ax in enumerate(axs):
            PlotUtilities.no_y_label(ax)
            PlotUtilities.ylabel("", ax=ax)
-           """
+           ax.set_ylim(ylims[j])
+           ax.set_xlim(xlim_final)
            if (j != 0):
                PlotUtilities.no_x_label(ax)
                PlotUtilities.xlabel("", ax=ax)
-           """
 
 def data_plot(fecs,energies):
     n_cols = len(fecs)
     n_rows = 3
     all_ax = []
-    gs = gridspec.GridSpec(4,3)
+    gs = gridspec.GridSpec(2,1)
+    gs1 = gridspec.GridSpecFromSubplotSpec(3,3,subplot_spec=gs[0,0],
+                                           wspace=0.05,hspace=0.05)
     for i, (data, e) in enumerate(zip(fecs, energies)):
-        axs_tmp = [plt.subplot(gs[j,i])
+        axs_tmp = [plt.subplot(gs1[j,i])
                    for j in range(n_rows)]
         ax1, ax2, ax3 = axs_tmp
         PlotUtil.plot_landscapes(data, e, ax1=ax1, ax2=ax2, ax3=ax3)
@@ -82,18 +94,34 @@ def data_plot(fecs,energies):
     fix_axes(all_ax)
     q_interp, splines =  RetinalUtil.interpolating_G0(energies)
     # get an average/stdev of energy
-    plot_mean_landscape(q_interp, splines,ax=gs[3,:])
+    mean_energy, std_energy = plot_mean_landscape(q_interp, splines,ax=gs[-1,:])
+    # determine where the max is, and label it
+    max_idx = np.argmax(mean_energy)
+    max_energy_mean = mean_energy[max_idx]
+    max_energy_std = std_energy[max_idx]
+    q_at_max_energy = q_interp[max_idx]
+    label_mean = np.round(max_energy_mean,-1)
+    label_std = np.round(max_energy_std,-1)
+    label = r"""$\Delta G_{GF}$"""  + "= {:.0f} $\pm$ {:.0f} kcal/mol".\
+                format(label_mean,label_std)
+    plt.errorbar(q_at_max_energy,max_energy_mean,max_energy_std,
+                 fmt='ro',linestyle='None',label=label,markersize=3,
+                 capsize=3)
+    plt.axvspan(q_at_max_energy,max(plt.xlim()),color='k',alpha=0.3)
+    PlotUtilities.legend(loc='upper left',frameon=True)
 
 def plot_mean_landscape(q_interp,splines,ax=None):
     values = [s(q_interp) for s in splines]
     mean_energy = np.mean(values, axis=0)
     std_energy = np.std(values, axis=0)
     ax = plt.subplot(1,1,1) if (ax is None) else ax
+    plt.subplot(ax)
     plt.plot(q_interp, mean_energy, color='c')
     plt.fill_between(q_interp, mean_energy - std_energy,
                      mean_energy + std_energy,
                      color='c', alpha=0.2)
     PlotUtilities.lazyLabel("q (nm)", "$\Delta G_0$ (kcal/mol)", "")
+    return mean_energy, std_energy
 
 def run():
     """
@@ -125,7 +153,7 @@ def run():
         fecs.append(data)
         energies.append(e)
     n_cols = N
-    fig = PlotUtilities.figure(((n_cols * 1.5),3.5))
+    fig = PlotUtilities.figure(((n_cols * 1.5),5))
     data_plot(fecs, energies)
     PlotUtilities.savefig(fig,out_dir + "energies.png")
     # interpolate all the energies to the same grid
