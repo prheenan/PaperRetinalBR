@@ -35,9 +35,10 @@ function run_on_all_dirs(){
         done
 }
 
-# Description:
-function process(){
-    dir="$1"
+function run_recursive(){
+    descr="$1"
+    dir="$2"
+    bash_file="$3"
     cd_prh "$dir"
     # determine the absolute directory
     abs_dir=`pwd`
@@ -47,17 +48,32 @@ function process(){
     # process everything in the subdirectories
     for f in $files
         do
-            print("===== Processing directory $f ====")
-            run_on_all_dirs ../Processing/main/main.sh "$f/"
-        done
+           echo "===== $descr $f ====" 
+           run_on_all_dirs "$bash_file" "$f/"
+        done  
+}
+
+function process(){
+    run_recursive "Processing for" "$1" ../Processing/main/main.sh
+}
+
+function generate_landscapes(){
+    run_recursive "Generating landscapes for" "$1" ../Landscapes/main/main.sh
+}
+
+function full_stack(){
+    dir="$1"
+    process "$dir"
+    generate_landscapes "$dir"
 }
  
+# Description:
 
 # Arguments:
 # This file runs the full analysis pipeline for generating figure-ready data.
 #### Arg 1: Description
 data_base="../../Data/"
-process "${data_base}BR+Retinal/"
+full_stack "${data_base}BR+Retinal/"
 # Returns:
 
 
