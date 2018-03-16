@@ -9,6 +9,14 @@ IFS=$'\n\t'
 # datestring, used in many different places...
 dateStr=`date +%Y-%m-%d:%H:%M:%S`
 
+function invalid_directory(){
+    if [[ "$1" = *"cache"* ]]; then
+        return 0;
+    else
+        return 1;
+    fi
+}
+
 function cd_prh(){
     cd "$1" > /dev/null
 }
@@ -20,6 +28,9 @@ function run_on_all_dirs(){
     files=`find "$dir_to_search" -mindepth 1 -maxdepth 1 -type d`    
     for g in $files
         do
+            if invalid_directory "$g"; then
+                continue
+            fi
             # determine where the directory we send as an argument to the file
             cd_prh $g
             abs_f=`pwd`
@@ -48,6 +59,9 @@ function run_recursive(){
     # process everything in the subdirectories
     for f in $files
         do
+            if invalid_directory "$f"; then
+                continue
+            fi
            echo "===== $descr $f ====" 
            run_on_all_dirs "$bash_file" "$f/"
         done  

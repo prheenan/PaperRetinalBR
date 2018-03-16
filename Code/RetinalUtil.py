@@ -41,10 +41,14 @@ class EnergyList(object):
 def _processing_base(default_base="../../../Data/BR+Retinal/170321FEC/",**kw):
     return Pipeline._base_dir_from_cmd(default=default_base,**kw)
 
+def _landscape_dir(dir_base):
+    return dir_base + "landscape_"
+
 def _landscape_base(**kw):
-    return _processing_base(**kw) + "landscape_"
+    to_ret = _landscape_dir(_processing_base(**kw))
+    return to_ret
     
-def _analysis_base(default_base="../../../Data/BR+Retinal/",**kw):
+def _analysis_base(default_base="../../../Data/BR+Retinal/50/",**kw):
     return _processing_base(default_base=default_base,**kw)
 
 

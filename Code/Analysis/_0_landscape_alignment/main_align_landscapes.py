@@ -19,21 +19,29 @@ from Processing import ProcessingUtil
 from Lib.AppWHAM.Code import WeightedHistogram, UtilWHAM
 import RetinalUtil,PlotUtil
 
-
-def get_energy_list(base_dir_analysis):
+def subdirs(base_dir_analysis):
     raw_dirs = [base_dir_analysis + d for d in os.listdir(base_dir_analysis)]
     filtered_dirs = [r + "/" for r in raw_dirs if os.path.isdir(r)
                      and "cache" not in r]
+    return filtered_dirs
+
+
+
+def get_energy_list(base_dir_analysis):
+    filtered_dirs = subdirs(base_dir_analysis)
     energies, files, bases = [], [], []
-    for d in filtered_dirs:
-        base_tmp = RetinalUtil._landscape_base(default_base=d)
-        cache_tmp = \
-            Pipeline._cache_dir(base=base_tmp, enum=Pipeline.Step.POLISH)
-        file_load = cache_tmp + "energy.pkl"
-        energy_obj = CheckpointUtilities.lazy_load(file_load)
-        bases.append(base_tmp)
-        files.append(file_load)
-        energies.append(energy_obj)
+    for velocity_directory in filtered_dirs:
+        fecs = subdirs(velocity_directory)
+        for d in fecs:
+            landscape_base = RetinalUtil._landscape_dir(d)
+            cache_tmp = \
+                Pipeline._cache_dir(base=landscape_base,
+                                    enum=Pipeline.Step.POLISH)
+            file_load = cache_tmp + "energy.pkl"
+            energy_obj = CheckpointUtilities.lazy_load(file_load)
+            bases.append(landscape_base)
+            files.append(file_load)
+            energies.append(energy_obj)
     return RetinalUtil.EnergyList(files,base_dirs=bases,energies=energies)
 
 def fix_axes(ax_list):
@@ -73,7 +81,9 @@ def run():
     out_dir = Pipeline._cache_dir(base=base_dir_analysis,
                                   enum=Pipeline.Step.CORRECTED)
     force = True
-    energy_list = CheckpointUtilities.getCheckpoint(out_dir + "energies.pkl",
+    GenUtilities.ensureDirExists(out_dir)
+    energy_list = CheckpointUtilities.getCheckpoint(out_dir + \
+                                                    "energies.pkl",
                                                     get_energy_list,force,
                                                     base_dir_analysis)
     fecs = []
@@ -86,7 +96,7 @@ def run():
         fecs.append(data)
         energies.append(energy_list.energies[i])
     n_cols = energy_list.N
-    fig = PlotUtilities.figure(((n_cols * 2.5),3.5))
+    fig = PlotUtilities.figure(((n_cols * 1.5),3.5))
     data_plot(fecs, energies)
     PlotUtilities.savefig(fig,out_dir + "energies.png")
 

@@ -18,6 +18,9 @@ from Lib.UtilForce.UtilGeneral import PlotUtilities
 from Processing import ProcessingUtil
 from Lib.AppIWT.Code import WeierstrassUtil
 import RetinalUtil
+import warnings
+from collections import Counter
+
 
 def to_iwt(in_dir):
     data = CheckpointUtilities.lazy_multi_load(in_dir)
@@ -27,9 +30,20 @@ def to_iwt(in_dir):
     np.testing.assert_allclose(velocities,velocities[0],atol=0,rtol=1e-3)
     # repeat for the spring constant
     spring_constants = [d.SpringConstant for d in data]
-    np.testing.assert_allclose(spring_constants,spring_constants[0],
-                               atol=0,rtol=1e-3)
+    K_key = spring_constants[0]
+    K_diff = np.max(np.array(spring_constants)-K_key)/np.mean(spring_constants)
+    if (K_diff > 1e-2):
+        msg ="For {:s}, not all spring constants ({:s}) the same. Replace <K>".\
+            format(in_dir,spring_constants)
+        warnings.warn(msg)
+        # average all the time each K appears
+        weighted_mean = np.mean(spring_constants)
+        for d in data:
+            d.Meta.SpringConstant = weighted_mean
     # get the minimum of the sizes
+    np.testing.assert_allclose(data[0].SpringConstant,
+                               [d.SpringConstant for d in data],
+                               rtol=1e-3)
     max_sizes = [d.Force.size for d in data]
     min_of_max_sizes = min(max_sizes)
     # re-slice each data set so they are exactly the same size (as IWT needs)

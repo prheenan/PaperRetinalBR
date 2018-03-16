@@ -21,7 +21,7 @@ for f in $files
         dir_name=`dirname $f`
         cd $dir_name
         echo "Running $file_base on $data_dir"
-        python "$file_base" --base "$data_dir" || echo "Couldn't run $file_base"
+        python "$file_base" --base "$data_dir" 
         cd -
     done
 
