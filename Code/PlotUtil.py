@@ -16,6 +16,7 @@ from Lib.UtilForce.UtilGeneral import PlotUtilities
 
 
 from Lib.AppIWT.Code.InverseWeierstrass import FEC_Pulling_Object
+from Lib.AppWHAM.Code.UtilLandscape import Conversions
 
 import RetinalUtil
 
@@ -30,18 +31,19 @@ def plot_landscapes(data,energy_obj,ax1=None,
     q = energy_obj.q
     q_nm = q * 1e9
     xlim_nm = [min(q_nm), max(q_nm)]
-    G0_kT = energy_obj.G0 / 4.1e-21
+    G0_plot = energy_obj.G0_kcal_per_mol
     spline_G0 = RetinalUtil.spline_fit(q=q, G0=energy_obj.G0)
+    to_kcal_per_mol = Conversions.kcal_per_mol_per_J()
     plt.sca(ax1)
     for d in data:
         plt.plot(d.Separation * 1e9, d.Force * 1e12, markevery=50)
     plt.xlim(xlim_nm)
-    PlotUtilities.lazyLabel("", "Force (pN)", "")
+    PlotUtilities.lazyLabel("", "$F$ (pN)", "")
     PlotUtilities.no_x_label(ax=ax1)
     plt.sca(ax2)
-    plt.plot(q_nm, G0_kT)
-    plt.plot(q_nm, spline_G0(q) / 4.1e-21, 'r--')
-    PlotUtilities.lazyLabel("", "$\Delta G_\mathrm{0}$ (kbT)", "")
+    plt.plot(q_nm, G0_plot)
+    plt.plot(q_nm, spline_G0(q) * to_kcal_per_mol, 'r--')
+    PlotUtilities.lazyLabel("", "$\Delta G_\mathrm{0}$\n(kcal/mol)", "")
     PlotUtilities.no_x_label(ax=ax2)
     plt.xlim(xlim_nm)
     plt.sca(ax3)

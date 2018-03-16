@@ -108,7 +108,7 @@ def data_plot(fecs,energies):
                  fmt='ro',linestyle='None',label=label,markersize=3,
                  capsize=3)
     plt.axvspan(q_at_max_energy,max(plt.xlim()),color='k',alpha=0.3)
-    PlotUtilities.legend(loc='upper left',frameon=True)
+    PlotUtilities.legend(loc='upper right',frameon=True)
 
 def plot_mean_landscape(q_interp,splines,ax=None):
     values = [s(q_interp) for s in splines]
