@@ -18,6 +18,7 @@ from Lib.UtilForce.UtilGeneral import PlotUtilities
 from Processing import ProcessingUtil
 from Lib.AppWHAM.Code import WeightedHistogram, UtilWHAM
 import RetinalUtil,PlotUtil
+import matplotlib.gridspec as gridspec
 
 def subdirs(base_dir_analysis):
     raw_dirs = [base_dir_analysis + d for d in os.listdir(base_dir_analysis)]
@@ -60,22 +61,28 @@ def fix_axes(ax_list):
        for j, ax in enumerate(axs):
            PlotUtilities.no_y_label(ax)
            PlotUtilities.ylabel("", ax=ax)
+           """
            if (j != 0):
                PlotUtilities.no_x_label(ax)
                PlotUtilities.xlabel("", ax=ax)
+           """
 
 def data_plot(fecs,energies):
     n_cols = len(fecs)
     n_rows = 3
     all_ax = []
+    gs = gridspec.GridSpec(4,3)
     for i, (data, e) in enumerate(zip(fecs, energies)):
-        axs_tmp = [plt.subplot(n_rows, n_cols, j * n_cols + i + 1)
+        axs_tmp = [plt.subplot(gs[j,i])
                    for j in range(n_rows)]
         ax1, ax2, ax3 = axs_tmp
         PlotUtil.plot_landscapes(data, e, ax1=ax1, ax2=ax2, ax3=ax3)
         # every axis after the first gets more of the decoaration chopped...
         all_ax.append(axs_tmp)
     fix_axes(all_ax)
+    q_interp, splines =  RetinalUtil.interpolating_G0(energies)
+    # get an average/stdev of energy
+    plot_mean_landscape(q_interp, splines,ax=gs[3,:])
 
 def plot_mean_landscape(q_interp,splines,ax=None):
     values = [s(q_interp) for s in splines]
@@ -118,9 +125,9 @@ def run():
         fecs.append(data)
         energies.append(e)
     n_cols = N
-    #fig = PlotUtilities.figure(((n_cols * 1.5),3.5))
-    #data_plot(fecs, energies)
-    #PlotUtilities.savefig(fig,out_dir + "energies.png")
+    fig = PlotUtilities.figure(((n_cols * 1.5),3.5))
+    data_plot(fecs, energies)
+    PlotUtilities.savefig(fig,out_dir + "energies.png")
     # interpolate all the energies to the same grid
     q_interp, splines =  RetinalUtil.interpolating_G0(energy_list)
     # get an average/stdev of energy
