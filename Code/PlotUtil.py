@@ -54,3 +54,22 @@ def plot_landscapes(data,energy_obj,ax1=None,
     PlotUtilities.lazyLabel("q (nm)", "k (pN/nm)", "")
     lim = 75
     plt.ylim(-lim, lim)
+
+def plot_mean_landscape(q_interp, splines, ax=None):
+    """
+    :param q_interp: where to interpolate the splines
+    :param splines: LstSqUnivariateSpline objects
+    :param ax:  which axis to add to
+    :return:
+    """
+    values = [s(q_interp) for s in splines]
+    mean_energy = np.mean(values, axis=0)
+    std_energy = np.std(values, axis=0)
+    ax = plt.subplot(1, 1, 1) if (ax is None) else ax
+    plt.sca(ax)
+    plt.plot(q_interp, mean_energy, color='c')
+    plt.fill_between(q_interp, mean_energy - std_energy,
+                     mean_energy + std_energy,
+                     color='c', alpha=0.2)
+    PlotUtilities.lazyLabel("q (nm)", "$\Delta G_0$ (kcal/mol)", "")
+    return mean_energy, std_energy

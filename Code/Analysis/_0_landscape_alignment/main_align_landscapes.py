@@ -94,7 +94,8 @@ def data_plot(fecs,energies):
     fix_axes(all_ax)
     q_interp, splines =  RetinalUtil.interpolating_G0(energies)
     # get an average/stdev of energy
-    mean_energy, std_energy = plot_mean_landscape(q_interp, splines,ax=gs[-1,:])
+    mean_energy, std_energy = PlotUtil.plot_mean_landscape(q_interp,
+                                                           splines,ax=gs[-1,:])
     # only look at the first X nm
     max_q_nm = 30
     max_q_idx = np.where(q_interp <= max_q_nm)[0][-1]
@@ -113,18 +114,6 @@ def data_plot(fecs,energies):
     plt.axvspan(q_at_max_energy,max(plt.xlim()),color='k',alpha=0.3)
     PlotUtilities.legend(loc='upper right',frameon=True)
 
-def plot_mean_landscape(q_interp,splines,ax=None):
-    values = [s(q_interp) for s in splines]
-    mean_energy = np.mean(values, axis=0)
-    std_energy = np.std(values, axis=0)
-    ax = plt.subplot(1,1,1) if (ax is None) else ax
-    plt.subplot(ax)
-    plt.plot(q_interp, mean_energy, color='c')
-    plt.fill_between(q_interp, mean_energy - std_energy,
-                     mean_energy + std_energy,
-                     color='c', alpha=0.2)
-    PlotUtilities.lazyLabel("q (nm)", "$\Delta G_0$ (kcal/mol)", "")
-    return mean_energy, std_energy
 
 def run():
     """
@@ -175,7 +164,7 @@ def run():
     q_interp, splines =  RetinalUtil.interpolating_G0(energy_list)
     # get an average/stdev of energy
     fig = PlotUtilities.figure()
-    plot_mean_landscape(q_interp, splines)
+    PlotUtil.plot_mean_landscape(q_interp, splines)
     PlotUtilities.savefig(fig,out_dir + "avg.png")
 
 

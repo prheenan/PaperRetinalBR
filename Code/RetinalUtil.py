@@ -80,3 +80,13 @@ def spline_fit(q, G0, k=3, knots=None,num=100):
         knots = np.linspace(min(q), max(q), num=num, endpoint=True)[1:-1]
     spline_G0 = LSQUnivariateSpline(x=q, y=G0,t=knots, k=k)
     return spline_G0
+
+def valid_landscape(e):
+    """
+    :param e: Landsape object
+    :return: new landscape object, all the places where it is finite-valued
+    """
+    good_idx = np.where(np.isfinite(e.G0) & ~np.isnan(e.G0))[0]
+    assert good_idx.size > 0
+    tmp_e = e._slice(good_idx)
+    return tmp_e
