@@ -27,7 +27,7 @@ def to_iwt(in_dir):
     # make sure they all have the same velocity
     velocities = [d.Velocity for d in data]
     # make sure the velocities match within X%
-    np.testing.assert_allclose(velocities,velocities[0],atol=0,rtol=1e-3)
+    np.testing.assert_allclose(velocities,velocities[0],atol=0,rtol=1e-2)
     # repeat for the spring constant
     spring_constants = [d.SpringConstant for d in data]
     K_key = spring_constants[0]
