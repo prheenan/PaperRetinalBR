@@ -78,11 +78,11 @@ def fix_axes(ax_list):
                PlotUtilities.xlabel("", ax=ax)
 
 def data_plot(fecs,energies):
-    n_cols = len(fecs)
+    n_cols = len(energies)
     n_rows = 3
     all_ax = []
     gs = gridspec.GridSpec(2,1)
-    gs1 = gridspec.GridSpecFromSubplotSpec(3,3,subplot_spec=gs[0,0],
+    gs1 = gridspec.GridSpecFromSubplotSpec(n_rows,n_cols,subplot_spec=gs[0,0],
                                            wspace=0.05,hspace=0.05)
     for i, (data, e) in enumerate(zip(fecs, energies)):
         axs_tmp = [plt.subplot(gs1[j,i])
@@ -95,8 +95,11 @@ def data_plot(fecs,energies):
     q_interp, splines =  RetinalUtil.interpolating_G0(energies)
     # get an average/stdev of energy
     mean_energy, std_energy = plot_mean_landscape(q_interp, splines,ax=gs[-1,:])
+    # only look at the first X nm
+    max_q_nm = 30
+    max_q_idx = np.where(q_interp <= max_q_nm)[0][-1]
     # determine where the max is, and label it
-    max_idx = np.argmax(mean_energy)
+    max_idx = np.argmax(mean_energy[:max_q_idx])
     max_energy_mean = mean_energy[max_idx]
     max_energy_std = std_energy[max_idx]
     q_at_max_energy = q_interp[max_idx]
@@ -136,12 +139,19 @@ def run():
     base_dir_analysis = RetinalUtil._analysis_base()
     out_dir = Pipeline._cache_dir(base=base_dir_analysis,
                                   enum=Pipeline.Step.CORRECTED)
-    force = True
+    force = False
     GenUtilities.ensureDirExists(out_dir)
-    energy_list = CheckpointUtilities.getCheckpoint(out_dir + \
+    energy_list_raw = CheckpointUtilities.getCheckpoint(out_dir + \
                                                     "energies.pkl",
                                                     get_energy_list,force,
                                                     base_dir_analysis)
+    # XXX do this somewhere else
+    energy_list = []
+    for e in energy_list_raw:
+        good_idx = np.where(np.isfinite(e.G0) & ~np.isnan(e.G0))[0]
+        assert good_idx.size > 0
+        tmp_e = e._slice(good_idx)
+        energy_list.append(tmp_e)
     fecs = []
     energies = []
     N = len(energy_list)
@@ -149,7 +159,12 @@ def run():
         base_tmp = e.base_dir
         in_dir = Pipeline._cache_dir(base=base_tmp,
                                      enum=Pipeline.Step.REDUCED)
-        data = CheckpointUtilities.lazy_multi_load(in_dir)
+        dir_exists = os.path.exists(in_dir)
+        if (dir_exists and \
+            len(GenUtilities.getAllFiles(in_dir,ext=".pkl")) > 0):
+            data = CheckpointUtilities.lazy_multi_load(in_dir)
+        else:
+            data = []
         fecs.append(data)
         energies.append(e)
     n_cols = N

@@ -31,11 +31,17 @@ class EnergyWithMeta(WeightedHistogram.LandscapeWHAM):
     def __init__(self,file_name,base_dir,energy):
         self.file_name = file_name
         self.base_dir = base_dir
+        self.__init__energy(energy)
+    def __init__energy(self,energy):
         offset = energy._offset_G0_of_q
         super(EnergyWithMeta,self).__init__(q=energy._q,
                                             G0=energy._G0,
                                             offset_G0_of_q=offset,
                                             beta=energy.beta)
+    def _slice(self,*args,**kw):
+        sliced = super(EnergyWithMeta,self)._slice(*args,**kw)
+        self.__init__energy(sliced)
+        return self
 
 
 def _processing_base(default_base="../../../Data/BR+Retinal/170321FEC/",**kw):
