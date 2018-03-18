@@ -66,7 +66,7 @@ def plot_mean_landscape(q_interp, splines, ax=None):
     mean_energy = np.mean(values, axis=0)
     std_energy = np.std(values, axis=0)
     ax = plt.subplot(1, 1, 1) if (ax is None) else ax
-    plt.sca(ax)
+    plt.subplot(ax)
     plt.plot(q_interp, mean_energy, color='c')
     plt.fill_between(q_interp, mean_energy - std_energy,
                      mean_energy + std_energy,

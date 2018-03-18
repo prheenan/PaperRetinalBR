@@ -45,8 +45,10 @@ def run():
         energy_list_arr.append(e)
     fig = PlotUtilities.figure()
     for i,energy_list in enumerate(energy_list_arr):
-        for tmp in energy_list:
-            plt.plot(tmp.q_nm,tmp.G0_kcal_per_mol,label=str(i) + tmp.base_dir)
+        G0_arr = [tmp.G0_kcal_per_mol for tmp in energy_list]
+        G0 = np.mean(G0_arr,axis=0)
+        G0_std = np.std(G0_arr,axis=0)
+        plt.plot(tmp.q_nm,G0,label=str(i) + tmp.base_dir)
     PlotUtilities.lazyLabel("q (nm)","$\Delta G$ (kcal/mol)","")
     PlotUtilities.legend()
     PlotUtilities.savefig(fig,out_dir + "avg.png")
