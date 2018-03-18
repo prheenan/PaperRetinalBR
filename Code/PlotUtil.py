@@ -55,7 +55,7 @@ def plot_landscapes(data,energy_obj,ax1=None,
     lim = 75
     plt.ylim(-lim, lim)
 
-def plot_mean_landscape(q_interp, splines, ax=None):
+def plot_mean_landscape(q_interp, splines, ax=None,color='c',label=None):
     """
     :param q_interp: where to interpolate the splines
     :param splines: LstSqUnivariateSpline objects
@@ -67,9 +67,36 @@ def plot_mean_landscape(q_interp, splines, ax=None):
     std_energy = np.std(values, axis=0)
     ax = plt.subplot(1, 1, 1) if (ax is None) else ax
     plt.subplot(ax)
-    plt.plot(q_interp, mean_energy, color='c')
+    plt.plot(q_interp, mean_energy, color=color,label=label)
     plt.fill_between(q_interp, mean_energy - std_energy,
                      mean_energy + std_energy,
-                     color='c', alpha=0.2)
+                     color=color, alpha=0.2)
     PlotUtilities.lazyLabel("q (nm)", "$\Delta G_0$ (kcal/mol)", "")
     return mean_energy, std_energy
+
+
+
+def plot_delta_GF(q_interp,mean_energy,std_energy,max_q_nm=30,linestyle='None',
+                  markersize=3,**kw):
+    """
+    :param q_interp: extensions
+    :param mean_energy:
+    :param std_energy:
+    :param max_q_nm:
+    :return:
+    """
+    # only look at the first X nm
+    max_q_idx = np.where(q_interp <= max_q_nm)[0][-1]
+    # determine where the max is, and label it
+    max_idx = max_q_idx
+    max_energy_mean = mean_energy[max_idx]
+    max_energy_std = std_energy[max_idx]
+    q_at_max_energy = q_interp[max_idx]
+    label_mean = np.round(max_energy_mean,-1)
+    label_std = np.round(max_energy_std,-1)
+    label = r"""$\Delta G_{GF}$"""  + "= {:.0f} $\pm$ {:.0f} kcal/mol".\
+                format(label_mean,label_std)
+    plt.errorbar(q_at_max_energy,max_energy_mean,max_energy_std,
+                 label=label,markersize=markersize,linestyle=linestyle,
+                 capsize=3,**kw)
+    return q_at_max_energy,max_energy_mean,max_energy_std

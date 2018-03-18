@@ -43,13 +43,42 @@ def run():
         in_file = in_dir + "energies.pkl"
         e = CheckpointUtilities.lazy_load(in_file)
         energy_list_arr.append(e)
+
+    energy_list_arr = [ [RetinalUtil.valid_landscape(e) for e in list_tmp]
+                        for list_tmp in energy_list_arr]
+    e_list_flat = [e for list_tmp in energy_list_arr for e in list_tmp ]
+    q_interp = RetinalUtil.common_q_interp(energy_list=e_list_flat)
     fig = PlotUtilities.figure()
-    for i,energy_list in enumerate(energy_list_arr):
-        G0_arr = [tmp.G0_kcal_per_mol for tmp in energy_list]
-        G0 = np.mean(G0_arr,axis=0)
-        G0_std = np.std(G0_arr,axis=0)
-        plt.plot(tmp.q_nm,G0,label=str(i) + tmp.base_dir)
-    PlotUtilities.lazyLabel("q (nm)","$\Delta G$ (kcal/mol)","")
+    ax = plt.subplot(1,1,1)
+    style_dicts = [dict(color='c',label="+ Retinal"),
+                   dict(color='r',label="- Retinal")]
+    markers = ['v','x']
+    max_q_nm = 25
+    slice_arr = [slice(0,None,1),slice(1,None,1)]
+    deltas, deltas_std = [], []
+    for i,energy_list_raw in enumerate(energy_list_arr):
+        energy_list = [RetinalUtil.valid_landscape(e) for e in energy_list_raw]
+        slice_f = slice_arr[i]
+        tmp_style = style_dicts[i]
+        energy_list = energy_list[slice_f]
+        _, splines = RetinalUtil.interpolating_G0(energy_list)
+        mean,std = PlotUtil.plot_mean_landscape(q_interp, splines,
+                                                 ax=ax,**tmp_style)
+        delta_style = dict(color=tmp_style['color'],markersize=5,
+                           linestyle='None',marker=markers[i])
+        q_at_max_energy, max_energy_mean, max_energy_std =\
+            PlotUtil.plot_delta_GF(q_interp,mean,std,max_q_nm=max_q_nm,
+                                   **delta_style)
+        deltas.append(max_energy_mean)
+        deltas_std.append(max_energy_std)
+    delta_delta = np.abs(np.diff(deltas))[0]
+    delta_delta_std = np.sum(np.sqrt(np.array(deltas_std)**2))
+    delta_delta_fmt = np.round(delta_delta,-1)
+    delta_delta_std_fmt = np.round(delta_delta_std,-1)
+    title = r"$\Delta\Delta G$" +  " = {:.0f} $\pm$ {:.0f} kcal/mol".\
+        format(delta_delta_fmt,delta_delta_std_fmt)
+    PlotUtilities.lazyLabel("q (nm)","$\Delta G$ (kcal/mol)",title)
+    plt.xlim([None,max_q_nm*1.1])
     PlotUtilities.legend()
     PlotUtilities.savefig(fig,out_dir + "avg.png")
 

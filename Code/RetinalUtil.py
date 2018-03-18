@@ -57,6 +57,12 @@ def _landscape_base(**kw):
 def _analysis_base(default_base="../../../Data/BR+Retinal/50/",**kw):
     return _processing_base(default_base=default_base,**kw)
 
+def common_q_interp(energy_list,num_q=200):
+    q_mins = [min(e.q_nm) for e in energy_list]
+    q_maxs = [max(e.q_nm) for e in energy_list]
+    q_limits = [np.max(q_mins), np.min(q_maxs)]
+    q_interp = np.linspace(*q_limits,num=num_q)
+    return q_interp
 
 def interpolating_G0(energy_list,num_q=200,num_splines=75):
     """
@@ -66,10 +72,7 @@ def interpolating_G0(energy_list,num_q=200,num_splines=75):
     :return: tuple of <q (nm) in range of all energy objects,
                       splines for objects' energy in kcal/mol(q in nm)>
     """
-    q_mins = [min(e.q_nm) for e in energy_list]
-    q_maxs = [max(e.q_nm) for e in energy_list]
-    q_limits = [np.max(q_mins), np.min(q_maxs)]
-    q_interp = np.linspace(*q_limits,num=num_q)
+    q_interp =  common_q_interp(energy_list,num_q=num_q)
     # get all the splines
     splines = [spline_fit(q=e.q_nm, G0=e.G0_kcal_per_mol,num=num_splines)
                for e in energy_list]

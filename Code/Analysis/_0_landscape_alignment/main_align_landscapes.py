@@ -96,22 +96,10 @@ def data_plot(fecs,energies):
     # get an average/stdev of energy
     mean_energy, std_energy = PlotUtil.plot_mean_landscape(q_interp,
                                                            splines,ax=gs[-1,:])
-    # only look at the first X nm
-    max_q_nm = 30
-    max_q_idx = np.where(q_interp <= max_q_nm)[0][-1]
-    # determine where the max is, and label it
-    max_idx = np.argmax(mean_energy[:max_q_idx])
-    max_energy_mean = mean_energy[max_idx]
-    max_energy_std = std_energy[max_idx]
-    q_at_max_energy = q_interp[max_idx]
-    label_mean = np.round(max_energy_mean,-1)
-    label_std = np.round(max_energy_std,-1)
-    label = r"""$\Delta G_{GF}$"""  + "= {:.0f} $\pm$ {:.0f} kcal/mol".\
-                format(label_mean,label_std)
-    plt.errorbar(q_at_max_energy,max_energy_mean,max_energy_std,
-                 fmt='ro',linestyle='None',label=label,markersize=3,
-                 capsize=3)
-    plt.axvspan(q_at_max_energy,max(plt.xlim()),color='k',alpha=0.3)
+    q_at_max_energy,_,_ =  \
+        PlotUtil.plot_delta_GF(q_interp,mean_energy,std_energy,max_q_nm=30)
+    xlim = max(plt.xlim())
+    plt.axvspan(q_at_max_energy,xlim,color='k',alpha=0.3)
     PlotUtilities.legend(loc='upper right',frameon=True)
 
 
@@ -135,12 +123,7 @@ def run():
                                                     get_energy_list,force,
                                                     base_dir_analysis)
     # XXX do this somewhere else
-    energy_list = []
-    for e in energy_list_raw:
-        good_idx = np.where(np.isfinite(e.G0) & ~np.isnan(e.G0))[0]
-        assert good_idx.size > 0
-        tmp_e = e._slice(good_idx)
-        energy_list.append(tmp_e)
+    energy_list = [RetinalUtil.valid_landscape(e) for e in energy_list_raw]
     fecs = []
     energies = []
     N = len(energy_list)
