@@ -10,6 +10,9 @@ IFS=$'\n\t'
 dateStr=`date +%Y-%m-%d:%H:%M:%S`
 
 function invalid_directory(){
+    """
+    Returns: true iff the directory isn't a cache directory
+    """
     if [[ "$1" = *"cache"* ]]; then
         return 0;
     else
@@ -22,6 +25,9 @@ function cd_prh(){
 }
 
 function run_on_all_dirs(){
+    """
+    Runs the first argument (a .sh file) on all subdirectories in the second arg
+    """
     bash_file=$1
     dir_to_search=$2
     sub_files=``

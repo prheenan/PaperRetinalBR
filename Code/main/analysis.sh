@@ -14,7 +14,7 @@ dateStr=`date +%Y-%m-%d:%H:%M:%S`
 # Arguments:
 # This file runs the full analysis pipeline for generating figure-ready data.
 #### Arg 1: Description
-data_base="../../Data/FECs180307/"
+data_base=${1:-"../../Data/FECs180307/"}
 bash run_on_all_dirs.sh ../Analysis/main/main.sh "$data_base"
 
 

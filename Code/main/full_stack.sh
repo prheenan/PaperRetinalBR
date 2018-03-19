@@ -55,16 +55,8 @@ function full_stack(){
     process "$dir"
     generate_landscapes "$dir"
 }
- 
-# Description:
 
-# Arguments:
-# This file runs the full analysis pipeline for generating figure-ready data.
-#### Arg 1: Description
-data_base="../../Data/FECs180307/"
-full_stack "${data_base}BR+Retinal/"
-full_stack "${data_base}BR-Retinal/"
-
+full_stack "$1"
 
 
 
