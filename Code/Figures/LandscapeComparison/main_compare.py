@@ -31,7 +31,7 @@ def run():
     Returns:
         This is a description of what is returned.
     """
-    input_dir = "../../../Data/"
+    input_dir = "../../../Data/FECs180307/"
     subdirs_raw = [input_dir + d + "/" for d in os.listdir(input_dir)]
     subdirs = [d for d in subdirs_raw if (os.path.isdir(d))]
     out_dir = "./"
@@ -41,9 +41,11 @@ def run():
         in_dir = Pipeline._cache_dir(base=base,
                                      enum=Pipeline.Step.CORRECTED)
         in_file = in_dir + "energies.pkl"
-        e = CheckpointUtilities.lazy_load(in_file)
-        energy_list_arr.append(e)
-
+        try:
+            e = CheckpointUtilities.lazy_load(in_file)
+            energy_list_arr.append(e)
+        except IOError as e:
+            print(" ==== Couldn't read in {:s}; skipping ==== ".format(e))
     energy_list_arr = [ [RetinalUtil.valid_landscape(e) for e in list_tmp]
                         for list_tmp in energy_list_arr]
     e_list_flat = [e for list_tmp in energy_list_arr for e in list_tmp ]

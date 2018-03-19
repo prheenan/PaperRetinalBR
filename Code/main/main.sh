@@ -90,6 +90,7 @@ data_base="../../Data/FECs180307/"
 full_stack "${data_base}BR+Retinal/"
 full_stack "${data_base}BR-Retinal/"
 # Returns:
+run_on_all_dirs "../Analysis/main/main.sh" "$data_base"
 
 
 
