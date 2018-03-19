@@ -86,9 +86,9 @@ function full_stack(){
 # Arguments:
 # This file runs the full analysis pipeline for generating figure-ready data.
 #### Arg 1: Description
-data_base="../../Data/"
-full_stack "${data_base}BR-Retinal/"
+data_base="../../Data/FECs180307/"
 full_stack "${data_base}BR+Retinal/"
+full_stack "${data_base}BR-Retinal/"
 # Returns:
 
 

@@ -72,7 +72,6 @@ def fix_axes(ax_list):
            PlotUtilities.no_y_label(ax)
            PlotUtilities.ylabel("", ax=ax)
            ax.set_ylim(ylims[j])
-           ax.set_xlim(xlim_final)
            if (j != 0):
                PlotUtilities.no_x_label(ax)
                PlotUtilities.xlabel("", ax=ax)
@@ -97,7 +96,7 @@ def data_plot(fecs,energies):
     mean_energy, std_energy = PlotUtil.plot_mean_landscape(q_interp,
                                                            splines,ax=gs[-1,:])
     q_at_max_energy,_,_ =  \
-        PlotUtil.plot_delta_GF(q_interp,mean_energy,std_energy,max_q_nm=30)
+        PlotUtil.plot_delta_GF(q_interp,mean_energy,std_energy,max_q_nm=25)
     xlim = max(plt.xlim())
     plt.axvspan(q_at_max_energy,xlim,color='k',alpha=0.3)
     PlotUtilities.legend(loc='upper right',frameon=True)
