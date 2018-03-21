@@ -56,7 +56,7 @@ def run():
                    dict(color='r',label="- Retinal")]
     markers = ['v','x']
     max_q_nm = 25
-    slice_arr = [slice(0,None,1),slice(0,None,1)]
+    slice_arr = [slice(0,None,1),slice(1,None,1)]
     deltas, deltas_std = [], []
     for i,energy_list_raw in enumerate(energy_list_arr):
         energy_list = [RetinalUtil.valid_landscape(e) for e in energy_list_raw]

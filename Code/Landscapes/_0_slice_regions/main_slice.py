@@ -19,7 +19,7 @@ from Processing import ProcessingUtil
 from Lib.AppWLC.Code import WLC
 import RetinalUtil
 
-def slice_data(in_dir,min_sep=40e-9,max_sep=100e-9):
+def slice_data(in_dir,min_sep=40e-9,max_sep=140e-9):
     data = CheckpointUtilities.lazy_multi_load(in_dir)
     for d in data:
         # find where we should start
