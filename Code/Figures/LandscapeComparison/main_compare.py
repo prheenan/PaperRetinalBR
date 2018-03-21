@@ -56,7 +56,7 @@ def run():
                    dict(color='r',label="- Retinal")]
     markers = ['v','x']
     max_q_nm = 25
-    slice_arr = [slice(0,None,1),slice(1,None,1)]
+    slice_arr = [slice(0,None,1),slice(0,None,1)]
     deltas, deltas_std = [], []
     for i,energy_list_raw in enumerate(energy_list_arr):
         energy_list = [RetinalUtil.valid_landscape(e) for e in energy_list_raw]
@@ -74,7 +74,7 @@ def run():
         deltas.append(max_energy_mean)
         deltas_std.append(max_energy_std)
     delta_delta = np.abs(np.diff(deltas))[0]
-    delta_delta_std = np.sum(np.sqrt(np.array(deltas_std)**2))
+    delta_delta_std = np.sqrt(np.sum(np.array(deltas_std)**2))
     delta_delta_fmt = np.round(delta_delta,-1)
     delta_delta_std_fmt = np.round(delta_delta_std,-1)
     title = r"$\Delta\Delta G$" +  " = {:.0f} $\pm$ {:.0f} kcal/mol".\
