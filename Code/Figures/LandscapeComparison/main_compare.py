@@ -58,6 +58,7 @@ def run():
     max_q_nm = 25
     slice_arr = [slice(0,None,1),slice(1,None,1)]
     deltas, deltas_std = [], []
+    round_energy = 0
     for i,energy_list_raw in enumerate(energy_list_arr):
         energy_list = [RetinalUtil.valid_landscape(e) for e in energy_list_raw]
         slice_f = slice_arr[i]
@@ -70,12 +71,12 @@ def run():
                            linestyle='None',marker=markers[i])
         q_at_max_energy, max_energy_mean, max_energy_std =\
             PlotUtil.plot_delta_GF(q_interp,mean,std,max_q_nm=max_q_nm,
-                                   **delta_style)
+                                   round_energy=round_energy,**delta_style)
         deltas.append(max_energy_mean)
         deltas_std.append(max_energy_std)
     delta_delta = np.abs(np.diff(deltas))[0]
     delta_delta_std = np.sqrt(np.sum(np.array(deltas_std)**2))
-    delta_delta_fmt = np.round(delta_delta,-1)
+    delta_delta_fmt = np.round(delta_delta,round_energy)
     delta_delta_std_fmt = np.round(delta_delta_std,-1)
     title = r"$\Delta\Delta G$" +  " = {:.0f} $\pm$ {:.0f} kcal/mol".\
         format(delta_delta_fmt,delta_delta_std_fmt)
