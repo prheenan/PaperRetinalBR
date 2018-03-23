@@ -51,16 +51,19 @@ def run():
     K0 = 1000e-12
     kbT = 4.1e-21
     N_monomers = 77
-    plot_inf = get_plot_info(ext=ext,F=F,Lp=Lp,K0=K0,kbT=kbT,
-                             L0=N_monomers * L0_per_monomer)
+    L0_arr = [N_monomers * tmp
+              for tmp in [L0_per_monomer,L0_per_monomer_low_force]]
+    plot_infs = [get_plot_info(ext=ext,F=F,Lp=Lp,K0=K0,kbT=kbT,L0=L0)
+                 for L0 in L0_arr]
     fig = PlotUtilities.figure((2.5,4))
-    ax1 = plt.subplot(2,1,1)
-    plt.plot(plot_inf.q,plot_inf.f)
-    PlotUtilities.lazyLabel("","$F$ (pN)","")
-    PlotUtilities.no_x_label(ax1)
-    ax2 = plt.subplot(2,1,2)
-    plt.plot(plot_inf.q,plot_inf.w,label="Total work")
-    PlotUtilities.lazyLabel("Extension (nm)","$W$ (kcal/mol)","")
+    for plot_inf in plot_infs:
+        ax1 = plt.subplot(2,1,1)
+        plt.plot(plot_inf.q,plot_inf.f)
+        PlotUtilities.lazyLabel("","$F$ (pN)","")
+        PlotUtilities.no_x_label(ax1)
+        ax2 = plt.subplot(2,1,2)
+        plt.plot(plot_inf.q,plot_inf.w,label="Total work")
+        PlotUtilities.lazyLabel("Extension (nm)","$W$ (kcal/mol)","")
     PlotUtilities.savefig(fig,"PEG.png")
 
 if __name__ == "__main__":
