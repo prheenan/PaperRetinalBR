@@ -19,6 +19,7 @@ from Processing import ProcessingUtil
 from Lib.AppWHAM.Code import WeightedHistogram, UtilWHAM
 import RetinalUtil,PlotUtil
 import matplotlib.gridspec as gridspec
+from Figures.Util import WLC
 
 
 def run():
@@ -88,12 +89,31 @@ def run():
     plt.ylim(ylim)
     PlotUtilities.legend()
     # add the 'shifted' energies
-    plt.subplot(1, 2, 2)
+    peg = WLC.peg_contribution()
+    shifts = [peg.W_at_f(f) for f in [150,250] ]
+    # can I help-ya, help-ya, help-ya?
+    # get the change in the DeltaDeltaG (or, the delta delta delta G)
+    delta_delta_delta = np.abs(np.diff(shifts)[0])
+    shifted_delta_delta = delta_delta - delta_delta_delta
+    shifted_delta_delta_fmt = np.round(shifted_delta_delta,-1)
+    title_shift = r"$\Delta\Delta G$" +  " = {:.0f} $\pm$ {:.0f} kcal/mol".\
+        format(shifted_delta_delta_fmt,delta_delta_std_fmt)
+    ax2 = plt.subplot(1, 2, 2)
     for i,(q,delta,err) in enumerate(zip(q_arr,deltas,deltas_std)):
-        plt.errorbar(x=q,y=delta,yerr=err,**delta_styles[i])
-
+        style_uncorrected = dict(**delta_styles[i])
+        style_uncorrected['color'] = 'k'
+        style_uncorrected['alpha'] = 0.5
+        plt.errorbar(x=q,y=delta,yerr=err,**style_uncorrected)
+        dy = -shifts[i]
+        arrow_fudge = dy/3
+        plt.errorbar(x=q,y=delta + dy,yerr=err,**delta_styles[i])
+        ax2.arrow(x=q,y=deltas[i]-abs(arrow_fudge),dx=0,dy=dy - 2*arrow_fudge,
+                  length_includes_head=True,head_width=0.5,head_length=6)
     plt.xlim(xlim)
     plt.ylim(ylim)
+    title_shift = "PEG3400-corrected ($\downarrow$)\n" + title_shift
+    PlotUtilities.lazyLabel("Extension (nm)","",title_shift)
+    PlotUtilities.no_y_label(ax2)
     PlotUtilities.savefig(fig,out_dir + "avg.png")
 
 
