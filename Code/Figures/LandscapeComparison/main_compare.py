@@ -78,7 +78,9 @@ def run():
     title = r"$\Delta\Delta G$" +  " = {:.0f} $\pm$ {:.0f} kcal/mol".\
         format(delta_delta_fmt,delta_delta_std_fmt)
     PlotUtilities.lazyLabel("q (nm)","$\Delta G$ (kcal/mol)",title)
-    plt.xlim([None,max_q_nm*1.1])
+    plt.xlim([0,27])
+    plt.ylim([-25,350])
+
     PlotUtilities.legend()
     PlotUtilities.savefig(fig,out_dir + "avg.png")
 
