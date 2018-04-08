@@ -90,7 +90,7 @@ def run():
     PlotUtilities.legend()
     # add the 'shifted' energies
     peg = WLC.peg_contribution()
-    shifts = [peg.W_at_f(f) for f in [150,250] ]
+    shifts = [peg.W_at_f(f) for f in [250,100] ]
     # can I help-ya, help-ya, help-ya?
     # get the change in the DeltaDeltaG (or, the delta delta delta G)
     delta_delta_delta = np.abs(np.diff(shifts)[0])
