@@ -79,7 +79,7 @@ def plot_mean_landscape(q_interp, splines, ax=None,color='c',label=None,
 
 
 def plot_delta_GF(q_interp,mean_energy,std_energy,max_q_nm=30,linestyle='None',
-                  markersize=3,**kw):
+                  markersize=3,capsize=3,**kw):
     """
     :param q_interp: extensions
     :param mean_energy:
@@ -100,5 +100,5 @@ def plot_delta_GF(q_interp,mean_energy,std_energy,max_q_nm=30,linestyle='None',
                 format(label_mean,label_std)
     plt.errorbar(q_at_max_energy,max_energy_mean,max_energy_std,
                  label=label,markersize=markersize,linestyle=linestyle,
-                 capsize=3,**kw)
+                 capsize=capsize,**kw)
     return q_at_max_energy,max_energy_mean,max_energy_std
