@@ -19,6 +19,8 @@ from Processing import ProcessingUtil
 from Lib.AppWHAM.Code import WeightedHistogram, UtilWHAM
 import RetinalUtil,PlotUtil
 import matplotlib.gridspec as gridspec
+import re
+
 
 def subdirs(base_dir_analysis):
     raw_dirs = [base_dir_analysis + d for d in os.listdir(base_dir_analysis)]
@@ -52,7 +54,11 @@ def get_energy_list(base_dir_analysis):
     for velocity_directory in filtered_dirs:
         fecs = subdirs(velocity_directory)
         for d in fecs:
-            to_ret.append(read_in_energy(base_dir=d))
+            try:
+                tmp = read_in_energy(base_dir=d)
+                to_ret.append(tmp)
+            except IOError as e:
+                print("Couldn't read from (so skipping): {:s}".format(d))
     return to_ret
 
 def get_ranges(ax_list,get_x=True):
@@ -72,7 +78,6 @@ def fix_axes(ax_list):
            PlotUtilities.no_y_label(ax)
            PlotUtilities.ylabel("", ax=ax)
            ax.set_ylim(ylims[j])
-           ax.set_xlim(xlim_final)
            if (j != 0):
                PlotUtilities.no_x_label(ax)
                PlotUtilities.xlabel("", ax=ax)
@@ -91,13 +96,23 @@ def data_plot(fecs,energies):
         PlotUtil.plot_landscapes(data, e, ax1=ax1, ax2=ax2, ax3=ax3)
         # every axis after the first gets more of the decoaration chopped...
         all_ax.append(axs_tmp)
+        # XXX should really put this into the meta class...
+        plt.sca(ax1)
+        tmp_str = e.file_name
+        match = re.search(r"""
+                          Retinal/([\d\w]+)/([\d\w]+)/
+                          """, tmp_str, re.IGNORECASE | re.VERBOSE)
+        groups = match.groups()
+        velocity, title = groups
+        title = "v={:s}\n {:s}".format(velocity, title)
+        PlotUtilities.title(title)
     fix_axes(all_ax)
     q_interp, splines =  RetinalUtil.interpolating_G0(energies)
     # get an average/stdev of energy
     mean_energy, std_energy = PlotUtil.plot_mean_landscape(q_interp,
                                                            splines,ax=gs[-1,:])
     q_at_max_energy,_,_ =  \
-        PlotUtil.plot_delta_GF(q_interp,mean_energy,std_energy,max_q_nm=30)
+        PlotUtil.plot_delta_GF(q_interp,mean_energy,std_energy,max_q_nm=25)
     xlim = max(plt.xlim())
     plt.axvspan(q_at_max_energy,xlim,color='k',alpha=0.3)
     PlotUtilities.legend(loc='upper right',frameon=True)
@@ -116,7 +131,7 @@ def run():
     base_dir_analysis = RetinalUtil._analysis_base()
     out_dir = Pipeline._cache_dir(base=base_dir_analysis,
                                   enum=Pipeline.Step.CORRECTED)
-    force = False
+    force = True
     GenUtilities.ensureDirExists(out_dir)
     energy_list_raw = CheckpointUtilities.getCheckpoint(out_dir + \
                                                     "energies.pkl",

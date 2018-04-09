@@ -19,14 +19,16 @@ from Processing import ProcessingUtil
 from Lib.AppWLC.Code import WLC
 import warnings
 
-def align_single(d,min_wlc_force_fit_N,kw_wlc,brute_dict):
+def align_single(d,min_wlc_force_fit_N,max_sep_m,kw_wlc,brute_dict):
     force_N = d.Force
-    where_GF = np.where(force_N >= min_wlc_force_fit_N)[0]
+    where_GF = np.where((force_N >= min_wlc_force_fit_N) &
+                        (d.Separation <= max_sep_m))[0]
     where_above_surface = np.where(force_N >= 0)[0]
     assert where_above_surface.size > 0, "Force never above surface "
     if (where_GF.size > 0):
         last_time_GF = where_GF[-1]
     else:
+
         msg = "For alignment, {:} never above limit of {:}N; using max".\
             format(d.Meta.Name,min_wlc_force_fit_N)
         warnings.warn(msg,RuntimeWarning)
@@ -85,9 +87,11 @@ def run():
     force = True
     limit = None
     min_wlc_force_fit_N = 200e-12
+    max_sep_m = 105e-9
     brute_dict = dict(Ns=100,ranges=((10e-9,100e-9),))
     kw_wlc = dict(kbT=4.1e-21, Lp=0.3e-9, K0=1000e-12)
     functor = lambda : align_data(in_dir,
+                                  max_sep_m=max_sep_m,
                                   min_wlc_force_fit_N=min_wlc_force_fit_N,
                                   kw_wlc=kw_wlc,brute_dict=brute_dict)
     data =CheckpointUtilities.multi_load(cache_dir=out_dir,load_func=functor,

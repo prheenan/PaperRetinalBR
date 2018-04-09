@@ -28,6 +28,7 @@ def plot_landscapes(data,energy_obj,ax1=None,
         ax2 = plt.subplot(3,1,2)
     if ax3 is None:
         ax3 = plt.subplot(3,1,3)
+    energy_obj = RetinalUtil.valid_landscape(energy_obj)
     q = energy_obj.q
     q_nm = q * 1e9
     xlim_nm = [min(q_nm), max(q_nm)]
@@ -79,7 +80,7 @@ def plot_mean_landscape(q_interp, splines, ax=None,color='c',label=None,
 
 
 def plot_delta_GF(q_interp,mean_energy,std_energy,max_q_nm=30,linestyle='None',
-                  markersize=3,capsize=3,**kw):
+                  markersize=3,capsize=3,round_energy=-1,round_std=-1,**kw):
     """
     :param q_interp: extensions
     :param mean_energy:
@@ -94,8 +95,8 @@ def plot_delta_GF(q_interp,mean_energy,std_energy,max_q_nm=30,linestyle='None',
     max_energy_mean = mean_energy[max_idx]
     max_energy_std = std_energy[max_idx]
     q_at_max_energy = q_interp[max_idx]
-    label_mean = np.round(max_energy_mean,-1)
-    label_std = np.round(max_energy_std,-1)
+    label_mean = np.round(max_energy_mean,round_energy)
+    label_std = np.round(max_energy_std,round_std)
     label = r"""$\Delta G_{GF}$"""  + "= {:.0f} $\pm$ {:.0f} kcal/mol".\
                 format(label_mean,label_std)
     plt.errorbar(q_at_max_energy,max_energy_mean,max_energy_std,

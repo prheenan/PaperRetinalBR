@@ -51,6 +51,7 @@ def make_comparison_plot(q_interp,energy_list_arr):
     xlim = [None, 27]
     ylim = [-25, 350]
     q_arr = []
+    round_energy = 0
     for i, energy_list_raw in enumerate(energy_list_arr):
         energy_list = [RetinalUtil.valid_landscape(e) for e in energy_list_raw]
         slice_f = slice_arr[i]
@@ -63,19 +64,18 @@ def make_comparison_plot(q_interp,energy_list_arr):
         delta_style = delta_styles[i]
         q_at_max_energy, max_energy_mean, max_energy_std = \
             PlotUtil.plot_delta_GF(q_interp, mean, std, max_q_nm=max_q_nm,
-                                   **delta_style)
+                                   round_energy=round_energy,**delta_style)
         deltas.append(max_energy_mean)
         deltas_std.append(max_energy_std)
         q_arr.append(q_at_max_energy)
     delta_delta = np.abs(np.diff(deltas))[0]
-    delta_delta_std = np.sum(np.sqrt(np.array(deltas_std) ** 2))
-    delta_delta_fmt = np.round(delta_delta, -1)
-    delta_delta_std_fmt = np.round(delta_delta_std, -1)
-    title = r"$\Delta\Delta G$" + " = {:.0f} $\pm$ {:.0f} kcal/mol". \
-        format(delta_delta_fmt, delta_delta_std_fmt)
-    PlotUtilities.lazyLabel("q (nm)", "$\Delta G$ (kcal/mol)", title)
-    plt.xlim(xlim)
-    plt.ylim(ylim)
+    delta_delta_std = np.sqrt(np.sum(np.array(deltas_std)**2))
+    delta_delta_fmt = np.round(delta_delta,round_energy)
+    delta_delta_std_fmt = np.round(delta_delta_std,-1)
+    title = r"$\Delta\Delta G$" +  " = {:.0f} $\pm$ {:.0f} kcal/mol".\
+        format(delta_delta_fmt,delta_delta_std_fmt)
+    PlotUtilities.lazyLabel("q (nm)","$\Delta G$ (kcal/mol)",title)
+    plt.xlim([None,max_q_nm*1.1])
     PlotUtilities.legend()
     # add the 'shifted' energies
     peg = WLC.peg_contribution()
