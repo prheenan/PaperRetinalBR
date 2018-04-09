@@ -70,6 +70,7 @@ def run():
         energy_list = energy_list[slice_f]
         _, splines = RetinalUtil.interpolating_G0(energy_list)
         mean,std = PlotUtil.plot_mean_landscape(q_interp, splines,
+                                                fill_between=False,
                                                  ax=ax,**tmp_style)
         delta_style = delta_styles[i]
         q_at_max_energy, max_energy_mean, max_energy_std =\
@@ -98,22 +99,20 @@ def run():
     shifted_delta_delta_fmt = np.round(shifted_delta_delta,-1)
     title_shift = r"$\Delta\Delta G$" +  " = {:.0f} $\pm$ {:.0f} kcal/mol".\
         format(shifted_delta_delta_fmt,delta_delta_std_fmt)
-    ax2 = plt.subplot(1, 2, 2)
     for i,(q,delta,err) in enumerate(zip(q_arr,deltas,deltas_std)):
         style_uncorrected = dict(**delta_styles[i])
         style_uncorrected['color'] = 'k'
         style_uncorrected['alpha'] = 0.5
-        plt.errorbar(x=q,y=delta,yerr=err,**style_uncorrected)
         dy = -shifts[i]
         arrow_fudge = dy/3
-        plt.errorbar(x=q,y=delta + dy,yerr=err,**delta_styles[i])
-        ax2.arrow(x=q,y=deltas[i]-abs(arrow_fudge),dx=0,dy=dy - 2*arrow_fudge,
-                  length_includes_head=True,head_width=0.5,head_length=6)
+        plt.errorbar(x=q, y=delta + dy, yerr=err, **delta_styles[i])
+        ax.arrow(x=q,y=deltas[i]-abs(arrow_fudge),dx=0,dy=dy - 2*arrow_fudge,
+                  length_includes_head=True,head_width=0.2,head_length=6)
     plt.xlim(xlim)
     plt.ylim(ylim)
     title_shift = "PEG3400-corrected ($\downarrow$)\n" + title_shift
     PlotUtilities.lazyLabel("Extension (nm)","",title_shift)
-    PlotUtilities.no_y_label(ax2)
+    PlotUtilities.no_y_label(ax)
     PlotUtilities.savefig(fig,out_dir + "avg.png")
 
 
