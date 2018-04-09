@@ -22,6 +22,19 @@ import matplotlib.gridspec as gridspec
 from Figures.Util import WLC
 
 
+def read_energy_lists(subdirs):
+    energy_list_arr =[]
+    # get all the energy objects
+    for base in subdirs:
+        in_dir = Pipeline._cache_dir(base=base,
+                                     enum=Pipeline.Step.CORRECTED)
+        in_file = in_dir + "energies.pkl"
+        e = CheckpointUtilities.lazy_load(in_file)
+        energy_list_arr.append(e)
+    energy_list_arr = [ [RetinalUtil.valid_landscape(e) for e in list_tmp]
+                        for list_tmp in energy_list_arr]
+    return energy_list_arr
+
 def run():
     """
     <Description>
@@ -36,17 +49,7 @@ def run():
     subdirs_raw = [input_dir + d + "/" for d in os.listdir(input_dir)]
     subdirs = [d for d in subdirs_raw if (os.path.isdir(d))]
     out_dir = "./"
-    energy_list_arr =[]
-    # get all the energy objects
-    for base in subdirs:
-        in_dir = Pipeline._cache_dir(base=base,
-                                     enum=Pipeline.Step.CORRECTED)
-        in_file = in_dir + "energies.pkl"
-        e = CheckpointUtilities.lazy_load(in_file)
-        energy_list_arr.append(e)
-
-    energy_list_arr = [ [RetinalUtil.valid_landscape(e) for e in list_tmp]
-                        for list_tmp in energy_list_arr]
+    energy_list_arr = read_energy_lists(subdirs)
     e_list_flat = [e for list_tmp in energy_list_arr for e in list_tmp ]
     q_interp = RetinalUtil.common_q_interp(energy_list=e_list_flat)
     fig = PlotUtilities.figure(figsize=(7,3))
