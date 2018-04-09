@@ -35,8 +35,7 @@ def read_energy_lists(subdirs):
                         for list_tmp in energy_list_arr]
     return energy_list_arr
 
-def make_comparison_plot(q_interp,energy_list_arr):
-    gs = gridspec.GridSpec(nrows=1,ncols=2,width_ratios=[1,2])
+def make_retinal_subplot(gs,q_interp,energy_list_arr):
     ax1 = plt.subplot(gs[0])
     common_error = dict(capsize=3)
     style_dicts = [dict(color='c', label=r"$\mathbf{\oplus}$ Retinal"),
@@ -46,7 +45,7 @@ def make_comparison_plot(q_interp,energy_list_arr):
     slice_arr = [slice(0, None, 1), slice(1, None, 1)]
     deltas, deltas_std = [], []
     delta_styles = [dict(color=style_dicts[i]['color'], markersize=5,
-                         linestyle='None', marker=markers[i],**common_error)
+                         linestyle='None', marker=markers[i], **common_error)
                     for i in range(len(energy_list_arr))]
     xlim = [None, 27]
     ylim = [-25, 350]
@@ -64,18 +63,18 @@ def make_comparison_plot(q_interp,energy_list_arr):
         delta_style = delta_styles[i]
         q_at_max_energy, max_energy_mean, max_energy_std = \
             PlotUtil.plot_delta_GF(q_interp, mean, std, max_q_nm=max_q_nm,
-                                   round_energy=round_energy,**delta_style)
+                                   round_energy=round_energy, **delta_style)
         deltas.append(max_energy_mean)
         deltas_std.append(max_energy_std)
         q_arr.append(q_at_max_energy)
     delta_delta = np.abs(np.diff(deltas))[0]
-    delta_delta_std = np.sqrt(np.sum(np.array(deltas_std)**2))
-    delta_delta_fmt = np.round(delta_delta,round_energy)
-    delta_delta_std_fmt = np.round(delta_delta_std,-1)
-    title = r"$\Delta\Delta G$" +  " = {:.0f} $\pm$ {:.0f} kcal/mol".\
-        format(delta_delta_fmt,delta_delta_std_fmt)
-    PlotUtilities.lazyLabel("q (nm)","$\Delta G$ (kcal/mol)",title)
-    plt.xlim([None,max_q_nm*1.1])
+    delta_delta_std = np.sqrt(np.sum(np.array(deltas_std) ** 2))
+    delta_delta_fmt = np.round(delta_delta, round_energy)
+    delta_delta_std_fmt = np.round(delta_delta_std, -1)
+    title = r"$\Delta\Delta G$" + " = {:.0f} $\pm$ {:.0f} kcal/mol". \
+        format(delta_delta_fmt, delta_delta_std_fmt)
+    PlotUtilities.lazyLabel("q (nm)", "$\Delta G$ (kcal/mol)", title)
+    plt.xlim([None, max_q_nm * 1.1])
     PlotUtilities.legend()
     # add the 'shifted' energies
     peg = WLC.peg_contribution()
@@ -95,13 +94,22 @@ def make_comparison_plot(q_interp,energy_list_arr):
         arrow_fudge = dy / 3
         plt.errorbar(x=q, y=delta + dy, yerr=err, **delta_styles[i])
         ax1.arrow(x=q, y=deltas[i] - abs(arrow_fudge), dx=0,
-                  dy=dy - 2 * arrow_fudge,color=delta_styles[i]['color'],
+                  dy=dy - 2 * arrow_fudge, color=delta_styles[i]['color'],
                   length_includes_head=True, head_width=0.35, head_length=6)
     plt.xlim(xlim)
     plt.ylim(ylim)
     title_shift = "PEG3400-corrected ($\downarrow$)\n" + title_shift
-    PlotUtilities.lazyLabel("Extension (nm)", "$\Delta G$ (kcal/mol)","")
-    ax1 = plt.subplot(gs[1])
+    PlotUtilities.lazyLabel("Extension (nm)", "$\Delta G$ (kcal/mol)", "")
+    return ax1
+
+def make_comparison_plot(q_interp,energy_list_arr):
+    gs = gridspec.GridSpec(nrows=1,ncols=2,width_ratios=[1,2])
+    ax1 = make_retinal_subplot(gs, q_interp, energy_list_arr)
+    ax2 = plt.subplot(gs[1])
+    PlotUtilities.no_y_label(ax2)
+    PlotUtilities.lazyLabel("","","",ax=ax2)
+    ax2.set_ylim(ax1.get_ylim())
+
 
 def run():
     """
