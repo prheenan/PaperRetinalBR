@@ -12,6 +12,50 @@ import sys
 from Lib.AppWLC.Code import WLC
 from scipy.integrate import cumtrapz
 
+
+def HaoModel(N_s,L_planar,DeltaG,kbT,L_helical,F,L_K,K):
+    """
+    :param N_s: number of monomers
+    :param L_planar:  planar length per monomer for PEG, units of m
+    :param DeltaG: energy change between planar and helical, units of  J
+    :param kbT: Botlxzann energy, units of J
+    :param L_helical: helical length per monomer for PEG, units of m
+    :param F: force, units of N
+    :param L_K: kuhn length of PEG
+    :param K: PEG's enthalpic stretch modulus
+    :return:
+    """
+    to_ret =  N_s * ((L_planar  / (np.exp(-DeltaG/kbT) + 1)) + \
+                      L_helical / (np.exp(+DeltaG/kbT) + 1)) * \
+                     (np.tanh(F*L_K/kbT)**-1 - kbT/(F*L_K)) + \
+              N_s * F/K
+    return to_ret
+
+def PEGModel(F):
+    kbT = 4.1e-21
+    """
+    see: 
+    Oesterhelt, F., Rief, M., and Gaub, H.E. (1999). 
+    Single molecule force spectroscopy by AFM indicates helical structure of 
+    poly(ethylene-glycol) in water. New Journal of Physics 1, 6-6.
+    
+    Particularly...
+    
+     The Kuhn length LK (= 7 AAA), 
+     the stretching modulus (or segment elasticity) KS (= 150 N m-1) and 
+     Lhelical (= 2.8 ) are fitted to the experiments with Lplanar = 3.58 
+     estimated from bond lengths and angles of the planar 'all-trans' (ttt) 
+     structure. 
+     This results in DeltaG = (3 +/- 0.3)kBT which is consistent with prior ab 
+     initio
+      calculations.
+    """
+    commmon = dict(N_s = 77,L_planar=0.28e-9,L_helical=0.358e-9,
+                   kbT=kbT,DeltaG=3 *kbT,K=150,L_K=0.7e-9)
+    to_ret = HaoModel(F=F,**commmon)
+
+    return to_ret
+
 class plot_info:
     def __init__(self,ext,f,w):
         self.q = ext
