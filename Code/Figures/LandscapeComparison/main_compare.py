@@ -21,6 +21,18 @@ import RetinalUtil,PlotUtil
 import matplotlib.gridspec as gridspec
 from Figures.Util import WLC
 
+class LandscapeWithError(object):
+    def __init__(self,q_nm,G_kcal,G_err_kcal):
+        self.q_nm = q_nm
+        self.G_kcal = G_kcal
+        self.G_err_kcal = G_err_kcal
+
+def read_non_peg_landscape():
+    input_file = "../FigData/Fig2c_iwt_diagram.csv"
+    arr =  np.loadtxt(input_file,delimiter=",").T
+    q, G, G_low, G_upper = arr
+    G_std = (G_upper - G_low) * 0.5
+    return LandscapeWithError(q_nm=q,G_kcal=G,G_err_kcal=G_std)
 
 def read_energy_lists(subdirs):
     energy_list_arr =[]
@@ -35,6 +47,7 @@ def read_energy_lists(subdirs):
                         for list_tmp in energy_list_arr]
     return energy_list_arr
 
+
 def make_retinal_subplot(gs,q_interp,energy_list_arr):
     ax1 = plt.subplot(gs[0])
     common_error = dict(capsize=3)
@@ -48,9 +61,10 @@ def make_retinal_subplot(gs,q_interp,energy_list_arr):
                          linestyle='None', marker=markers[i], **common_error)
                     for i in range(len(energy_list_arr))]
     xlim = [None, 27]
-    ylim = [-25, 350]
+    ylim = [-25, 400]
     q_arr = []
     round_energy = 0
+    means,stdevs = [], []
     for i, energy_list_raw in enumerate(energy_list_arr):
         energy_list = [RetinalUtil.valid_landscape(e) for e in energy_list_raw]
         slice_f = slice_arr[i]
@@ -60,10 +74,13 @@ def make_retinal_subplot(gs,q_interp,energy_list_arr):
         mean, std = PlotUtil.plot_mean_landscape(q_interp, splines,
                                                  fill_between=False,
                                                  ax=ax1, **tmp_style)
+        landscape = LandscapeWithError(q_nm=q_interp,G_kcal=mean,G_err_kcal=std)
         delta_style = delta_styles[i]
         q_at_max_energy, max_energy_mean, max_energy_std = \
             PlotUtil.plot_delta_GF(q_interp, mean, std, max_q_nm=max_q_nm,
                                    round_energy=round_energy, **delta_style)
+        means.append(landscape.G_kcal)
+        stdevs.append(landscape.G_err_kcal)
         deltas.append(max_energy_mean)
         deltas_std.append(max_energy_std)
         q_arr.append(q_at_max_energy)
@@ -100,15 +117,28 @@ def make_retinal_subplot(gs,q_interp,energy_list_arr):
     plt.ylim(ylim)
     title_shift = "PEG3400-corrected ($\downarrow$)\n" + title_shift
     PlotUtilities.lazyLabel("Extension (nm)", "$\Delta G$ (kcal/mol)", "")
-    return ax1
+    return ax1, means, stdevs
 
-def make_comparison_plot(q_interp,energy_list_arr):
+def make_comparison_plot(q_interp,energy_list_arr,G_no_peg):
     gs = gridspec.GridSpec(nrows=1,ncols=2,width_ratios=[1,2])
-    ax1 = make_retinal_subplot(gs, q_interp, energy_list_arr)
+    ax1, means, stdevs = make_retinal_subplot(gs, q_interp, energy_list_arr)
+    # get the with-retinal max
     ax2 = plt.subplot(gs[1])
-    PlotUtilities.no_y_label(ax2)
-    PlotUtilities.lazyLabel("","","",ax=ax2)
-    ax2.set_ylim(ax1.get_ylim())
+    G_offset = 275
+    q_offset = 25
+    q_nm = G_no_peg.q_nm + q_offset
+    G_kcal = G_no_peg.G_kcal + G_offset
+    G_err_kcal = G_no_peg.G_err_kcal
+    ax2.plot(q_nm,G_kcal)
+    PlotUtilities.no_y_label(ax=ax2)
+    PlotUtilities.lazyLabel("","","")
+    axes = [ax1,ax2]
+    y_limits = [a.get_ylim() for a in axes]
+    ylim = [-25,np.max(y_limits)]
+    for a in axes:
+        a.set_ylim(ylim)
+
+
 
 
 def run():
@@ -128,8 +158,9 @@ def run():
     energy_list_arr = read_energy_lists(subdirs)
     e_list_flat = [e for list_tmp in energy_list_arr for e in list_tmp ]
     q_interp = RetinalUtil.common_q_interp(energy_list=e_list_flat)
+    G_no_peg = read_non_peg_landscape()
     fig = PlotUtilities.figure(figsize=(7,3))
-    make_comparison_plot(q_interp,energy_list_arr)
+    make_comparison_plot(q_interp,energy_list_arr,G_no_peg)
     PlotUtilities.savefig(fig,out_dir + "avg.png")
 
 
