@@ -22,7 +22,7 @@ def HaoModel(N_s,L_planar,DeltaG,kbT,L_helical,F,L_K,K):
     :param L_helical: helical length per monomer for PEG, units of m
     :param F: force, units of N
     :param L_K: kuhn length of PEG
-    :param K: PEG's enthalpic stretch modulus
+    :param K: PEG's enthalpic stretch modulus, units of N/m
     :return:
     """
     to_ret =  N_s * ((L_planar  / (np.exp(-DeltaG/kbT) + 1)) + \
@@ -71,27 +71,17 @@ class plot_info:
         W_int = np.round(int(W_f))
         return W_int
 
-def get_plot_info(ext,F,**kw):
-    ext_grid_final,force_grid_final,Force= \
-        WLC._inverted_wlc_full(ext=ext,F=F,odjik_as_guess=True,**kw)
-    ext = ext_grid_final
-    f = force_grid_final
-    work = cumtrapz(x=ext,y=f,initial=0)
+def get_plot_info(F):
+    x_PEG = PEGModel(F=F)
+    work = cumtrapz(x=x_PEG,y=F,initial=0)
     # make out plot, units of nanometers, piconewtons, kcal/mol
-    ext_plot = ext * 1e9
-    f_plot = f * 1e12
+    ext_plot = x_PEG * 1e9
+    f_plot = F * 1e12
     w_plot = (work / 4.1e-21) * 0.593
     return plot_info(ext_plot,f_plot,w_plot)
 
 def peg_contribution():
     ext = np.linspace(0, 25e-9, num=1000)
-    F = np.linspace(0, 500e-12, num=1000)
-    # see:  Oesterhelt, Rief, and Gaub (New J. Phys. 1, 6.1-6.11, 1999)
-    L0_per_monomer = 0.36e-9
-    Lp = 0.4e-9
-    K0 = np.inf
-    kbT = 4.1e-21
-    N_monomers = 77
-    L0 = N_monomers * L0_per_monomer
-    plot_inf = get_plot_info(ext=ext, F=F, Lp=Lp, K0=K0, kbT=kbT, L0=L0)
+    F = np.linspace(1e-20, 500e-12, num=1000)
+    plot_inf = get_plot_info(F=F)
     return plot_inf

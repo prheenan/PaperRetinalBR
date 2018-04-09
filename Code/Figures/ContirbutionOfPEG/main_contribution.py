@@ -29,15 +29,6 @@ def run():
     """
 
     xlim = [0,27]
-    F = np.linspace(1e-12, 250e-12, num=100, endpoint=True)
-    x = WLC.PEGModel(F)
-    ok_idx = np.where(np.isfinite(F))
-    ok_x = x[ok_idx]
-    ok_F = F[ok_idx]
-    W_kcal = 0.592 * cumtrapz(x=ok_x, y=ok_F, initial=0) / 4.1e-21
-    plt.close()
-    plt.plot(ok_x, W_kcal)
-    plt.show()
     fig = PlotUtilities.figure((3.5,4))
     ax1 = plt.subplot(3,1,1)
     plot_inf = WLC.peg_contribution()
@@ -51,7 +42,7 @@ def run():
     PlotUtilities.lazyLabel("Extension (nm)","$W$ (kcal/mol)","")
     ax2 = plt.subplot(3,1,3)
     plt.plot(plot_inf.f,plot_inf.w,'--',label="W$_{\mathbf{PEG}}$")
-    for f_tmp in [150,250]:
+    for f_tmp in [100,250]:
         W_int = plot_inf.W_at_f(f_tmp)
         label = "{:d} kcal/mol at {:d} pN".format(W_int,f_tmp)
         plt.axhline(W_int,label=label)
