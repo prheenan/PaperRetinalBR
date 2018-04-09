@@ -36,7 +36,8 @@ def read_energy_lists(subdirs):
     return energy_list_arr
 
 def make_comparison_plot(q_interp,energy_list_arr):
-    ax = plt.subplot(1, 2, 1)
+    gs = gridspec.GridSpec(nrows=1,ncols=2,width_ratios=[1,2])
+    ax1 = plt.subplot(gs[0])
     common_error = dict(capsize=3)
     style_dicts = [dict(color='c', label=r"$\mathbf{\oplus}$ Retinal"),
                    dict(color='r', label=r"$\mathbf{\ominus}$ Retinal")]
@@ -47,7 +48,7 @@ def make_comparison_plot(q_interp,energy_list_arr):
     delta_styles = [dict(color=style_dicts[i]['color'], markersize=5,
                          linestyle='None', marker=markers[i],**common_error)
                     for i in range(len(energy_list_arr))]
-    xlim = [0, 27]
+    xlim = [None, 27]
     ylim = [-25, 350]
     q_arr = []
     for i, energy_list_raw in enumerate(energy_list_arr):
@@ -58,7 +59,7 @@ def make_comparison_plot(q_interp,energy_list_arr):
         _, splines = RetinalUtil.interpolating_G0(energy_list)
         mean, std = PlotUtil.plot_mean_landscape(q_interp, splines,
                                                  fill_between=False,
-                                                 ax=ax, **tmp_style)
+                                                 ax=ax1, **tmp_style)
         delta_style = delta_styles[i]
         q_at_max_energy, max_energy_mean, max_energy_std = \
             PlotUtil.plot_delta_GF(q_interp, mean, std, max_q_nm=max_q_nm,
@@ -93,13 +94,14 @@ def make_comparison_plot(q_interp,energy_list_arr):
         dy = -shifts[i]
         arrow_fudge = dy / 3
         plt.errorbar(x=q, y=delta + dy, yerr=err, **delta_styles[i])
-        ax.arrow(x=q, y=deltas[i] - abs(arrow_fudge), dx=0,
-                 dy=dy - 2 * arrow_fudge,
-                 length_includes_head=True, head_width=0.2, head_length=6)
+        ax1.arrow(x=q, y=deltas[i] - abs(arrow_fudge), dx=0,
+                  dy=dy - 2 * arrow_fudge,color=delta_styles[i]['color'],
+                  length_includes_head=True, head_width=0.35, head_length=6)
     plt.xlim(xlim)
     plt.ylim(ylim)
     title_shift = "PEG3400-corrected ($\downarrow$)\n" + title_shift
     PlotUtilities.lazyLabel("Extension (nm)", "$\Delta G$ (kcal/mol)","")
+    ax1 = plt.subplot(gs[1])
 
 def run():
     """
