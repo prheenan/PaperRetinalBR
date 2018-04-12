@@ -153,13 +153,13 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg):
     ax = axes[0]
     ylim = ax.get_ylim()
     xlim = ax.get_xlim()
-    range_scale_kcal = 200
+    range_scale_kcal = 170
     x_range_nm = 15
     min_offset, _, rel_delta = Scalebar. \
         offsets_zero_tick(limits=ylim,range_scalebar=range_scale_kcal)
-    offset_x = 0.15
+    offset_x = 0.25
     common_kw = dict(add_minor=True)
-    scalebar_kw = dict(offset_x=offset_x,offset_y=min_offset,ax=ax,
+    scalebar_kw = dict(offset_x=offset_x,offset_y=min_offset+rel_delta,ax=ax,
                        x_on_top=True,
                        x_kwargs=dict(width=x_range_nm,unit="nm",**common_kw),
                        y_kwargs=dict(height=range_scale_kcal,unit="kcal/mol",
