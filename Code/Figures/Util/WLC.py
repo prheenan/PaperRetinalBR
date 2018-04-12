@@ -31,7 +31,7 @@ def HaoModel(N_s,L_planar,DeltaG,kbT,L_helical,F,L_K,K):
               N_s * F/K
     return to_ret
 
-def PEGModel(F):
+def Oesterhelt_PEGModel(F):
     kbT = 4.1e-21
     """
     see: 
@@ -50,17 +50,18 @@ def PEGModel(F):
      initio
       calculations.
     """
-    commmon = dict(N_s = 77,L_planar=0.28e-9,L_helical=0.358e-9,
+    common = dict(N_s = 77,L_planar=0.28e-9,L_helical=0.358e-9,
                    kbT=kbT,DeltaG=3 *kbT,K=150,L_K=0.7e-9)
-    to_ret = HaoModel(F=F,**commmon)
-
-    return to_ret
+    to_ret = HaoModel(F=F,**common)
+    return to_ret, common
 
 class plot_info:
-    def __init__(self,ext,f,w):
+    def __init__(self,ext,f,w,kw,func):
         self.q = ext
         self.f = f
         self.w = w
+        self.kw = kw
+        self.func = func
     def W_at_f(self,f_tmp):
         """
         :param f_tmp: force, in plot units (pN, prolly)
@@ -71,17 +72,17 @@ class plot_info:
         W_int = np.round(int(W_f))
         return W_int
 
-def get_plot_info(F):
-    x_PEG = PEGModel(F=F)
+def get_plot_info(F,model_f=Oesterhelt_PEGModel):
+    x_PEG,kw = model_f(F=F)
     work = cumtrapz(x=x_PEG,y=F,initial=0)
     # make out plot, units of nanometers, piconewtons, kcal/mol
     ext_plot = x_PEG * 1e9
     f_plot = F * 1e12
     w_plot = (work / 4.1e-21) * 0.593
-    return plot_info(ext_plot,f_plot,w_plot)
+    return plot_info(ext_plot,f_plot,w_plot,func=model_f,kw=kw)
 
 def peg_contribution():
     ext = np.linspace(0, 25e-9, num=1000)
-    F = np.linspace(1e-20, 500e-12, num=1000)
+    F = np.linspace(1e-20, 275e-12, num=1000)
     plot_inf = get_plot_info(F=F)
     return plot_inf

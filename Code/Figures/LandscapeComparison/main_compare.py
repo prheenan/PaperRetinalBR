@@ -189,7 +189,7 @@ def run():
     q_interp = RetinalUtil.common_q_interp(energy_list=e_list_flat)
     q_interp = q_interp[np.where(q_interp  <= 25)]
     G_no_peg = read_non_peg_landscape()
-    fig = PlotUtilities.figure(figsize=(5,3.25))
+    fig = PlotUtilities.figure(figsize=(3.5,3.25))
     make_comparison_plot(q_interp,energy_list_arr,G_no_peg)
     PlotUtilities.savefig(fig,out_dir + "avg.png")
 
