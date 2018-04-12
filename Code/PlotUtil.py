@@ -56,6 +56,12 @@ def plot_landscapes(data,energy_obj,ax1=None,
     lim = 75
     plt.ylim(-lim, lim)
 
+def _mean_and_stdev_landcapes(splines,q_interp):
+    values = [s(q_interp) for s in splines]
+    mean_energy = np.mean(values, axis=0)
+    std_energy = np.std(values, axis=0)
+    return mean_energy,std_energy
+
 def plot_mean_landscape(q_interp, splines, ax=None,color='c',label=None,
                         fill_between=True):
     """
@@ -64,9 +70,7 @@ def plot_mean_landscape(q_interp, splines, ax=None,color='c',label=None,
     :param ax:  which axis to add to
     :return:
     """
-    values = [s(q_interp) for s in splines]
-    mean_energy = np.mean(values, axis=0)
-    std_energy = np.std(values, axis=0)
+    mean_energy, std_energy = _mean_and_stdev_landcapes(splines,q_interp)
     ax = plt.subplot(1, 1, 1) if (ax is None) else ax
     plt.subplot(ax)
     plt.plot(q_interp, mean_energy, color=color,label=label)
@@ -80,7 +84,8 @@ def plot_mean_landscape(q_interp, splines, ax=None,color='c',label=None,
 
 
 def plot_delta_GF(q_interp,mean_energy,std_energy,max_q_nm=30,linestyle='None',
-                  markersize=3,capsize=3,round_energy=-1,round_std=-1,**kw):
+                  markersize=3,capsize=3,round_energy=-1,round_std=-1,
+                  label_offset=0,**kw):
     """
     :param q_interp: extensions
     :param mean_energy:
@@ -95,10 +100,11 @@ def plot_delta_GF(q_interp,mean_energy,std_energy,max_q_nm=30,linestyle='None',
     max_energy_mean = mean_energy[max_idx]
     max_energy_std = std_energy[max_idx]
     q_at_max_energy = q_interp[max_idx]
-    label_mean = np.round(max_energy_mean,round_energy)
+    # subtract the offset (i.e., to show the data with the PEG correction..)
+    label_mean = np.round(max_energy_mean-label_offset,round_energy)
     label_std = np.round(max_energy_std,round_std)
-    label = r"""$\Delta G_{GF}$"""  + "= {:.0f} $\pm$ {:.0f} kcal/mol".\
-                format(label_mean,label_std)
+    label = (r"$\mathbf{\Delta G}_{GF}$")  + \
+            (" = {:.0f} $\pm$ {:.0f} kcal/mol").format(label_mean,label_std)
     plt.errorbar(q_at_max_energy,max_energy_mean,max_energy_std,
                  label=label,markersize=markersize,linestyle=linestyle,
                  capsize=capsize,**kw)

@@ -15,6 +15,8 @@ from Lib.UtilPipeline import Pipeline
 from Lib.UtilForce.FEC import FEC_Util, FEC_Plot
 from Lib.UtilForce.UtilGeneral import CheckpointUtilities, GenUtilities
 from Lib.UtilForce.UtilGeneral import PlotUtilities
+from Lib.UtilForce.UtilGeneral.Plot import Scalebar
+
 from Processing import ProcessingUtil
 from Lib.AppWHAM.Code import WeightedHistogram, UtilWHAM
 import RetinalUtil,PlotUtil
@@ -48,14 +50,15 @@ def read_energy_lists(subdirs):
     return energy_list_arr
 
 
-def make_retinal_subplot(gs,q_interp,energy_list_arr):
+def make_retinal_subplot(gs,energy_list_arr,shifts):
+    q_interp_nm = energy_list_arr[0].q_nm
+    means = [e.G_kcal for e in energy_list_arr]
+    stdevs = [e.G_err_kcal for e in energy_list_arr]
     ax1 = plt.subplot(gs[0])
     common_error = dict(capsize=3)
     style_dicts = [dict(color='c', label=r"$\mathbf{\oplus}$ Retinal"),
                    dict(color='r', label=r"$\mathbf{\ominus}$ Retinal")]
     markers = ['v', 'x']
-    max_q_nm = 25
-    slice_arr = [slice(0, None, 1), slice(1, None, 1)]
     deltas, deltas_std = [], []
     delta_styles = [dict(color=style_dicts[i]['color'], markersize=5,
                          linestyle='None', marker=markers[i], **common_error)
@@ -63,24 +66,17 @@ def make_retinal_subplot(gs,q_interp,energy_list_arr):
     xlim = [None, 27]
     ylim = [-25, 400]
     q_arr = []
-    round_energy = 0
-    means,stdevs = [], []
-    for i, energy_list_raw in enumerate(energy_list_arr):
-        energy_list = [RetinalUtil.valid_landscape(e) for e in energy_list_raw]
-        slice_f = slice_arr[i]
-        tmp_style = style_dicts[i]
-        energy_list = energy_list[slice_f]
-        _, splines = RetinalUtil.interpolating_G0(energy_list)
-        mean, std = PlotUtil.plot_mean_landscape(q_interp, splines,
-                                                 fill_between=False,
-                                                 ax=ax1, **tmp_style)
-        landscape = LandscapeWithError(q_nm=q_interp,G_kcal=mean,G_err_kcal=std)
-        delta_style = delta_styles[i]
+    round_energy = 2
+    max_q_nm = max(q_interp_nm)
+    # add the 'shifted' energies
+    for i,(mean,stdev) in enumerate(zip(means,stdevs)):
+        delta_style = dict(**delta_styles[i])
+        plt.plot(q_interp_nm,mean,**style_dicts[i])
         q_at_max_energy, max_energy_mean, max_energy_std = \
-            PlotUtil.plot_delta_GF(q_interp, mean, std, max_q_nm=max_q_nm,
-                                   round_energy=round_energy, **delta_style)
-        means.append(landscape.G_kcal)
-        stdevs.append(landscape.G_err_kcal)
+            PlotUtil.plot_delta_GF(q_interp_nm, mean, stdev,
+                                   max_q_nm=max_q_nm,
+                                   round_energy=round_energy,
+                                   label_offset=shifts[i],**delta_style)
         deltas.append(max_energy_mean)
         deltas_std.append(max_energy_std)
         q_arr.append(q_at_max_energy)
@@ -93,15 +89,13 @@ def make_retinal_subplot(gs,q_interp,energy_list_arr):
     PlotUtilities.lazyLabel("q (nm)", "$\Delta G$ (kcal/mol)", title)
     plt.xlim([None, max_q_nm * 1.1])
     PlotUtilities.legend()
-    # add the 'shifted' energies
-    peg = WLC.peg_contribution()
-    shifts = [peg.W_at_f(f) for f in [250, 100]]
     # can I help-ya, help-ya, help-ya?
     # get the change in the DeltaDeltaG (or, the delta delta delta G)
     delta_delta_delta = np.abs(np.diff(shifts)[0])
     shifted_delta_delta = delta_delta - delta_delta_delta
     shifted_delta_delta_fmt = np.round(shifted_delta_delta, -1)
-    title_shift = r"$\Delta\Delta G$" + " = {:.0f} $\pm$ {:.0f} kcal/mol". \
+    title_shift = r"$\mathbf{\Delta\Delta }G$" + \
+                  " = {:.0f} $\pm$ {:.0f} kcal/mol". \
         format(shifted_delta_delta_fmt, delta_delta_std_fmt)
     for i, (q, delta, err) in enumerate(zip(q_arr, deltas, deltas_std)):
         style_uncorrected = dict(**delta_styles[i])
@@ -116,28 +110,63 @@ def make_retinal_subplot(gs,q_interp,energy_list_arr):
     plt.xlim(xlim)
     plt.ylim(ylim)
     title_shift = "PEG3400-corrected ($\downarrow$)\n" + title_shift
-    PlotUtilities.lazyLabel("Extension (nm)", "$\Delta G$ (kcal/mol)", "")
+    PlotUtilities.lazyLabel("Extension (nm)", "$\mathbf{\Delta}G$ (kcal/mol)",
+                            title_shift,
+                            legend_kwargs=dict(loc='lower right'))
     return ax1, means, stdevs
 
 def make_comparison_plot(q_interp,energy_list_arr,G_no_peg):
-    gs = gridspec.GridSpec(nrows=1,ncols=2,width_ratios=[1,2])
-    ax1, means, stdevs = make_retinal_subplot(gs, q_interp, energy_list_arr)
+    slice_arr = [slice(0, None, 1), slice(1, None, 1)]
+    landscpes_with_error = []
+    for i, energy_list_raw in enumerate(energy_list_arr):
+        energy_list = [RetinalUtil.valid_landscape(e) for e in energy_list_raw]
+        slice_f = slice_arr[i]
+        energy_list = energy_list[slice_f]
+        _, splines = RetinalUtil.interpolating_G0(energy_list)
+        mean, stdev = PlotUtil._mean_and_stdev_landcapes(splines, q_interp)
+        l = LandscapeWithError(q_nm=q_interp,G_kcal=mean,G_err_kcal=stdev)
+        landscpes_with_error.append(l)
+    peg = WLC.peg_contribution()
+    shifts = [peg.W_at_f(f) for f in [250, 100]]
+    gs = gridspec.GridSpec(nrows=1,ncols=1,width_ratios=[1])
+    ax1, means, stdevs = make_retinal_subplot(gs,landscpes_with_error,shifts)
     # get the with-retinal max
-    ax2 = plt.subplot(gs[1])
-    G_offset = 275
+    ax2 = plt.subplot(gs[0])
+    G_offset = np.max([l.G_kcal[-1] for l in landscpes_with_error]) - shifts[0]
     q_offset = 25
     q_nm = G_no_peg.q_nm + q_offset
     G_kcal = G_no_peg.G_kcal + G_offset
     G_err_kcal = G_no_peg.G_err_kcal
-    ax2.plot(q_nm,G_kcal)
-    PlotUtilities.no_y_label(ax=ax2)
-    PlotUtilities.lazyLabel("","","")
+    mean_err = np.mean(G_err_kcal)
+    idx_errorbar = q_nm.size//2
+    common_style = dict(color='k',linewidth=1.5)
+    ax2.plot(q_nm,G_kcal,**common_style)
+    ax2.errorbar(q_nm[idx_errorbar],G_kcal[idx_errorbar],yerr=mean_err,
+                 marker=None,markersize=0,capsize=3,**common_style)
     axes = [ax1,ax2]
     y_limits = [a.get_ylim() for a in axes]
-    ylim = [-25,np.max(y_limits)]
+    ylim = [-25,None]
     for a in axes:
         a.set_ylim(ylim)
-
+        a.set_xlim([0,max(q_nm)])
+    # add in the scale bar
+    ax = axes[0]
+    ylim = ax.get_ylim()
+    xlim = ax.get_xlim()
+    range_scale_kcal = 200
+    x_range_nm = 15
+    min_offset, _, rel_delta = Scalebar. \
+        offsets_zero_tick(limits=ylim,range_scalebar=range_scale_kcal)
+    offset_x = 0.15
+    common_kw = dict(add_minor=True)
+    scalebar_kw = dict(offset_x=offset_x,offset_y=min_offset,ax=ax,
+                       x_on_top=True,
+                       x_kwargs=dict(width=x_range_nm,unit="nm",**common_kw),
+                       y_kwargs=dict(height=range_scale_kcal,unit="kcal/mol",
+                                     **common_kw))
+    PlotUtilities.no_x_label(ax=ax)
+    PlotUtilities.no_y_label(ax=ax)
+    Scalebar.crossed_x_and_y_relative(**scalebar_kw)
 
 
 
@@ -158,8 +187,9 @@ def run():
     energy_list_arr = read_energy_lists(subdirs)
     e_list_flat = [e for list_tmp in energy_list_arr for e in list_tmp ]
     q_interp = RetinalUtil.common_q_interp(energy_list=e_list_flat)
+    q_interp = q_interp[np.where(q_interp  <= 25)]
     G_no_peg = read_non_peg_landscape()
-    fig = PlotUtilities.figure(figsize=(7,3))
+    fig = PlotUtilities.figure(figsize=(5,3.25))
     make_comparison_plot(q_interp,energy_list_arr,G_no_peg)
     PlotUtilities.savefig(fig,out_dir + "avg.png")
 
