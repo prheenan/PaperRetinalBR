@@ -11,6 +11,10 @@ import sys
 
 from Lib.AppWLC.Code import WLC
 from scipy.integrate import cumtrapz
+from scipy.interpolate import interp1d
+
+
+kbT = 4.1e-21
 
 
 def HaoModel(N_s,L_planar,DeltaG,kbT,L_helical,F,L_K,K):
@@ -32,7 +36,6 @@ def HaoModel(N_s,L_planar,DeltaG,kbT,L_helical,F,L_K,K):
     return to_ret
 
 def common_peg_params():
-    kbT = 4.1e-21
     to_ret = dict(L_planar = 0.358e-9, L_helical = 0.28e-9,kbT = kbT,
                   DeltaG = 3 * kbT)
     return to_ret
@@ -60,12 +63,44 @@ def Oesterhelt_PEGModel(F):
     to_ret = HaoModel(F=F,**common)
     return to_ret, common
 
+def grid_interp(points,values,grid):
+    interp = interp1d(x=points,y=values,kind='linear',
+                      fill_value='extrapolate',bounds_error=False)
+    to_ret = interp(grid)
+    return to_ret
+
+def grid_both(x,x_a,a,x_b,b):
+    """
+    :param x: what grid we want, length N
+    :param x_a: current grid for a
+    :param a: value for a on that grid
+    :param x_b: current grid for b
+    :param b:  values on b on that grid
+    :return: tuple of <grid_a,grid_b>, each length of N
+    """
+    grid_a = grid_interp(points=x_a,values=a,grid=x)
+    grid_b = grid_interp(points=x_b,values=b,grid=x)
+    return grid_a, grid_b
+
 def Hao_PEGModel(F):
     """
     see: communication with Hao, 
     """
-    common = dict(N_s=82,K=908.86,L_K=0.6324e-9,**common_peg_params())
-    to_ret = HaoModel(F=F, **common)
+    common = dict(N_s=82.074,K=906.86,L_K=0.63235e-9,**common_peg_params())
+    # get the FJC model of *just* the PEG
+    ext_FJC = HaoModel(F=F, **common)
+    # get the WLC model of the unfolded polypeptide
+    polypeptide_args = dict(kbT=kbT,Lp=0.4e-9,L0=27.2e-9,K0=np.inf)
+    ext_wlc,F_wlc = \
+        WLC._inverted_wlc_helper(F=F,odjik_as_guess=True,**polypeptide_args)
+    valid_idx = np.where(ext_wlc > 0)
+    ext_wlc = ext_wlc[valid_idx]
+    F_wlc = F_wlc[valid_idx]
+    # create the interpolator of total extension vs force. First, interpolate
+    ext_FJC_grid, ext_WLC_grid = grid_both(x=F, x_a=F, a=ext_FJC, x_b=F_wlc,
+                                           b=ext_wlc)
+    to_ret = ext_FJC_grid + ext_WLC_grid
+    # the extensions and forces to the same grid
     return to_ret, common
 
 class plot_info:

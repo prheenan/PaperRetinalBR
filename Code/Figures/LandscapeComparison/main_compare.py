@@ -106,7 +106,7 @@ def make_retinal_subplot(gs,energy_list_arr,shifts):
         plt.errorbar(x=q, y=delta + dy, yerr=err, **delta_styles[i])
         ax1.arrow(x=q, y=deltas[i] - abs(arrow_fudge), dx=0,
                   dy=dy - 2 * arrow_fudge, color=delta_styles[i]['color'],
-                  length_includes_head=True, head_width=0.35, head_length=6)
+                  length_includes_head=True, head_width=1.2, head_length=6)
     plt.xlim(xlim)
     plt.ylim(ylim)
     title_shift = "PEG3400-corrected ($\downarrow$)\n" + title_shift
@@ -191,7 +191,7 @@ def run():
     G_no_peg = read_non_peg_landscape()
     fig = PlotUtilities.figure(figsize=(3.5,3.25))
     make_comparison_plot(q_interp,energy_list_arr,G_no_peg)
-    PlotUtilities.savefig(fig,out_dir + "avg.png")
+    PlotUtilities.savefig(fig,out_dir + "LandscapeComparison.png")
 
 
 
