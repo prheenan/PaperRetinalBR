@@ -15,6 +15,8 @@ from Lib.UtilForce.UtilGeneral import PlotUtilities
 from Figures.Util import WLC
 from scipy.integrate import cumtrapz
 import matplotlib.gridspec as gridspec
+from scipy.interpolate import interp1d
+
 
 def make_model_plot(model_f,title):
     gs = gridspec.GridSpec(nrows=2,ncols=1)
@@ -52,6 +54,21 @@ def make_model_plot(model_f,title):
     xlabel = "$F$ (pN) [! not extension !]"
     PlotUtilities.lazyLabel(xlabel, W_str + "\n(kcal/mol)", "")
 
+def make_comparison_plot():
+    hao_file = "../FigData/HaosFEC.csv"
+    arr = np.genfromtxt(hao_file,delimiter=",")
+    plot_inf = WLC.peg_contribution(model_f=WLC.Hao_PEGModel)
+    ext, F = arr.T
+    interp = interp1d(x=ext, y=F, kind='linear', fill_value='extrapolate')
+    ext_grid = plot_inf.q
+    Hao_F = interp(ext_grid)
+    plt.plot(ext_grid, Hao_F,'r-',
+             label="Hao's Model\n(interpolated)")
+    plt.plot(ext,F,color='b',marker='o',linestyle='None',markersize=4)
+    plt.plot(ext_grid,plot_inf.f,label="My Model")
+    for q in plot_inf.qs:
+        plt.plot(q,plot_inf.f)
+    PlotUtilities.lazyLabel("Extension (nm)","Force (pN)","")
 
 def run():
     """
@@ -67,6 +84,11 @@ def run():
     fig = PlotUtilities.figure((4,6))
     make_model_plot(model_f=model, title=descr)
     PlotUtilities.savefig(fig,"PEG_{:s}.png".format(descr))
+    # make sure what we have matches Hao.
+    fig = PlotUtilities.figure((3,3))
+    make_comparison_plot()
+    PlotUtilities.savefig(fig,"out_compare.png")
+    pass
 
 if __name__ == "__main__":
     run()
