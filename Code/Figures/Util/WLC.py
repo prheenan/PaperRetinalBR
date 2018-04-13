@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 
-from Lib.AppWLC.Code import WLC
+from Lib.AppWLC.Code import WLC, WLC_Utils
 from scipy.integrate import cumtrapz
 from scipy.interpolate import interp1d
 
@@ -90,9 +90,11 @@ def Hao_PEGModel(F):
     # get the FJC model of *just* the PEG
     ext_FJC = HaoModel(F=F, **common)
     # get the WLC model of the unfolded polypeptide
-    polypeptide_args = dict(kbT=kbT,Lp=0.4e-9,L0=27.2e-9,K0=np.inf)
-    ext_wlc,F_wlc = \
-        WLC._inverted_wlc_helper(F=F,odjik_as_guess=True,**polypeptide_args)
+    L0 = 27.2e-9
+    polypeptide_args = dict(kbT=kbT,Lp=0.4e-9,L0=L0,K0=np.inf)
+    ext_wlc = np.linspace(0,L0 * 0.95,num=F.size * 2 )
+    F_wlc = WLC_Utils.WlcNonExtensible(ext=ext_wlc,
+                                       **polypeptide_args)
     valid_idx = np.where(ext_wlc > 0)
     ext_wlc = ext_wlc[valid_idx]
     F_wlc = F_wlc[valid_idx]
