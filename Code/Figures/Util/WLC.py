@@ -94,8 +94,11 @@ def Hao_PEGModel(F):
     polypeptide_args = dict(kbT=kbT,Lp=0.4e-9,L0=L0,K0=10000e-12)
     non_ext_polypeptide_args = dict(**polypeptide_args)
     non_ext_polypeptide_args['K0'] = np.inf
-    ext_wlc = WLC.ExtensionPerForceOdjik(F=F,**non_ext_polypeptide_args)
-    F_wlc = WLC_Utils. WlcExtensible_Helper(ext=ext_wlc,F=F,**polypeptide_args)
+    ext_wlc = np.linspace(0,L0 * 0.9)
+    F_wlc = WLC_Utils.WlcNonExtensible(ext=ext_wlc,
+                                       **non_ext_polypeptide_args)
+    F_wlc = WLC_Utils.WlcExtensible_Helper(ext=ext_wlc,F=F_wlc,
+                                           **polypeptide_args)
     valid_idx = np.where(ext_wlc > 0)
     ext_wlc = ext_wlc[valid_idx]
     F_wlc = F_wlc[valid_idx]

@@ -30,7 +30,7 @@ def make_model_plot(model_f,title):
     print("For {:s}...".format(title))
     for k,v in plot_inf.kw.items():
         print("{:s}={:.5g}".format(k,v))
-    labels = ["Unfolded\npeptide","PEG"]
+    labels = ["PEG","Unfolded\npeptide"]
     color_final = 'k'
     colors = ['b','r']
     for q, l, c in zip(plot_inf.qs,labels,colors):
