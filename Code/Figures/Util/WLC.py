@@ -61,7 +61,7 @@ def Oesterhelt_PEGModel(F):
     """
     common = dict(N_s = 77,K=150,L_K=0.7e-9,**common_peg_params())
     to_ret = HaoModel(F=F,**common)
-    return to_ret, common
+    return [to_ret], common
 
 def grid_interp(points,values,grid):
     interp = interp1d(x=points,y=values,kind='linear',
@@ -86,7 +86,7 @@ def Hao_PEGModel(F):
     """
     see: communication with Hao, 
     """
-    common = dict(N_s=82.074,K=906.86,L_K=0.63235e-9,**common_peg_params())
+    common = dict(N_s=25.318,K=906.86,L_K=0.63235e-9,**common_peg_params())
     # get the FJC model of *just* the PEG
     ext_FJC = HaoModel(F=F, **common)
     # get the WLC model of the unfolded polypeptide
@@ -101,17 +101,21 @@ def Hao_PEGModel(F):
     # create the interpolator of total extension vs force. First, interpolate
     ext_FJC_grid, ext_WLC_grid = grid_both(x=F, x_a=F, a=ext_FJC, x_b=F_wlc,
                                            b=ext_wlc)
-    to_ret = ext_FJC_grid + ext_WLC_grid
+    to_ret = [ext_FJC_grid,ext_WLC_grid]
     # the extensions and forces to the same grid
     return to_ret, common
 
 class plot_info:
     def __init__(self,ext,f,w,kw,func):
-        self.q = ext
+        self.qs = ext
         self.f = f
         self.w = w
         self.kw = kw
         self.func = func
+    @property
+    def q(self):
+        to_ret = np.sum(self.qs,axis=0)
+        return to_ret
     def W_at_f(self,f_tmp):
         """
         :param f_tmp: force, in plot units (pN, prolly)
@@ -124,9 +128,10 @@ class plot_info:
 
 def get_plot_info(F,model_f=Hao_PEGModel):
     x_PEG,kw = model_f(F=F)
-    work = cumtrapz(x=x_PEG,y=F,initial=0)
+    total_x = np.sum(x_PEG,axis=0)
+    work = cumtrapz(x=total_x,y=F,initial=0)
     # make out plot, units of nanometers, piconewtons, kcal/mol
-    ext_plot = x_PEG * 1e9
+    ext_plot = np.array(x_PEG) * 1e9
     f_plot = F * 1e12
     w_plot = (work / 4.1e-21) * 0.593
     return plot_info(ext_plot,f_plot,w_plot,func=model_f,kw=kw)
