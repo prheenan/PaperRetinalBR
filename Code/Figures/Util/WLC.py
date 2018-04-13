@@ -92,8 +92,10 @@ def Hao_PEGModel(F):
     # get the WLC model of the unfolded polypeptide
     L0 = 27.2e-9
     polypeptide_args = dict(kbT=kbT,Lp=0.4e-9,L0=L0,K0=10000e-12)
-    ext_wlc, F_wlc = WLC._inverted_wlc_helper(F=F, odjik_as_guess=False,
-                                              **polypeptide_args)
+    non_ext_polypeptide_args = dict(**polypeptide_args)
+    non_ext_polypeptide_args['K0'] = np.inf
+    ext_wlc = WLC.ExtensionPerForceOdjik(F=F,**non_ext_polypeptide_args)
+    F_wlc = WLC_Utils. WlcExtensible_Helper(ext=ext_wlc,F=F,**polypeptide_args)
     valid_idx = np.where(ext_wlc > 0)
     ext_wlc = ext_wlc[valid_idx]
     F_wlc = F_wlc[valid_idx]
@@ -125,15 +127,18 @@ class plot_info:
         W_int = np.round(int(W_f))
         return W_int
 
-def get_plot_info(F,model_f=Hao_PEGModel):
-    x_PEG,kw = model_f(F=F)
-    total_x = np.sum(x_PEG,axis=0)
+def _plot_info_helper(x,F,kw,model_f):
+    total_x = np.sum(x,axis=0)
     work = cumtrapz(x=total_x,y=F,initial=0)
     # make out plot, units of nanometers, piconewtons, kcal/mol
-    ext_plot = np.array(x_PEG) * 1e9
+    ext_plot = np.array(x) * 1e9
     f_plot = F * 1e12
     w_plot = (work / 4.1e-21) * 0.593
     return plot_info(ext_plot,f_plot,w_plot,func=model_f,kw=kw)
+
+def get_plot_info(F,model_f=Hao_PEGModel):
+    x_PEG,kw = model_f(F=F)
+    return _plot_info_helper(x_PEG,F,kw,model_f)
 
 def peg_contribution(**kw):
     ext = np.linspace(0, 25e-9, num=1000)

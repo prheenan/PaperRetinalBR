@@ -54,20 +54,34 @@ def make_model_plot(model_f,title):
     xlabel = "$F$ (pN) [! not extension !]"
     PlotUtilities.lazyLabel(xlabel, W_str + "\n(kcal/mol)", "")
 
-def make_comparison_plot():
+def read_haos_data():
     hao_file = "../FigData/HaosFEC.csv"
     arr = np.genfromtxt(hao_file,delimiter=",")
-    plot_inf = WLC.peg_contribution(model_f=WLC.Hao_PEGModel)
     ext, F = arr.T
-    interp = interp1d(x=ext, y=F, kind='linear', fill_value='extrapolate')
+    return ext,F
+
+def hao_plot_inf(ext_grid):
+    ext,F = read_haos_data()
+    interp = interp1d(x=ext*1e-9, y=F*1e-12, kind='linear',
+                      fill_value='extrapolate')
+    Hao_F = interp(ext_grid * 1e-9)
+    to_ret =  WLC._plot_info_helper(x=[ext_grid*1e-9], F=Hao_F,
+                                    kw=dict(), model_f=read_haos_data)
+    return to_ret
+
+def make_comparison_plot():
+    plot_inf = WLC.peg_contribution(model_f=WLC.Hao_PEGModel)
     ext_grid = plot_inf.q
-    Hao_F = interp(ext_grid)
-    plt.plot(ext_grid, Hao_F,'r-',
+    plot_info_hao = hao_plot_inf(ext_grid)
+    plt.plot(plot_info_hao.q, plot_info_hao.f,'r-',
              label="Hao's Model\n(interpolated)")
-    plt.plot(ext,F,color='b',marker='o',linestyle='None',markersize=4)
+    plt.plot(*read_haos_data(),color='b',marker='o',
+             linestyle='None',markersize=4)
     plt.plot(ext_grid,plot_inf.f,label="My Model")
     for q in plot_inf.qs:
         plt.plot(q,plot_inf.f)
+    plt.xlim([0,50])
+    plt.ylim([0,400])
     PlotUtilities.lazyLabel("Extension (nm)","Force (pN)","")
 
 def run():
