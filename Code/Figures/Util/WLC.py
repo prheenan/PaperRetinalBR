@@ -92,7 +92,7 @@ def Hao_PEGModel(F):
     # get the WLC model of the unfolded polypeptide
     L0 = 27.2e-9
     polypeptide_args = dict(kbT=kbT,Lp=0.4e-9,L0=L0,K0=10000e-12)
-    non_ext_polypeptide_args = dict(**polypeptide_args)
+    non_ext_polypeptide_args = dict(disable_correction=False,**polypeptide_args)
     non_ext_polypeptide_args['K0'] = np.inf
     ext_wlc = np.linspace(0,L0 * 0.9)
     F_wlc = WLC_Utils.WlcNonExtensible(ext=ext_wlc,

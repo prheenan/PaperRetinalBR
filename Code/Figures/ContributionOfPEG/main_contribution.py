@@ -78,8 +78,9 @@ def make_comparison_plot():
     plt.plot(*read_haos_data(),color='b',marker='o',
              linestyle='None',markersize=4)
     plt.plot(ext_grid,plot_inf.f,label="My Model")
-    for q in plot_inf.qs:
-        plt.plot(q,plot_inf.f)
+    labels = ["PEG", "Unfolded peptide"]
+    for q,l in zip(plot_inf.qs,labels):
+        plt.plot(q,plot_inf.f,label="Only "+ l)
     plt.xlim([0,50])
     plt.ylim([0,400])
     PlotUtilities.lazyLabel("Extension (nm)","Force (pN)","")
@@ -99,7 +100,7 @@ def run():
     make_model_plot(model_f=model, title=descr)
     PlotUtilities.savefig(fig,"PEG_{:s}.png".format(descr))
     # make sure what we have matches Hao.
-    fig = PlotUtilities.figure((3,3))
+    fig = PlotUtilities.figure((5,5))
     make_comparison_plot()
     PlotUtilities.savefig(fig,"out_compare.png")
     pass
