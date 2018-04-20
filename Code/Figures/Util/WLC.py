@@ -29,9 +29,10 @@ def HaoModel(N_s,L_planar,DeltaG,kbT,L_helical,F,L_K,K):
     :param K: PEG's enthalpic stretch modulus, units of N/m
     :return:
     """
+    coth = lambda x: 1/np.tanh(x)
     to_ret =  N_s * ((L_planar  / (np.exp(-DeltaG/kbT) + 1)) + \
                       L_helical / (np.exp(+DeltaG/kbT) + 1)) * \
-                     (np.tanh(F*L_K/kbT)**-1 - kbT/(F*L_K)) + \
+                     (coth(F*L_K/kbT) - kbT/(F*L_K)) + \
               N_s * F/K
     return to_ret
 
@@ -95,10 +96,8 @@ def Hao_PEGModel(F):
     non_ext_polypeptide_args = dict(disable_correction=False,**polypeptide_args)
     non_ext_polypeptide_args['K0'] = np.inf
     ext_wlc = np.linspace(0,L0 * 0.9)
-    F_wlc = WLC_Utils.WlcNonExtensible(ext=ext_wlc,
-                                       **non_ext_polypeptide_args)
-    F_wlc = WLC_Utils.WlcExtensible_Helper(ext=ext_wlc,F=F_wlc,
-                                           **polypeptide_args)
+    ext_wlc, F_wlc = WLC._inverted_wlc_helper(F=F,odjik_as_guess=True,
+                                              **polypeptide_args)
     valid_idx = np.where(ext_wlc > 0)
     ext_wlc = ext_wlc[valid_idx]
     F_wlc = F_wlc[valid_idx]
@@ -130,6 +129,45 @@ class plot_info:
         W_int = np.round(int(W_f))
         return W_int
 
+def _read_csv_fec(f):
+    """
+    :param f: filename, should have columns like (ext in nm, force in pN)
+    :return:  ext,force
+    """
+    arr = np.genfromtxt(f,delimiter=",")
+    ext, F = arr.T
+    return ext,F
+
+def read_haos_data():
+    """
+    :return: tuple of <ext,F> for Hao's *total* model
+    """
+    hao_file = "../FigData/HaosFEC.csv"
+    return _read_csv_fec(hao_file)
+
+def read_hao_polypeptide():
+    """
+    :return: see  read_haos_data, except just the WLC (polypeptide) part
+    """
+    file_polypeptide = "../FigData/HaosFEC_Polypeptide.csv"
+    return _read_csv_fec(file_polypeptide)
+
+def _make_plot_inf(ext_grid,read_functor):
+    """
+    :param ext_grid: grid we want the extension on
+    :param read_functor: no arguments, call to get ext, F
+    :return:
+    """
+    ext, F = read_functor()
+    interp = interp1d(x=ext*1e-9, y=F*1e-12, kind='linear',
+                      fill_value='extrapolate')
+    Hao_F = interp(ext_grid * 1e-9)
+    to_ret =  _plot_info_helper(x=[ext_grid*1e-9], F=Hao_F,
+                                kw=dict(), model_f=read_haos_data)
+    return to_ret
+
+
+
 def _plot_info_helper(x,F,kw,model_f):
     total_x = np.sum(x,axis=0)
     work = cumtrapz(x=total_x,y=F,initial=0)
@@ -145,6 +183,6 @@ def get_plot_info(F,model_f=Hao_PEGModel):
 
 def peg_contribution(**kw):
     ext = np.linspace(0, 25e-9, num=1000)
-    F = np.linspace(1e-20, 275e-12, num=1000)
+    F = np.linspace(1e-20, 300e-12, num=1000)
     plot_inf = get_plot_info(F=F,**kw)
     return plot_inf

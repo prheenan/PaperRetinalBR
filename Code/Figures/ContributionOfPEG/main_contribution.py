@@ -54,33 +54,29 @@ def make_model_plot(model_f,title):
     xlabel = "$F$ (pN) [! not extension !]"
     PlotUtilities.lazyLabel(xlabel, W_str + "\n(kcal/mol)", "")
 
-def read_haos_data():
-    hao_file = "../FigData/HaosFEC.csv"
-    arr = np.genfromtxt(hao_file,delimiter=",")
-    ext, F = arr.T
-    return ext,F
 
 def hao_plot_inf(ext_grid):
-    ext,F = read_haos_data()
-    interp = interp1d(x=ext*1e-9, y=F*1e-12, kind='linear',
-                      fill_value='extrapolate')
-    Hao_F = interp(ext_grid * 1e-9)
-    to_ret =  WLC._plot_info_helper(x=[ext_grid*1e-9], F=Hao_F,
-                                    kw=dict(), model_f=read_haos_data)
-    return to_ret
+    fec_system = WLC._make_plot_inf(ext_grid,WLC.read_haos_data)
+    fec_polypeptide = WLC._make_plot_inf(ext_grid,WLC.read_hao_polypeptide)
+    return fec_system, fec_polypeptide
 
 def make_comparison_plot():
     plot_inf = WLC.peg_contribution(model_f=WLC.Hao_PEGModel)
     ext_grid = plot_inf.q
-    plot_info_hao = hao_plot_inf(ext_grid)
-    plt.plot(plot_info_hao.q, plot_info_hao.f,'r-',
-             label="Hao's Model\n(interpolated)")
-    plt.plot(*read_haos_data(),color='b',marker='o',
-             linestyle='None',markersize=4)
-    plt.plot(ext_grid,plot_inf.f,label="My Model")
-    labels = ["PEG", "Unfolded peptide"]
-    for q,l in zip(plot_inf.qs,labels):
-        plt.plot(q,plot_inf.f,label="Only "+ l)
+    plot_info_hao,plot_inf_hao_polypeptide = hao_plot_inf(ext_grid)
+    # plot all of Hao's data
+    label_hao_total = "Hao's FJC+WLC"
+    plt.plot(plot_info_hao.q, plot_info_hao.f,'k-',
+             label=label_hao_total)
+    wlc_color = 'b'
+    # plot Hao's polypeptide model
+    plt.plot(*WLC.read_hao_polypeptide(),color=wlc_color,marker='o',
+             linestyle='None',markersize=4,label="Hao's WLC")
+    plt.plot(ext_grid,plot_inf.f,color='r',label="My model")
+    labels = ["My FJC", "My WLC"]
+    colors = ['darkgoldenrod',wlc_color]
+    for q,l,c in zip(plot_inf.qs,labels,colors):
+        plt.plot(q,plot_inf.f,label=l,color=c)
     plt.xlim([0,50])
     plt.ylim([0,400])
     PlotUtilities.lazyLabel("Extension (nm)","Force (pN)","")
@@ -100,8 +96,11 @@ def run():
     make_model_plot(model_f=model, title=descr)
     PlotUtilities.savefig(fig,"PEG_{:s}.png".format(descr))
     # make sure what we have matches Hao.
-    fig = PlotUtilities.figure((5,5))
+    fig = PlotUtilities.figure((2.5,4))
     make_comparison_plot()
+    plt.xlim([0,35])
+    plt.ylim([0,300])
+    PlotUtilities.legend(frameon=True)
     PlotUtilities.savefig(fig,"out_compare.png")
     pass
 

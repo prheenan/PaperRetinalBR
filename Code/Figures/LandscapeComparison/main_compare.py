@@ -126,8 +126,12 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg):
         mean, stdev = PlotUtil._mean_and_stdev_landcapes(splines, q_interp)
         l = LandscapeWithError(q_nm=q_interp,G_kcal=mean,G_err_kcal=stdev)
         landscpes_with_error.append(l)
+    # get the extension grid we wnt...
     peg = WLC.peg_contribution()
-    shifts = [peg.W_at_f(f) for f in [250, 100]]
+    ext_grid = peg.q
+    # read in Hao's energy landscape
+    fec_system = WLC._make_plot_inf(ext_grid,WLC.read_haos_data)
+    shifts = [fec_system.W_at_f(f) for f in [250, 100]]
     gs = gridspec.GridSpec(nrows=1,ncols=1,width_ratios=[1])
     ax1, means, stdevs = make_retinal_subplot(gs,landscpes_with_error,shifts)
     # get the with-retinal max
