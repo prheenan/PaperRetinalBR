@@ -10,11 +10,34 @@ import matplotlib.pyplot as plt
 import sys
 
 from Lib.AppWLC.Code import WLC, WLC_Utils
+from Lib.AppWLC.UtilFit import fit_base
 from scipy.integrate import cumtrapz
 from scipy.interpolate import interp1d
 
 
 kbT = 4.1e-21
+
+
+class plot_info:
+    def __init__(self,ext,f,w,kw,func):
+        self.qs = ext
+        self.f = f
+        self.w = w
+        self.kw = kw
+        self.func = func
+    @property
+    def q(self):
+        to_ret = np.sum(self.qs,axis=0)
+        return to_ret
+    def W_at_f(self,f_tmp):
+        """
+        :param f_tmp: force, in plot units (pN, prolly)
+        :return:  work at that force
+        """
+        idx_f = np.argmin(np.abs(self.f - f_tmp))
+        W_f = self.w[idx_f]
+        W_int = np.round(int(W_f))
+        return W_int
 
 
 def HaoModel(N_s,L_planar,DeltaG,kbT,L_helical,F,L_K,K):
@@ -93,9 +116,6 @@ def Hao_PEGModel(F,N_s=25.318,K=906.86,L_K=0.63235e-9):
     # get the WLC model of the unfolded polypeptide
     L0 = 27.2e-9
     polypeptide_args = dict(kbT=kbT,Lp=0.4e-9,L0=L0,K0=10000e-12)
-    non_ext_polypeptide_args = dict(disable_correction=False,**polypeptide_args)
-    non_ext_polypeptide_args['K0'] = np.inf
-    ext_wlc = np.linspace(0,L0 * 0.9)
     ext_wlc, F_wlc = WLC._inverted_wlc_helper(F=F,odjik_as_guess=True,
                                               **polypeptide_args)
     valid_idx = np.where(ext_wlc > 0)
@@ -108,26 +128,62 @@ def Hao_PEGModel(F,N_s=25.318,K=906.86,L_K=0.63235e-9):
     # the extensions and forces to the same grid
     return to_ret, common
 
-class plot_info:
-    def __init__(self,ext,f,w,kw,func):
-        self.qs = ext
-        self.f = f
-        self.w = w
-        self.kw = kw
-        self.func = func
+def _hao_ext_grid(force_grid,*args):
+    ext, _ = Hao_PEGModel(force_grid,*args)
+    # add the FJC and WLC extensions.
+    ext_grid = ext[0] + ext[1]
+    return ext_grid
+
+def _hao_fit_helper(x,f,force_grid,*args,**kwargs):
+    ext_grid =_hao_ext_grid(force_grid,*args,**kwargs)
+    l2 = fit_base._l2_grid_to_data(x,f,ext_grid,force_grid)
+    return l2
+
+class FitFJCandWLC(object):
+    def __init__(self,brute_dict,x0,f):
+        self.brute_dict = brute_dict
+        self.x0 = x0
+        self.min_f = min(f)
+        self.max_f = max(f)
+        self.n_f = f.size
     @property
-    def q(self):
-        to_ret = np.sum(self.qs,axis=0)
-        return to_ret
-    def W_at_f(self,f_tmp):
-        """
-        :param f_tmp: force, in plot units (pN, prolly)
-        :return:  work at that force
-        """
-        idx_f = np.argmin(np.abs(self.f - f_tmp))
-        W_f = self.w[idx_f]
-        W_int = np.round(int(W_f))
-        return W_int
+    def f_grid(self):
+        return np.linspace(self.min_f,self.max_f,endpoint=True,num=self.n_f)
+    @property
+    def ext_grid(self,f_grid=None):
+        if f_grid is None:
+            f_grid = self.f_grid
+        # get the force and extension grid again, with the optimized parameters
+        ext_grid = _hao_ext_grid(self.f_grid, *self.x0)
+        return ext_grid
+    @property
+    def _Ns(self):
+        return self.x0[0]
+    @property
+    def _K(self):
+        return self.x0[1]
+    @property
+    def _L_K(self):
+        return self.x0[2]
+
+
+def predicted_f_at_x(x,ext_grid,f_grid):
+    to_ret = fit_base._grid_to_data(x,ext_grid,f_grid)
+    return to_ret
+
+def hao_fit(x,f):
+    f_grid = np.linspace(min(f),max(f),endpoint=True,num=f.size)
+    functor_l2 = lambda *args: _hao_fit_helper(x,f,f_grid,*(args[0]))
+    range_N = slice(0,250,20)
+    range_K = slice(100,1000,100)
+    range_L_K = slice(0.1e-9,5e-9,1e-9)
+    brute_dict = dict(ranges=(range_N,range_K,range_L_K),
+                      Ns=None)
+    brute_dict['full_output']=False
+    x0 = fit_base._prh_brute(objective=functor_l2,**brute_dict)
+    # get the force and extension grid, interpolated back to the original data
+    to_ret = FitFJCandWLC(brute_dict=brute_dict,x0=x0,f=f)
+    return to_ret
 
 def _read_csv_fec(f):
     """

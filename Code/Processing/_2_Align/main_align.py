@@ -17,6 +17,8 @@ from Lib.UtilForce.UtilGeneral import CheckpointUtilities
 from Lib.UtilForce.UtilGeneral import PlotUtilities
 from Processing import ProcessingUtil
 from Lib.AppWLC.Code import WLC
+from Processing.Util import WLC as WLCHao
+
 import warnings
 
 def align_single(d,min_wlc_force_fit_N,max_sep_m,kw_wlc,brute_dict):
@@ -41,23 +43,21 @@ def align_single(d,min_wlc_force_fit_N,max_sep_m,kw_wlc,brute_dict):
     # slice the object to just the region we want
     obj_slice = d._slice(fit_slice)
     # fit wlc to the f vs x of that slice
-    L0_fit,_ = WLC.fit(separation=obj_slice.Separation,
-                     force=obj_slice.Force,brute_dict=brute_dict,
-                     **kw_wlc)
-    L0 = L0_fit[0]
-    x, f, _ = WLC._inverted_wlc_full(ext=obj_slice.Separation,
-                                     F=obj_slice.Force, L0=L0,
-                                     max_force=None, odjik_as_guess=True,
-                                     **kw_wlc)
+    fit_info = WLCHao.hao_fit(obj_slice.Separation,obj_slice.Force)
+    f_grid = fit_info.f_grid
+    ext_grid = fit_info.ext_grid
+    x = obj_slice.Separation
+    fit_info.fit_slice = fit_slice
+    f_pred = WLCHao.predicted_f_at_x(x, ext_grid, f_grid)
+    # align everything to the PEG3400 contour length.
+    N_monomers = fit_info._Ns
+    L0_PEG3400_per_monomer = WLCHao.common_peg_params()['L_helical']
+    L0_PEG3400 = L0_PEG3400_per_monomer * N_monomers
+    L0_correct = L0_PEG3400
     # subtract off L0
-    d.Separation -= L0
-    d.ZSnsr -= L0
-    # return the FEC with the contour length information
-    L0_info = ProcessingUtil.ContourInformation(L0,
-                                                brute_dict=brute_dict,
-                                                kw_wlc=kw_wlc,
-                                                fit_slice=fit_slice)
-    to_ret = ProcessingUtil.AlignedFEC(d,L0_info)
+    d.Separation -= L0_correct
+    d.ZSnsr -= L0_correct
+    to_ret = ProcessingUtil.AlignedFEC(d,fit_info)
     return to_ret
 
 
@@ -84,7 +84,7 @@ def run():
     step = Pipeline.Step.ALIGNED
     in_dir = Pipeline._cache_dir(base=base_dir, enum=Pipeline.Step.FILTERED)
     out_dir = Pipeline._cache_dir(base=base_dir,enum=step)
-    force = True
+    force = False
     limit = None
     min_wlc_force_fit_N = 200e-12
     max_sep_m = 105e-9
