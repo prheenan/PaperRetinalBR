@@ -44,16 +44,8 @@ def align_single(d,min_wlc_force_fit_N,max_sep_m,kw_wlc,brute_dict):
     obj_slice = d._slice(fit_slice)
     # fit wlc to the f vs x of that slice
     fit_info = WLCHao.hao_fit(obj_slice.Separation,obj_slice.Force)
-    f_grid = fit_info.f_grid
-    ext_grid = fit_info.ext_grid
-    x = obj_slice.Separation
     fit_info.fit_slice = fit_slice
-    f_pred = WLCHao.predicted_f_at_x(x, ext_grid, f_grid)
-    # align everything to the PEG3400 contour length.
-    N_monomers = fit_info._Ns
-    L0_PEG3400_per_monomer = WLCHao.common_peg_params()['L_helical']
-    L0_PEG3400 = L0_PEG3400_per_monomer * N_monomers
-    L0_correct = L0_PEG3400
+    L0_correct = fit_info.L0_correct
     # subtract off L0
     d.Separation -= L0_correct
     d.ZSnsr -= L0_correct
@@ -98,7 +90,28 @@ def run():
                                          force=force,
                                          limit=limit,
                                          name_func=FEC_Util.fec_name_func)
-    ProcessingUtil.plot_data(base_dir,step,data)
+    plot_subdir = Pipeline._plot_subdir(base_dir, step)
+    f_x = lambda x: x.Separation
+    xlim, ylim = ProcessingUtil.nm_and_pN_limits(data,f_x)
+    xlim = [xlim[0],200]
+    name_func = FEC_Util.fec_name_func
+    for d in data:
+        f = PlotUtilities.figure()
+        # get the fit
+        info = d.L0_info
+        f_grid = info.f_grid
+        ext_grid = info.ext_grid
+        x = d.Separation
+        f_pred = WLCHao.predicted_f_at_x(x, ext_grid, f_grid)
+        # convert to reasonable units for plotting
+        f_plot_pred = f_pred * 1e12
+        x_plot_pred = (f_x(d) - info.L0_correct)*1e9
+        plt.plot(x_plot_pred,f_plot_pred,color='r',linewidth=1.5)
+        # plot the fit
+        ProcessingUtil.plot_single_fec(d, f_x, xlim, ylim)
+        PlotUtilities.savefig(f, plot_subdir + name_func(0, d) + ".png")
+
+
 
 if __name__ == "__main__":
     run()

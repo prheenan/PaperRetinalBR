@@ -36,6 +36,13 @@ def nm_and_pN_limits(data,f_x):
     ylim = 1e12 * np.array([np.min(y_range), np.max(y_range)])
     return xlim,ylim
 
+def plot_single_fec(d,f_x,xlim,ylim,markevery=1):
+    FEC_Plot._fec_base_plot(f_x(d)[::markevery] * 1e9,
+                            d.Force[::markevery] * 1e12)
+    plt.xlim(xlim)
+    plt.ylim(ylim)
+    PlotUtilities.lazyLabel("Extension (nm)", "Force (pN)", "")
+
 def plot_data(base_dir,step,data,markevery=1,f_x = lambda x: x.Separation):
     """
     :param base_dir: where the data live
@@ -50,10 +57,6 @@ def plot_data(base_dir,step,data,markevery=1,f_x = lambda x: x.Separation):
     xlim, ylim = nm_and_pN_limits(data,f_x)
     for d in data:
         f = PlotUtilities.figure()
-        FEC_Plot._fec_base_plot(f_x(d)[::markevery]*1e9,
-                                d.Force[::markevery]* 1e12)
-        plt.xlim(xlim)
-        plt.ylim(ylim)
-        PlotUtilities.lazyLabel("Extension (nm)", "Force (pN)", "")
+        plot_single_fec(d, f_x, xlim, ylim,markevery=markevery)
         PlotUtilities.savefig(f, plot_subdir + name_func(0, d) + ".png")
 

@@ -165,6 +165,17 @@ class FitFJCandWLC(object):
     @property
     def _L_K(self):
         return self.x0[2]
+    @property
+    def L0_correct(self):
+        """
+        :return: contour length of the PEG3400
+        """
+        # align everything to the PEG3400 contour length.
+        N_monomers = self._Ns
+        L0_PEG3400_per_monomer = common_peg_params()['L_helical']
+        L0_PEG3400 = L0_PEG3400_per_monomer * N_monomers
+        L0_correct = L0_PEG3400
+        return L0_correct
 
 
 def predicted_f_at_x(x,ext_grid,f_grid):
