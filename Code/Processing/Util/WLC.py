@@ -83,11 +83,11 @@ def grid_both(x,x_a,a,x_b,b):
     grid_b = grid_interp(points=x_b,values=b,grid=x)
     return grid_a, grid_b
 
-def Hao_PEGModel(F):
+def Hao_PEGModel(F,N_s=25.318,K=906.86,L_K=0.63235e-9):
     """
     see: communication with Hao, 
     """
-    common = dict(N_s=25.318,K=906.86,L_K=0.63235e-9,**common_peg_params())
+    common = dict(N_s=N_s,K=K,L_K=L_K,**common_peg_params())
     # get the FJC model of *just* the PEG
     ext_FJC = HaoModel(F=F, **common)
     # get the WLC model of the unfolded polypeptide
