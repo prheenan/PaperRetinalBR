@@ -21,6 +21,9 @@ from Processing.Util import WLC as WLCHao
 
 import warnings
 
+from multiprocessing import Pool
+import multiprocessing
+
 def _debug_plot(to_ret):
     plt.close()
     inf = to_ret.L0_info
@@ -64,14 +67,27 @@ def align_single(d,min_wlc_force_fit_N,max_sep_m,kw_wlc,brute_dict):
     to_ret = ProcessingUtil.AlignedFEC(d,fit_info)
     return to_ret
 
+def _align_and_cache(d,out_dir,force=False,**kw):
+    name = out_dir + FEC_Util.fec_name_func(0,d) + ".pkl"
+    data = CheckpointUtilities.getCheckpoint(name,align_single,force,
+                                             d,**kw)
+    return data
 
-def align_data(base_dir,**kw):
+
+def func(args):
+    x, out_dir, kw = args
+    to_ret = _align_and_cache(x,out_dir,**kw)
+    return to_ret
+
+def align_data(base_dir,out_dir,n_pool,**kw):
     all_data = CheckpointUtilities.lazy_multi_load(base_dir)
-    for d in all_data:
-        # filter the data, making a copy
-        to_ret = d._slice(slice(0, None, 1))
-        to_ret = align_single(to_ret,**kw)
-        yield to_ret
+    input_v = [ [d,out_dir,kw] for d in all_data]
+    p = Pool(n_pool)
+    if (n_pool > 1):
+        to_ret = p.map(func,input_v)
+    else:
+        to_ret = [func(d) for d in input_v]
+    return to_ret
 
 def run():
     """
@@ -89,19 +105,16 @@ def run():
     in_dir = Pipeline._cache_dir(base=base_dir, enum=Pipeline.Step.FILTERED)
     out_dir = Pipeline._cache_dir(base=base_dir,enum=step)
     force = True
-    limit = None
+    max_n_pool = multiprocessing.cpu_count() - 1
+    n_pool = max_n_pool
     min_wlc_force_fit_N = 200e-12
     max_sep_m = 105e-9
     brute_dict = dict(Ns=100,ranges=((10e-9,100e-9),))
     kw_wlc = dict(kbT=4.1e-21, Lp=0.3e-9, K0=1000e-12)
-    functor = lambda : align_data(in_dir,
-                                  max_sep_m=max_sep_m,
-                                  min_wlc_force_fit_N=min_wlc_force_fit_N,
-                                  kw_wlc=kw_wlc,brute_dict=brute_dict)
-    data =CheckpointUtilities.multi_load(cache_dir=out_dir,load_func=functor,
-                                         force=force,
-                                         limit=limit,
-                                         name_func=FEC_Util.fec_name_func)
+    data =align_data(in_dir,out_dir,max_sep_m=max_sep_m,
+                     min_wlc_force_fit_N=min_wlc_force_fit_N,
+                     kw_wlc=kw_wlc,brute_dict=brute_dict,force=force,
+                     n_pool=n_pool)
     ProcessingUtil.make_aligned_plot(base_dir,step,data)
 
 

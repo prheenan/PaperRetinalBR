@@ -154,6 +154,14 @@ class FitFJCandWLC(object):
         self.minimize_dict = minimize_dict
         self.output_polishing = res
         self.output_brute = output_brute
+        self.x_offset = 0
+    def set_x_offset(self,x):
+        """
+        :param x: x, defined with one point at each point in f_grid
+        :return: nothing, sets the x ffset
+        """
+        assert x.size == self.n_f
+        self.x_offset = x
     @property
     def f_grid(self):
         return np.linspace(self.min_f,self.max_f,endpoint=True,num=self.n_f)
@@ -162,7 +170,7 @@ class FitFJCandWLC(object):
         if f_grid is None:
             f_grid = self.f_grid
         # get the force and extension grid again, with the optimized parameters
-        ext_grid,_ = _hao_ext_grid(self.f_grid, *self.x0)
+        ext_grid,_ = _hao_ext_grid(f_grid, *self.x0)
         return ext_grid
     @property
     def _Ns(self):
@@ -212,7 +220,7 @@ def hao_fit(x,f):
     range_L0 = (15e-9,35e-9)
     # how many brute points should we use?
     ranges = (range_N,range_K,range_L_K,range_L0)
-    n_pts = [12,12,12,12]
+    n_pts = [7 for _ in ranges]
     # determine the step sizes in each dimension
     steps = [ (r[1]-r[0])/n_pts[i] for i,r in enumerate(ranges)]
     # determine the slice in each dimension
@@ -225,7 +233,7 @@ def hao_fit(x,f):
     output_brute = fit_base._prh_brute(objective=functor_l2,**brute_dict)
     x0_brute = output_brute[0]
     # take the brute result, and polish it within the bounds
-    opts = dict(ftol=1e-3,xtol=1e-3,maxfev=int(1e3))
+    opts = dict(ftol=1e-3,xtol=1e-3,maxfev=int(1e4))
     minimize_dict = dict(x0=x0_brute,method='Nelder-Mead',options=opts)
     # get the bounds we infer from brute; we look within the N-dimensional
     # cube
@@ -236,7 +244,6 @@ def hao_fit(x,f):
     bounded_fun = lambda *args: _constrained_L2(functor_l2,bounds_brute,*args)
     res = minimize(fun=bounded_fun,**minimize_dict)
     x0 = res.x
-    assert res.success
     for b,x in zip(bounds,x0):
         assert (x <= b[1]) and (x >= b[0])  , "Minimization didn't constrain"
     # get the force and extension grid, interpolated back to the original data

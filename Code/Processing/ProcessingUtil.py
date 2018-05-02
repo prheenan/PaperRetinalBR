@@ -55,6 +55,21 @@ def plot_data(base_dir,step,data,markevery=1,f_x = lambda x: x.Separation,
         plot_single_fec(d, f_x, xlim, ylim,markevery=markevery)
         PlotUtilities.savefig(f, plot_subdir + name_func(0, d) + ".png")
 
+def _aligned_plot(d,f_x,xlim,ylim):
+    # get the fit
+    # convert to reasonable units for plotting
+    # get the fit
+    info = d.L0_info
+    f_grid = info.f_grid
+    # convert to reasonable units for plotting
+    f_plot_pred = f_grid * 1e12
+    x_plot_pred = (info.ext_grid - info.x_offset)* 1e9
+    # convert back to the grid to get rid of the offset
+
+    plt.plot(x_plot_pred, f_plot_pred, color='r', linewidth=1.5)
+    # plot the fit
+    plot_single_fec(d, f_x, xlim, ylim)
+
 def make_aligned_plot(base_dir,step,data):
     plot_subdir = Pipeline._plot_subdir(base_dir, step)
     f_x = lambda x: x.Separation
@@ -63,18 +78,7 @@ def make_aligned_plot(base_dir,step,data):
     name_func = FEC_Util.fec_name_func
     for d in data:
         f = PlotUtilities.figure()
-        # get the fit
-        info = d.L0_info
-        f_grid = info.f_grid
-        ext_grid = info.ext_grid
-        x = d.Separation
-        f_pred = WLCHao.predicted_f_at_x(x, ext_grid, f_grid)
-        # convert to reasonable units for plotting
-        f_plot_pred = f_pred * 1e12
-        x_plot_pred = (f_x(d))*1e9
-        plt.plot(x_plot_pred,f_plot_pred,color='r',linewidth=1.5)
-        # plot the fit
-        plot_single_fec(d, f_x, xlim, ylim)
+        _aligned_plot(d, f_x, xlim, ylim)
         PlotUtilities.savefig(f, plot_subdir + name_func(0, d) + ".png")
 
 

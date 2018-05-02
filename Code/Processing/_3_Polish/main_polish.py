@@ -20,6 +20,21 @@ from Lib.AppWLC.Code import WLC
 from Processing.Util import WLC as WLCHao
 from Lib.AppWLC.UtilFit import fit_base
 
+def offset_L(info):
+    # align by the contour length of the protein
+    offset_m = 20e-9
+    L0 = info.L0_c_terminal - offset_m
+    return L0
+
+def _ext_grid(f_grid,x0):
+    # get the extension components
+    ext_total, ext_components = WLCHao._hao_ext_grid(f_grid, *x0)
+    ext_FJC = ext_components[0]
+    # make the extension at <= force be zero
+    where_f_le = np.where(f_grid <= 0)
+    ext_FJC[where_f_le] = 0
+    ext_total[where_f_le] = 0
+    return ext_total, ext_FJC
 
 def polish_data(base_dir,**kw):
     all_data = CheckpointUtilities.lazy_multi_load(base_dir)
@@ -32,13 +47,7 @@ def polish_data(base_dir,**kw):
         x, f = to_ret.Separation.copy(), to_ret.Force.copy()
         # get a grid over all possible forces
         f_grid = np.linspace(min(f), max(f), num=f.size, endpoint=True)
-        # get the extension components
-        ext_total, ext_components = WLCHao._hao_ext_grid(f_grid, *inf.x0)
-        ext_FJC = ext_components[0]
-        # make the extension at <= force be zero
-        where_f_le = np.where(f_grid <= 0)
-        ext_FJC[where_f_le] = 0
-        ext_total[where_f_le] = 0
+        ext_total, ext_FJC = _ext_grid(f_grid,inf.x0)
         # we now have X_FJC as a function of force. Therefore, we can subtract
         # off the extension of the PEG3400 to determining the force-extension
         # associated with only the protein (*including* its C-term)
@@ -49,11 +58,12 @@ def polish_data(base_dir,**kw):
                                                     bounds_error=False)
         # remove the extension associated with the PEG
         to_ret.Separation -= ext_FJC_all_forces
-        # align by the contour length of the protein
-        offset_m = 20e-9
-        L0 = inf.L0_c_terminal - offset_m
+        L0 = offset_L(to_ret.L0_info)
         to_ret.Separation -= L0
         to_ret.ZSnsr -= L0
+        # make sure the fitting object knows about the change in extensions...
+        _, ext_FJC_correct_info = _ext_grid(inf.f_grid, inf.x0)
+        to_ret.L0_info.set_x_offset(L0 + ext_FJC_correct_info)
         yield to_ret
 
 def run():
@@ -79,20 +89,25 @@ def run():
                                          force=force,
                                          limit=limit,
                                          name_func=FEC_Util.fec_name_func)
+    data_unpolished = CheckpointUtilities.lazy_multi_load(in_dir)
     ProcessingUtil.heatmap_ensemble_plot(data,out_name=plot_dir + "heatmap.png")
     # plot each individual
-    ProcessingUtil.plot_data(base_dir,step,data,xlim_override=[-50,175])
-    """
-    XXX work into plot...
-        plt.subplot(2, 1, 1)
-        plt.plot(x, f, color='k', alpha=0.3)
-        plt.plot(x[fit_slice], f[fit_slice], 'r')
-        plt.plot(ext_total, f_grid, 'b--')
-        plt.plot(ext_FJC, f_grid, 'g:')
-        plt.subplot(2, 1, 2)
-        plt.plot(to_ret.Separation, to_ret.Force)
-        plt.show()
-    """
+    f_x = lambda x_tmp : x_tmp.Separation
+    plot_subdir = Pipeline._plot_subdir(base_dir, step)
+    name_func = FEC_Util.fec_name_func
+    xlim, ylim = ProcessingUtil.nm_and_pN_limits(data,f_x)
+    xlim = [-10,150]
+    for d_unpolish,d_polish in zip(data_unpolished,data):
+        fig = PlotUtilities.figure()
+        ax1 = plt.subplot(2,1,1)
+        ProcessingUtil._aligned_plot(d_unpolish,f_x,xlim,ylim)
+        PlotUtilities.xlabel("")
+        PlotUtilities.no_x_label(ax1)
+        plt.subplot(2,1,2)
+        ProcessingUtil._aligned_plot(d_polish,f_x,xlim,ylim)
+        name = plot_subdir + name_func(0, d_polish) + ".png"
+        PlotUtilities.savefig(fig,name)
+
 
 if __name__ == "__main__":
     run()
