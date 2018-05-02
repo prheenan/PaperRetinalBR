@@ -1,5 +1,6 @@
-
+*.xlsx
 *.i
+*.idea
 *.hg/*
 *~
 *.pyo
