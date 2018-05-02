@@ -86,26 +86,7 @@ def run():
                                          force=force,
                                          limit=limit,
                                          name_func=FEC_Util.fec_name_func)
-    plot_subdir = Pipeline._plot_subdir(base_dir, step)
-    f_x = lambda x: x.Separation
-    xlim, ylim = ProcessingUtil.nm_and_pN_limits(data,f_x)
-    xlim = [xlim[0],200]
-    name_func = FEC_Util.fec_name_func
-    for d in data:
-        f = PlotUtilities.figure()
-        # get the fit
-        info = d.L0_info
-        f_grid = info.f_grid
-        ext_grid = info.ext_grid
-        x = d.Separation
-        f_pred = WLCHao.predicted_f_at_x(x, ext_grid, f_grid)
-        # convert to reasonable units for plotting
-        f_plot_pred = f_pred * 1e12
-        x_plot_pred = (f_x(d))*1e9
-        plt.plot(x_plot_pred,f_plot_pred,color='r',linewidth=1.5)
-        # plot the fit
-        ProcessingUtil.plot_single_fec(d, f_x, xlim, ylim)
-        PlotUtilities.savefig(f, plot_subdir + name_func(0, d) + ".png")
+    ProcessingUtil.make_aligned_plot(base_dir,step,data)
 
 
 
