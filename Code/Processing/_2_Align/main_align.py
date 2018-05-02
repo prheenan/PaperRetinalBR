@@ -21,6 +21,22 @@ from Processing.Util import WLC as WLCHao
 
 import warnings
 
+def _debug_plot(to_ret):
+    plt.close()
+    inf = to_ret.L0_info
+    fit_slice = inf.fit_slice
+    x, f = to_ret.Separation, to_ret.Force
+    # get a grid over all possible forces
+    f_grid = np.linspace(min(f), max(f), num=f.size, endpoint=True)
+    # get the extension components
+    ext_total, ext_components = WLCHao._hao_ext_grid(f_grid, *inf.x0)
+    ext_FJC = ext_components[0]
+    # determine the
+    plt.plot(x, f, color='k', alpha=0.3)
+    plt.plot(x[fit_slice], f[fit_slice], 'r')
+    plt.plot(ext_total, f_grid, 'b--')
+    plt.show()
+
 def align_single(d,min_wlc_force_fit_N,max_sep_m,kw_wlc,brute_dict):
     force_N = d.Force
     where_GF = np.where((force_N >= min_wlc_force_fit_N) &

@@ -13,7 +13,7 @@ from Lib.AppWLC.Code import WLC, WLC_Utils
 from Lib.AppWLC.UtilFit import fit_base
 from scipy.integrate import cumtrapz
 from scipy.interpolate import interp1d
-
+from scipy.optimize import minimize
 
 kbT = 4.1e-21
 
@@ -145,12 +145,14 @@ def _hao_fit_helper(x,f,force_grid,*args,**kwargs):
     return l2
 
 class FitFJCandWLC(object):
-    def __init__(self,brute_dict,x0,f):
+    def __init__(self,brute_dict,x0,f,minimize_dict,res):
         self.brute_dict = brute_dict
         self.x0 = x0
         self.min_f = min(f)
         self.max_f = max(f)
         self.n_f = f.size
+        self.minimize_dict = minimize_dict
+        self.res = res
     @property
     def f_grid(self):
         return np.linspace(self.min_f,self.max_f,endpoint=True,num=self.n_f)
@@ -190,19 +192,55 @@ def predicted_f_at_x(x,ext_grid,f_grid):
     to_ret = fit_base._grid_to_data(x,ext_grid,f_grid)
     return to_ret
 
+
+def _constrained_L2(L2,bounds,*args):
+    raw_L2 = L2(*args)
+    in_bounds = [(a >= b[0] and a <= b[1]) for a,b in zip(args[0],bounds)]
+    if False in in_bounds:
+        # articially increase the error
+        return raw_L2 * 1000
+    else:
+        return raw_L2
+
 def hao_fit(x,f):
     f_grid = np.linspace(min(f),max(f),endpoint=True,num=f.size)
     functor_l2 = lambda *args: _hao_fit_helper(x,f,f_grid,*(args[0]))
-    range_N = slice(0,250,20)
-    range_K = slice(100,1000,100)
-    range_L_K = slice(0.1e-9,5e-9,1e-9)
-    range_L0 = slice(15e-9,40e-9,5e-9)
-    brute_dict = dict(ranges=(range_N,range_K,range_L_K,range_L0),
+    range_N = (0,500)
+    range_K = (150,2500)
+    range_L_K = (0.1e-9,4e-9)
+    range_L0 = (20e-9,35e-9)
+    # how many brute points should we use?
+    ranges = (range_N,range_K,range_L_K,range_L0)
+    n_pts = [10 for _ in ranges]
+    # determine the step sizes in each dimension
+    steps = [ (r[1]-r[0])/n_pts[i] for i,r in enumerate(ranges)]
+    # determine the slice in each dimension
+    slices = [slice(r[0],r[1],step) for r,step in zip(ranges,steps)]
+    # bounds...
+    bounds = [ (s.start,s.stop) for s in slices]
+    # initially, dont polish
+    brute_dict = dict(ranges=slices,finish=None,
                       Ns=None)
     brute_dict['full_output']=False
-    x0 = fit_base._prh_brute(objective=functor_l2,**brute_dict)
+    x0_brute = fit_base._prh_brute(objective=functor_l2,**brute_dict)
+    # take the brute result, and polish it within the bounds
+    opts = dict(ftol=1e-3,xtol=1e-3,maxfev=int(1e4))
+    minimize_dict = dict(x0=x0_brute,method='Nelder-Mead',options=opts)
+    # get the bounds we infer from brute; we look within the N-dimensional
+    # cube
+    bounds_brute = [ (a-step,a+step) for a,step in zip(x0_brute,steps)]
+    # make sure the minimum and maximum are within the original bounds
+    bounds_brute = [ (max(b1[0],b2[0]),min(b1[1],b2[1]))
+                     for (b1,b2) in zip(bounds_brute,bounds)]
+    bounded_fun = lambda *args: _constrained_L2(functor_l2,bounds_brute,*args)
+    res = minimize(fun=bounded_fun,**minimize_dict)
+    x0 = res.x
+    assert res.success
+    for b,x in zip(bounds,x0):
+        assert (x <= b[1]) and (x >= b[0])  , "Minimization didn't constrain"
     # get the force and extension grid, interpolated back to the original data
-    to_ret = FitFJCandWLC(brute_dict=brute_dict,x0=x0,f=f)
+    to_ret = FitFJCandWLC(brute_dict=brute_dict,x0=x0,f=f,
+                          minimize_dict=minimize_dict,res=res)
     return to_ret
 
 def _read_csv_fec(f):
