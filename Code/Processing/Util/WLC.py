@@ -106,7 +106,8 @@ def grid_both(x,x_a,a,x_b,b):
     grid_b = grid_interp(points=x_b,values=b,grid=x)
     return grid_a, grid_b
 
-def Hao_PEGModel(F,N_s=25.318,K=906.86,L_K=0.63235e-9,L0_Protein=27.2e-9):
+def Hao_PEGModel(F,N_s=25.318,K=906.86,L_K=0.63235e-9,L0_Protein=27.2e-9,
+                 Lp=0.4e-9):
     """
     see: communication with Hao, 
     """
@@ -115,7 +116,7 @@ def Hao_PEGModel(F,N_s=25.318,K=906.86,L_K=0.63235e-9,L0_Protein=27.2e-9):
     ext_FJC = HaoModel(F=F, **common)
     # get the WLC model of the unfolded polypeptide
     L0 = L0_Protein
-    polypeptide_args = dict(kbT=kbT,Lp=0.4e-9,L0=L0,K0=10000e-12)
+    polypeptide_args = dict(kbT=kbT,Lp=Lp,L0=L0,K0=10000e-12)
     ext_wlc, F_wlc = WLC._inverted_wlc_helper(F=F,odjik_as_guess=True,
                                               **polypeptide_args)
     valid_idx = np.where(ext_wlc > 0)
@@ -217,9 +218,10 @@ def hao_fit(x,f):
     range_N = (0,500)
     range_K = (50,4000)
     range_L_K = (0.1e-9,4e-9)
-    range_L0 = (15e-9,35e-9)
+    range_L0 = (18e-9,35e-9)
+    range_Lp = (0.3e-9,0.5e-9)
     # how many brute points should we use?
-    ranges = (range_N,range_K,range_L_K,range_L0)
+    ranges = (range_N,range_K,range_L_K,range_L0,range_Lp)
     n_pts = [7 for _ in ranges]
     # determine the step sizes in each dimension
     steps = [ (r[1]-r[0])/n_pts[i] for i,r in enumerate(ranges)]

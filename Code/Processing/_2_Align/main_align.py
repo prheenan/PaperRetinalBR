@@ -40,7 +40,7 @@ def _debug_plot(to_ret):
     plt.plot(ext_total, f_grid, 'b--')
     plt.show()
 
-def align_single(d,min_wlc_force_fit_N,max_sep_m,kw_wlc,brute_dict):
+def align_single(d,min_wlc_force_fit_N,max_sep_m):
     force_N = d.Force
     where_GF = np.where((force_N >= min_wlc_force_fit_N) &
                         (d.Separation <= max_sep_m))[0]
@@ -109,11 +109,8 @@ def run():
     n_pool = max_n_pool
     min_wlc_force_fit_N = 200e-12
     max_sep_m = 105e-9
-    brute_dict = dict(Ns=100,ranges=((10e-9,100e-9),))
-    kw_wlc = dict(kbT=4.1e-21, Lp=0.3e-9, K0=1000e-12)
     data =align_data(in_dir,out_dir,max_sep_m=max_sep_m,
-                     min_wlc_force_fit_N=min_wlc_force_fit_N,
-                     kw_wlc=kw_wlc,brute_dict=brute_dict,force=force,
+                     min_wlc_force_fit_N=min_wlc_force_fit_N,force=force,
                      n_pool=n_pool)
     ProcessingUtil.make_aligned_plot(base_dir,step,data)
 
