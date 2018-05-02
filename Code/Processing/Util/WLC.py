@@ -129,13 +129,18 @@ def Hao_PEGModel(F,N_s=25.318,K=906.86,L_K=0.63235e-9,L0_Protein=27.2e-9):
     return to_ret, common
 
 def _hao_ext_grid(force_grid,*args):
+    """
+    :param force_grid: forces to get the extension at
+    :param args: passed to Hao_PEGModel
+    :return: tuple of (total extension, [FJC extension, WLC extension))
+    """
     ext, _ = Hao_PEGModel(force_grid,*args)
     # add the FJC and WLC extensions.
     ext_grid = ext[0] + ext[1]
-    return ext_grid
+    return ext_grid, ext
 
 def _hao_fit_helper(x,f,force_grid,*args,**kwargs):
-    ext_grid =_hao_ext_grid(force_grid,*args,**kwargs)
+    ext_grid,_  =_hao_ext_grid(force_grid,*args,**kwargs)
     l2 = fit_base._l2_grid_to_data(x,f,ext_grid,force_grid)
     return l2
 
@@ -154,7 +159,7 @@ class FitFJCandWLC(object):
         if f_grid is None:
             f_grid = self.f_grid
         # get the force and extension grid again, with the optimized parameters
-        ext_grid = _hao_ext_grid(self.f_grid, *self.x0)
+        ext_grid,_ = _hao_ext_grid(self.f_grid, *self.x0)
         return ext_grid
     @property
     def _Ns(self):
@@ -166,7 +171,10 @@ class FitFJCandWLC(object):
     def _L_K(self):
         return self.x0[2]
     @property
-    def L0_correct(self):
+    def L0_c_terminal(self):
+        return self.x0[3]
+    @property
+    def L0_PEG3400(self):
         """
         :return: contour length of the PEG3400
         """

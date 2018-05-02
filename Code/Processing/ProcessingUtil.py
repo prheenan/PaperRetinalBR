@@ -15,15 +15,6 @@ from Lib.UtilForce.UtilIgor.TimeSepForceObj import TimeSepForceObj
 from Lib.UtilForce.UtilGeneral import PlotUtilities
 from Processing.Util import WLC as WLCHao
 
-
-class ContourInformation(object):
-    def __init__(self,L0,brute_dict,kw_wlc,fit_slice):
-        self.L0 = L0
-        self.brute_dict = brute_dict
-        self.kw_wlc = kw_wlc
-        self.fit_slice = fit_slice
-
-
 class AlignedFEC(TimeSepForceObj):
     def __init__(self,normal_fec,L0_info):
         super(AlignedFEC,self).__init__()

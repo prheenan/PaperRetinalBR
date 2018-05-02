@@ -17,13 +17,43 @@ from Lib.UtilForce.UtilGeneral import CheckpointUtilities
 from Lib.UtilForce.UtilGeneral import PlotUtilities
 from Processing import ProcessingUtil
 from Lib.AppWLC.Code import WLC
+from Processing.Util import WLC as WLCHao
+from Lib.AppWLC.UtilFit import fit_base
+
 
 def polish_data(base_dir,**kw):
     all_data = CheckpointUtilities.lazy_multi_load(base_dir)
     for d in all_data:
         # filter the data, making a copy
         to_ret = d._slice(slice(0, None, 1))
-        to_ret.Separation -= -20e-9
+        # get the slice we are fitting
+        inf = to_ret.L0_info
+        fit_slice = inf.fit_slice
+        x, f = to_ret.Separation.copy(), to_ret.Force.copy()
+        # get a grid over all possible forces
+        f_grid = np.linspace(min(f), max(f), num=f.size, endpoint=True)
+        # get the extension components
+        ext_total, ext_components = WLCHao._hao_ext_grid(f_grid, *inf.x0)
+        ext_FJC = ext_components[0]
+        # make the extension at <= force be zero
+        where_f_le = np.where(f_grid <= 0)
+        ext_FJC[where_f_le] = 0
+        ext_total[where_f_le] = 0
+        # we now have X_FJC as a function of force. Therefore, we can subtract
+        # off the extension of the PEG3400 to determining the force-extension
+        # associated with only the protein (*including* its C-term)
+        # note we are getting ext_FJC(f), where f is each point in the original
+        # data.
+        ext_FJC_all_forces = fit_base._grid_to_data(x=f, x_grid=f_grid,
+                                                    y_grid=ext_FJC,
+                                                    bounds_error=False)
+        # remove the extension associated with the PEG
+        to_ret.Separation -= ext_FJC_all_forces
+        # align by the contour length of the protein
+        L0 = inf.L0_c_terminal
+        print(L0)
+        to_ret.Separation -= L0
+        to_ret.ZSnsr -= L0
         yield to_ret
 
 def run():
@@ -64,12 +94,24 @@ def run():
     plt.subplot(2,1,2)
     for d in data:
         x,f = d.Separation*1e9,d.Force*1e12
-        FEC_Plot._fec_base_plot(x,f,style_data=dict(color=None,alpha=0.3))
+        FEC_Plot._fec_base_plot(x,f,style_data=dict(color=None,alpha=0.3,
+                                                    linewidth=0.5))
     PlotUtilities.lazyLabel("Extension (nm)","Force (pN)","")
     plt.xlim(xlim)
     PlotUtilities.savefig(fig,plot_dir + "heat_map.png")
     # plot each individual
     ProcessingUtil.plot_data(base_dir,step,data)
+    """
+    XXX work into plot...
+        plt.subplot(2, 1, 1)
+        plt.plot(x, f, color='k', alpha=0.3)
+        plt.plot(x[fit_slice], f[fit_slice], 'r')
+        plt.plot(ext_total, f_grid, 'b--')
+        plt.plot(ext_FJC, f_grid, 'g:')
+        plt.subplot(2, 1, 2)
+        plt.plot(to_ret.Separation, to_ret.Force)
+        plt.show()
+    """
 
 if __name__ == "__main__":
     run()

@@ -72,7 +72,7 @@ def run():
     step = Pipeline.Step.ALIGNED
     in_dir = Pipeline._cache_dir(base=base_dir, enum=Pipeline.Step.FILTERED)
     out_dir = Pipeline._cache_dir(base=base_dir,enum=step)
-    force = False
+    force = True
     limit = None
     min_wlc_force_fit_N = 200e-12
     max_sep_m = 105e-9
