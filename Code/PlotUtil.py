@@ -52,6 +52,7 @@ def plot_landscapes(data,energy_obj,ax1=None,
     k_pN_per_nm = k_N_per_m * 1e3
     plt.plot(q_nm, k_pN_per_nm,linewidth=0.5)
     plt.plot(q_nm, k_pN_per_nm,linewidth=0.5)
+    plt.xlim(xlim_nm)
     PlotUtilities.lazyLabel("q (nm)", "k (pN/nm)", "")
     lim = 75
     plt.ylim(-lim, lim)
