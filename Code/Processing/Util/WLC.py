@@ -145,14 +145,15 @@ def _hao_fit_helper(x,f,force_grid,*args,**kwargs):
     return l2
 
 class FitFJCandWLC(object):
-    def __init__(self,brute_dict,x0,f,minimize_dict,res):
+    def __init__(self,brute_dict,x0,f,minimize_dict,res,output_brute):
         self.brute_dict = brute_dict
         self.x0 = x0
         self.min_f = min(f)
         self.max_f = max(f)
         self.n_f = f.size
         self.minimize_dict = minimize_dict
-        self.res = res
+        self.output_polishing = res
+        self.output_brute = output_brute
     @property
     def f_grid(self):
         return np.linspace(self.min_f,self.max_f,endpoint=True,num=self.n_f)
@@ -206,12 +207,12 @@ def hao_fit(x,f):
     f_grid = np.linspace(min(f),max(f),endpoint=True,num=f.size)
     functor_l2 = lambda *args: _hao_fit_helper(x,f,f_grid,*(args[0]))
     range_N = (0,500)
-    range_K = (150,2500)
+    range_K = (50,4000)
     range_L_K = (0.1e-9,4e-9)
-    range_L0 = (20e-9,35e-9)
+    range_L0 = (15e-9,35e-9)
     # how many brute points should we use?
     ranges = (range_N,range_K,range_L_K,range_L0)
-    n_pts = [10 for _ in ranges]
+    n_pts = [20,20,15,15]
     # determine the step sizes in each dimension
     steps = [ (r[1]-r[0])/n_pts[i] for i,r in enumerate(ranges)]
     # determine the slice in each dimension
@@ -220,11 +221,11 @@ def hao_fit(x,f):
     bounds = [ (s.start,s.stop) for s in slices]
     # initially, dont polish
     brute_dict = dict(ranges=slices,finish=None,
-                      Ns=None)
-    brute_dict['full_output']=False
-    x0_brute = fit_base._prh_brute(objective=functor_l2,**brute_dict)
+                      Ns=None,full_output=True)
+    output_brute = fit_base._prh_brute(objective=functor_l2,**brute_dict)
+    x0_brute = output_brute[0]
     # take the brute result, and polish it within the bounds
-    opts = dict(ftol=1e-3,xtol=1e-3,maxfev=int(1e4))
+    opts = dict(ftol=1e-3,xtol=1e-3,maxfev=int(1e3))
     minimize_dict = dict(x0=x0_brute,method='Nelder-Mead',options=opts)
     # get the bounds we infer from brute; we look within the N-dimensional
     # cube
@@ -240,6 +241,7 @@ def hao_fit(x,f):
         assert (x <= b[1]) and (x >= b[0])  , "Minimization didn't constrain"
     # get the force and extension grid, interpolated back to the original data
     to_ret = FitFJCandWLC(brute_dict=brute_dict,x0=x0,f=f,
+                          output_brute=output_brute,
                           minimize_dict=minimize_dict,res=res)
     return to_ret
 

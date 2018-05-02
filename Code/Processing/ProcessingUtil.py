@@ -35,7 +35,8 @@ def plot_single_fec(d,f_x,xlim,ylim,markevery=1):
     plt.ylim(ylim)
     PlotUtilities.lazyLabel("Extension (nm)", "Force (pN)", "")
 
-def plot_data(base_dir,step,data,markevery=1,f_x = lambda x: x.Separation):
+def plot_data(base_dir,step,data,markevery=1,f_x = lambda x: x.Separation,
+              xlim_override=None):
     """
     :param base_dir: where the data live
     :param step:  what step we are on
@@ -47,6 +48,8 @@ def plot_data(base_dir,step,data,markevery=1,f_x = lambda x: x.Separation):
     plot_subdir = Pipeline._plot_subdir(base_dir, step)
     name_func = FEC_Util.fec_name_func
     xlim, ylim = nm_and_pN_limits(data,f_x)
+    if (xlim_override is not None):
+        xlim = xlim_override
     for d in data:
         f = PlotUtilities.figure()
         plot_single_fec(d, f_x, xlim, ylim,markevery=markevery)

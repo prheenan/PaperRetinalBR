@@ -51,7 +51,6 @@ def polish_data(base_dir,**kw):
         to_ret.Separation -= ext_FJC_all_forces
         # align by the contour length of the protein
         L0 = inf.L0_c_terminal
-        print(L0)
         to_ret.Separation -= L0
         to_ret.ZSnsr -= L0
         yield to_ret
@@ -79,14 +78,16 @@ def run():
                                          force=force,
                                          limit=limit,
                                          name_func=FEC_Util.fec_name_func)
-    fig = PlotUtilities.figure()
+    fig = PlotUtilities.figure(figsize=(3,5))
+    xlim = [-50,150]
     ax = plt.subplot(2,1,1)
     heatmap = FEC_Plot.heat_map_fec(data, num_bins=(200, 100),
-                                    use_colorbar=False)
+                                    use_colorbar=False,
+                                    separation_max=xlim[1])
+    xlim_heatmap = plt.xlim()
     for spine_name in ["bottom","top"]:
         PlotUtilities.color_axis_ticks(color='w',spine_name=spine_name,
                                        axis_name="x",ax=ax)
-    xlim = plt.xlim()
     PlotUtilities.xlabel("")
     PlotUtilities.title("")
     PlotUtilities.no_x_label(ax)
@@ -100,7 +101,7 @@ def run():
     plt.xlim(xlim)
     PlotUtilities.savefig(fig,plot_dir + "heat_map.png")
     # plot each individual
-    ProcessingUtil.plot_data(base_dir,step,data)
+    ProcessingUtil.plot_data(base_dir,step,data,xlim_override=xlim)
     """
     XXX work into plot...
         plt.subplot(2, 1, 1)
