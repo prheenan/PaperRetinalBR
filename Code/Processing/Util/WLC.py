@@ -106,7 +106,7 @@ def grid_both(x,x_a,a,x_b,b):
     grid_b = grid_interp(points=x_b,values=b,grid=x)
     return grid_a, grid_b
 
-def Hao_PEGModel(F,N_s=25.318,K=906.86,L_K=0.63235e-9):
+def Hao_PEGModel(F,N_s=25.318,K=906.86,L_K=0.63235e-9,L0_Protein=27.2e-9):
     """
     see: communication with Hao, 
     """
@@ -114,7 +114,7 @@ def Hao_PEGModel(F,N_s=25.318,K=906.86,L_K=0.63235e-9):
     # get the FJC model of *just* the PEG
     ext_FJC = HaoModel(F=F, **common)
     # get the WLC model of the unfolded polypeptide
-    L0 = 27.2e-9
+    L0 = L0_Protein
     polypeptide_args = dict(kbT=kbT,Lp=0.4e-9,L0=L0,K0=10000e-12)
     ext_wlc, F_wlc = WLC._inverted_wlc_helper(F=F,odjik_as_guess=True,
                                               **polypeptide_args)
@@ -188,7 +188,8 @@ def hao_fit(x,f):
     range_N = slice(0,250,20)
     range_K = slice(100,1000,100)
     range_L_K = slice(0.1e-9,5e-9,1e-9)
-    brute_dict = dict(ranges=(range_N,range_K,range_L_K),
+    range_L0 = slice(15e-9,40e-9,5e-9)
+    brute_dict = dict(ranges=(range_N,range_K,range_L_K,range_L0),
                       Ns=None)
     brute_dict['full_output']=False
     x0 = fit_base._prh_brute(objective=functor_l2,**brute_dict)

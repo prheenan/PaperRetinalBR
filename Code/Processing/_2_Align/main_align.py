@@ -45,10 +45,6 @@ def align_single(d,min_wlc_force_fit_N,max_sep_m,kw_wlc,brute_dict):
     # fit wlc to the f vs x of that slice
     fit_info = WLCHao.hao_fit(obj_slice.Separation,obj_slice.Force)
     fit_info.fit_slice = fit_slice
-    L0_correct = fit_info.L0_correct
-    # subtract off L0
-    d.Separation -= L0_correct
-    d.ZSnsr -= L0_correct
     to_ret = ProcessingUtil.AlignedFEC(d,fit_info)
     return to_ret
 
@@ -105,7 +101,7 @@ def run():
         f_pred = WLCHao.predicted_f_at_x(x, ext_grid, f_grid)
         # convert to reasonable units for plotting
         f_plot_pred = f_pred * 1e12
-        x_plot_pred = (f_x(d) - info.L0_correct)*1e9
+        x_plot_pred = (f_x(d))*1e9
         plt.plot(x_plot_pred,f_plot_pred,color='r',linewidth=1.5)
         # plot the fit
         ProcessingUtil.plot_single_fec(d, f_x, xlim, ylim)
