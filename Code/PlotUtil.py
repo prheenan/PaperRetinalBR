@@ -109,3 +109,4 @@ def plot_delta_GF(q_interp,mean_energy,std_energy,max_q_nm=30,linestyle='None',
                  label=label,markersize=markersize,linestyle=linestyle,
                  capsize=capsize,**kw)
     return q_at_max_energy,max_energy_mean,max_energy_std
+

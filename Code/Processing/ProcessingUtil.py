@@ -77,3 +77,32 @@ def make_aligned_plot(base_dir,step,data):
         plot_single_fec(d, f_x, xlim, ylim)
         PlotUtilities.savefig(f, plot_subdir + name_func(0, d) + ".png")
 
+
+def heatmap_ensemble_plot(data,out_name,xlim=[-50, 150]):
+    """
+    makes a heatmap of the ensemble, with the actual data beneath
+
+    :param data: list of FECs
+    :param out_name: what to save this as
+    :return: na
+    """
+    fig = PlotUtilities.figure(figsize=(3, 5))
+    ax = plt.subplot(2, 1, 1)
+    FEC_Plot.heat_map_fec(data, num_bins=(200, 100),
+                          use_colorbar=False,
+                          separation_max=xlim[1])
+    for spine_name in ["bottom", "top"]:
+        PlotUtilities.color_axis_ticks(color='w', spine_name=spine_name,
+                                       axis_name="x", ax=ax)
+    PlotUtilities.xlabel("")
+    PlotUtilities.title("")
+    PlotUtilities.no_x_label(ax)
+    plt.xlim(xlim)
+    plt.subplot(2, 1, 2)
+    for d in data:
+        x, f = d.Separation * 1e9, d.Force * 1e12
+        FEC_Plot._fec_base_plot(x, f, style_data=dict(color=None, alpha=0.3,
+                                                      linewidth=0.5))
+    PlotUtilities.lazyLabel("Extension (nm)", "Force (pN)", "")
+    plt.xlim(xlim)
+    PlotUtilities.savefig(fig, out_name)
