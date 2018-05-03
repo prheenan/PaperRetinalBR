@@ -155,7 +155,7 @@ def run():
         fecs.append(data)
         energies.append(e)
     n_cols = N
-    fig = PlotUtilities.figure(((n_cols * 1.5),5))
+    fig = PlotUtilities.figure(((n_cols * 1.25),7))
     data_plot(fecs, energies)
     PlotUtilities.savefig(fig,out_dir + "energies.png")
     # interpolate all the energies to the same grid
