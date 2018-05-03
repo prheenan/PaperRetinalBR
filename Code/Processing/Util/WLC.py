@@ -227,16 +227,16 @@ def _constrained_L2(L2,bounds,*args):
 
 def hao_fit(x,f):
     # write dfown the ranges for everything
-    range_N = (10,200)
+    range_N = (0,250)
     range_K = (50,2500)
     range_L_K = (0.1e-9,4e-9)
-    range_L0 = (15e-9,35e-9)
+    range_L0 = (10e-9,40e-9)
     Lp = 0.4e-9
     f_grid = np.linspace(min(f),max(f),endpoint=True,num=f.size)
     functor_l2 = lambda *args: _hao_fit_helper(x,f,f_grid,*(args[0]),Lp=Lp)
     # how many brute points should we use?
     ranges = (range_N,range_K,range_L_K,range_L0)
-    n_pts = [5 for _ in ranges]
+    n_pts = [10 for _ in ranges]
     # determine the step sizes in each dimension
     steps = [ (r[1]-r[0])/n_pts[i] for i,r in enumerate(ranges)]
     # determine the slice in each dimension
