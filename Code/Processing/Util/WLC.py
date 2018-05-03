@@ -73,6 +73,11 @@ class FitFJCandWLC(object):
         return ext_grid
 
     @property
+    def component_grid(self,f_grid=None):
+        f_grid = self.f_grid if f_grid is None else f_grid
+        _, ext_components = _hao_ext_grid(f_grid, *self.x0)
+        return ext_components
+    @property
     def _Ns(self):
         return self.x0[0]
 
@@ -222,10 +227,10 @@ def _constrained_L2(L2,bounds,*args):
 
 def hao_fit(x,f):
     # write dfown the ranges for everything
-    range_N = (0,200)
+    range_N = (10,200)
     range_K = (50,2500)
     range_L_K = (0.1e-9,4e-9)
-    range_L0 = (20e-9,35e-9)
+    range_L0 = (15e-9,35e-9)
     Lp = 0.4e-9
     f_grid = np.linspace(min(f),max(f),endpoint=True,num=f.size)
     functor_l2 = lambda *args: _hao_fit_helper(x,f,f_grid,*(args[0]),Lp=Lp)
