@@ -68,25 +68,19 @@ def align_single(d,min_wlc_force_fit_N,max_sep_m):
     return to_ret
 
 def _align_and_cache(d,out_dir,force=False,**kw):
-    name = out_dir + FEC_Util.fec_name_func(0,d) + ".pkl"
-    data = CheckpointUtilities.getCheckpoint(name,align_single,force,
-                                             d,**kw)
-    return data
-
+    return ProcessingUtil._cache_individual(d, out_dir, align_single,
+                                            force,d, **kw)
 
 def func(args):
     x, out_dir, kw = args
     to_ret = _align_and_cache(x,out_dir,**kw)
     return to_ret
 
+
 def align_data(base_dir,out_dir,n_pool,**kw):
     all_data = CheckpointUtilities.lazy_multi_load(base_dir)
     input_v = [ [d,out_dir,kw] for d in all_data]
-    p = Pool(n_pool)
-    if (n_pool > 1):
-        to_ret = p.map(func,input_v)
-    else:
-        to_ret = [func(d) for d in input_v]
+    to_ret = ProcessingUtil._multiproc(func, input_v, n_pool)
     return to_ret
 
 def run():
