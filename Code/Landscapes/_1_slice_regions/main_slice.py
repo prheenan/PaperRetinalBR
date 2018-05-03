@@ -51,8 +51,8 @@ def run():
     base_input_processing = RetinalUtil._processing_base()
     base_dir = RetinalUtil._landscape_base()
     step = Pipeline.Step.SANITIZED
-    in_dir = Pipeline._cache_dir(base=base_input_processing,
-                                 enum=Pipeline.Step.POLISH)
+    in_dir = Pipeline._cache_dir(base=base_dir,
+                                 enum=Pipeline.Step.MANUAL)
     out_dir = Pipeline._cache_dir(base=base_dir,enum=step)
     force = True
     limit = None
