@@ -39,6 +39,67 @@ class plot_info:
         W_int = np.round(int(W_f))
         return W_int
 
+class FitFJCandWLC(object):
+    def __init__(self, brute_dict, x0, f, minimize_dict, res, output_brute):
+        self.brute_dict = brute_dict
+        self.x0 = x0
+        self.min_f = min(f)
+        self.max_f = max(f)
+        self.n_f = f.size
+        self.minimize_dict = minimize_dict
+        self.output_polishing = res
+        self.output_brute = output_brute
+        self.x_offset = 0
+
+    def set_x_offset(self, x):
+        """
+        :param x: x, defined with one point at each point in f_grid
+        :return: nothing, sets the x ffset
+        """
+        assert x.size == self.n_f
+        self.x_offset = x
+
+    @property
+    def f_grid(self):
+        return np.linspace(self.min_f, self.max_f, endpoint=True,
+                           num=self.n_f)
+
+    @property
+    def ext_grid(self, f_grid=None):
+        if f_grid is None:
+            f_grid = self.f_grid
+        # get the force and extension grid again, with the optimized parameters
+        ext_grid, _ = _hao_ext_grid(f_grid, *self.x0)
+        return ext_grid
+
+    @property
+    def _Ns(self):
+        return self.x0[0]
+
+    @property
+    def _K(self):
+        return self.x0[1]
+
+    @property
+    def _L_K(self):
+        return self.x0[2]
+
+    @property
+    def L0_c_terminal(self):
+        return self.x0[3]
+
+    @property
+    def L0_PEG3400(self):
+        """
+        :return: contour length of the PEG3400
+        """
+        # align everything to the PEG3400 contour length.
+        N_monomers = self._Ns
+        L0_PEG3400_per_monomer = common_peg_params()['L_helical']
+        L0_PEG3400 = L0_PEG3400_per_monomer * N_monomers
+        L0_correct = L0_PEG3400
+        return L0_correct
+
 
 def HaoModel(N_s,L_planar,DeltaG,kbT,L_helical,F,L_K,K):
     """
@@ -129,13 +190,13 @@ def Hao_PEGModel(F,N_s=25.318,K=906.86,L_K=0.63235e-9,L0_Protein=27.2e-9,
     # the extensions and forces to the same grid
     return to_ret, common
 
-def _hao_ext_grid(force_grid,*args):
+def _hao_ext_grid(force_grid,*args,**kw):
     """
     :param force_grid: forces to get the extension at
     :param args: passed to Hao_PEGModel
     :return: tuple of (total extension, [FJC extension, WLC extension))
     """
-    ext, _ = Hao_PEGModel(force_grid,*args)
+    ext, _ = Hao_PEGModel(force_grid,*args,**kw)
     # add the FJC and WLC extensions.
     ext_grid = ext[0] + ext[1]
     return ext_grid, ext
@@ -144,59 +205,6 @@ def _hao_fit_helper(x,f,force_grid,*args,**kwargs):
     ext_grid,_  =_hao_ext_grid(force_grid,*args,**kwargs)
     l2 = fit_base._l2_grid_to_data(x,f,ext_grid,force_grid)
     return l2
-
-class FitFJCandWLC(object):
-    def __init__(self,brute_dict,x0,f,minimize_dict,res,output_brute):
-        self.brute_dict = brute_dict
-        self.x0 = x0
-        self.min_f = min(f)
-        self.max_f = max(f)
-        self.n_f = f.size
-        self.minimize_dict = minimize_dict
-        self.output_polishing = res
-        self.output_brute = output_brute
-        self.x_offset = 0
-    def set_x_offset(self,x):
-        """
-        :param x: x, defined with one point at each point in f_grid
-        :return: nothing, sets the x ffset
-        """
-        assert x.size == self.n_f
-        self.x_offset = x
-    @property
-    def f_grid(self):
-        return np.linspace(self.min_f,self.max_f,endpoint=True,num=self.n_f)
-    @property
-    def ext_grid(self,f_grid=None):
-        if f_grid is None:
-            f_grid = self.f_grid
-        # get the force and extension grid again, with the optimized parameters
-        ext_grid,_ = _hao_ext_grid(f_grid, *self.x0)
-        return ext_grid
-    @property
-    def _Ns(self):
-        return self.x0[0]
-    @property
-    def _K(self):
-        return self.x0[1]
-    @property
-    def _L_K(self):
-        return self.x0[2]
-    @property
-    def L0_c_terminal(self):
-        return self.x0[3]
-    @property
-    def L0_PEG3400(self):
-        """
-        :return: contour length of the PEG3400
-        """
-        # align everything to the PEG3400 contour length.
-        N_monomers = self._Ns
-        L0_PEG3400_per_monomer = common_peg_params()['L_helical']
-        L0_PEG3400 = L0_PEG3400_per_monomer * N_monomers
-        L0_correct = L0_PEG3400
-        return L0_correct
-
 
 def predicted_f_at_x(x,ext_grid,f_grid):
     to_ret = fit_base._grid_to_data(x,ext_grid,f_grid)
@@ -213,16 +221,17 @@ def _constrained_L2(L2,bounds,*args):
         return raw_L2
 
 def hao_fit(x,f):
-    f_grid = np.linspace(min(f),max(f),endpoint=True,num=f.size)
-    functor_l2 = lambda *args: _hao_fit_helper(x,f,f_grid,*(args[0]))
-    range_N = (0,500)
-    range_K = (50,4000)
+    # write dfown the ranges for everything
+    range_N = (0,200)
+    range_K = (50,2500)
     range_L_K = (0.1e-9,4e-9)
-    range_L0 = (18e-9,35e-9)
-    range_Lp = (0.3e-9,0.5e-9)
+    range_L0 = (20e-9,35e-9)
+    Lp = 0.4e-9
+    f_grid = np.linspace(min(f),max(f),endpoint=True,num=f.size)
+    functor_l2 = lambda *args: _hao_fit_helper(x,f,f_grid,*(args[0]),Lp=Lp)
     # how many brute points should we use?
-    ranges = (range_N,range_K,range_L_K,range_L0,range_Lp)
-    n_pts = [7 for _ in ranges]
+    ranges = (range_N,range_K,range_L_K,range_L0)
+    n_pts = [5 for _ in ranges]
     # determine the step sizes in each dimension
     steps = [ (r[1]-r[0])/n_pts[i] for i,r in enumerate(ranges)]
     # determine the slice in each dimension
