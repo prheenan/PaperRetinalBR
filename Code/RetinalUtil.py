@@ -74,7 +74,7 @@ def interpolating_G0(energy_list,num_q=200,num_splines=75):
     """
     q_interp =  common_q_interp(energy_list,num_q=num_q)
     # get all the splines
-    splines = [spline_fit(q=e.q_nm, G0=e.G0_kcal_per_mol,num=num_splines)
+    splines = [spline_fit(q=e.q_nm, G0=e.G0_kcal_per_mol)
                for e in energy_list]
     return q_interp, splines
 

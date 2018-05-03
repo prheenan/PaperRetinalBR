@@ -31,7 +31,7 @@ def to_iwt(in_dir):
     # repeat for the spring constant
     spring_constants = [d.SpringConstant for d in data]
     K_key = spring_constants[0]
-    K_diff = np.max(np.array(spring_constants)-K_key)/np.mean(spring_constants)
+    K_diff = np.max(np.abs(np.array(spring_constants)-K_key))/np.mean(spring_constants)
     if (K_diff > 1e-2):
         msg ="For {:s}, not all spring constants ({:s}) the same. Replace <K>".\
             format(in_dir,spring_constants)
