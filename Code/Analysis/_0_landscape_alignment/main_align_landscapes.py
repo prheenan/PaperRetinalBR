@@ -57,7 +57,7 @@ def get_energy_list(base_dir_analysis):
             try:
                 tmp = read_in_energy(base_dir=d)
                 to_ret.append(tmp)
-            except IOError as e:
+            except (IOError,AssertionError) as e:
                 print("Couldn't read from (so skipping): {:s}".format(d))
     return to_ret
 
@@ -139,6 +139,8 @@ def run():
                                                     base_dir_analysis)
     # XXX do this somewhere else
     energy_list = [RetinalUtil.valid_landscape(e) for e in energy_list_raw]
+    for e in energy_list:
+        e._G0 -= min(e.G0)
     fecs = []
     energies = []
     N = len(energy_list)

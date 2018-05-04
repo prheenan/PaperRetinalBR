@@ -61,19 +61,22 @@ def _detect_retract_FEATHER(d,pct_approach,tau_f,threshold,f_refs=None):
     fake_approach = d._slice(slice(n_approach_start, n, 1))
     fake_dwell = d._slice(slice(n_approach_start - 1, n_approach_start, 1))
     # make a 'custom' split fec (this is what FEATHER needs for its noise stuff)
-    split_fec = Analysis.split_force_extension(fake_approach, fake_dwell, d, tau_n_points)
+    split_fec = Analysis.split_force_extension(fake_approach, fake_dwell, d,
+                                               tau_n_points)
     # set the 'approach' number of points for filtering to the retract.
     split_fec.set_tau_num_points_approach(split_fec.tau_num_points)
-    # set the predicted retract surface index to a few tau. This avoids looking at adhesion
-    split_fec.get_predicted_retract_surface_index = lambda: 5 * tau_num_points
+    # set the predicted retract surface index to a few tau. This avoids looking
+    #  at adhesion
+    split_fec.get_predicted_retract_surface_index = lambda: 5 * tau_n_points
     pred_info = Detector._predict_split_fec(split_fec, threshold=threshold,
                                             f_refs=f_refs)
-    return pred_info
+    return pred_info, tau_n_points
 
 def align_single(d,min_F_N,**kw):
     """
     :param d: FEC to get FJC+WLC fit of
-    :param min_F_N: minimum force, in Newtons, for fitting event. helps avoid occasional small force events
+    :param min_F_N: minimum force, in Newtons, for fitting event. helps avoid
+     occasional small force events
     :param kw: keywords to use for fitting...
     :return:
     """
@@ -83,11 +86,14 @@ def align_single(d,min_F_N,**kw):
     first_time_above_surface = where_above_surface[0]
     # use FEATHER; fit to the first event, don't look for adhesion
     d_pred_only = d._slice(slice(0,None,1))
-    pred_info = _detect_retract_FEATHER(d_pred_only,f_refs=[Detector.delta_mask_function],**kw)
+    f_refs = [Detector.delta_mask_function]
+    pred_info,tau_n = _detect_retract_FEATHER(d_pred_only,
+                                              f_refs=f_refs,**kw)
     assert len(pred_info.event_idx) > 0 , "FEATHER can't find an event..."
-    force_spline_N = pred_info.interp(d.Time)
-    valid_events = [i for i in pred_info.event_idx
-                    if force_spline_N[i] > min_F_N]
+    event_idx = pred_info.event_idx
+    force_to_use_for_idx = FEC_Util.SavitskyFilter(force_N,10)
+    f_at_idx = [force_to_use_for_idx[i] for i in event_idx]
+    valid_events = [i for i,f in zip(event_idx,f_at_idx) if f > min_F_N]
     assert len(valid_events) > 0 , "Couldn't find any valid events"
     # make sure the event makes sense
     max_fit_idx = valid_events[0]
@@ -140,7 +146,8 @@ def run():
     max_n_pool = multiprocessing.cpu_count() - 1
     n_pool = max_n_pool
     kw_feather = dict(pct_approach=0.1, tau_f=0.01, threshold=1e-3)
-    data =align_data(in_dir,out_dir,force=force,n_pool=n_pool,min_F_N=90e-12,**kw_feather)
+    data =align_data(in_dir,out_dir,force=force,n_pool=n_pool,min_F_N=90e-12,
+                     **kw_feather)
     ProcessingUtil.make_aligned_plot(base_dir,step,data)
 
 
