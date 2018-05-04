@@ -13,3 +13,6 @@
 [submodule "Code/Lib/AppWHAM"]
 	path = Code/Lib/AppWHAM
 	url = https://github.com/prheenan/AppWHAM.git
+[submodule "Code/Lib/AppFEATHER"]
+	path = Code/Lib/AppFEATHER
+	url = https://github.com/prheenan/AppFEATHER.git

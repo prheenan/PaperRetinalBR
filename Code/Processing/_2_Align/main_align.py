@@ -20,6 +20,7 @@ from Lib.AppWLC.Code import WLC
 from Processing.Util import WLC as WLCHao
 
 import warnings
+from Lib.AppFEATHER.Code import Detector, Analysis
 
 from multiprocessing import Pool
 import multiprocessing
@@ -40,31 +41,63 @@ def _debug_plot(to_ret):
     plt.plot(ext_total, f_grid, 'b--')
     plt.show()
 
-def align_single(d,min_wlc_force_fit_N,max_sep_m):
+def _detect_retract_FEATHER(d,pct_approach,tau_f,threshold):
+    """
+    :param d:  TimeSepForce
+    :param pct_approach: how much of the retract, starting from the end,
+    to use as an effective approach curve
+    :param tau_f: fraction for tau
+    :param threshold: FEATHERs probability threshold
+    :return:
+    """
     force_N = d.Force
-    where_GF = np.where((force_N >= min_wlc_force_fit_N) &
-                        (d.Separation <= max_sep_m))[0]
+    # use the last x% as a fake 'approach' (just for noise)
+    n = force_N.size
+    n_approach = int(np.ceil(n * pct_approach))
+    tau_n_points = int(np.ceil(n * tau_f))
+    # slice the data for the approach, as described above
+    n_approach_start = n - (n_approach + 1)
+    fake_approach = d._slice(slice(n_approach_start, n, 1))
+    fake_dwell = d._slice(slice(n_approach_start - 1, n_approach_start, 1))
+    # make a 'custom' split fec (this is what FEATHER needs for its noise stuff)
+    split_fec = Analysis.split_force_extension(fake_approach, fake_dwell, d, tau_n_points)
+    # set the 'approach' number of points for filtering to the retract.
+    split_fec.set_tau_num_points_approach(split_fec.tau_num_points)
+    # set the predicted retract surface index to a few tau. This avoids looking at adhesion
+    split_fec.get_predicted_retract_surface_index = lambda: 5 * tau_n_points
+    pred_info = Detector._predict_split_fec(split_fec, threshold=threshold)
+    return pred_info
+
+def align_single(d,min_F_N,**kw):
+    """
+    :param d: FEC to get FJC+WLC fit of
+    :param min_F_N: minimum force, in Newtons, for fitting event. helps avoid occasional small force events
+    :param kw: keywords to use for fitting...
+    :return:
+    """
+    force_N = d.Force
     where_above_surface = np.where(force_N >= 0)[0]
     assert where_above_surface.size > 0, "Force never above surface "
-    if (where_GF.size > 0):
-        last_time_GF = where_GF[-1]
-    else:
-
-        msg = "For alignment, {:} never above limit of {:}N; using max".\
-            format(d.Meta.Name,min_wlc_force_fit_N)
-        warnings.warn(msg,RuntimeWarning)
-        last_time_GF = np.argmax(force_N)
-    max_fit_idx = np.argmax(force_N[:last_time_GF])
     first_time_above_surface = where_above_surface[0]
+    # use FEATHER; fit to the first event
+    pred_info = _detect_retract_FEATHER(d,**kw)
+    assert len(pred_info.event_idx) > 0 , "FEATHER didn't detect anything."
+    valid_events = [i for i in pred_info.event_idx
+                    if force_N[i] > min_F_N]
+    assert len(valid_events) > 0 , "Couldn't find any valid events"
+    # make sure the event makes sense
+    max_fit_idx = valid_events[0]
     assert first_time_above_surface < max_fit_idx , \
         "Couldn't find fitting region"
-    fit_slice = slice(first_time_above_surface,max_fit_idx,1)
+    # start the fit after any potential adhesions
+    fit_start = max(first_time_above_surface,pred_info.slice_fit.start)
+    fit_slice = slice(fit_start,max_fit_idx,1)
     # slice the object to just the region we want
     obj_slice = d._slice(fit_slice)
     # fit wlc to the f vs x of that slice
-    fit_info = WLCHao.hao_fit(obj_slice.Separation,obj_slice.Force)
-    fit_info.fit_slice = fit_slice
-    to_ret = ProcessingUtil.AlignedFEC(d,fit_info)
+    info_fit = WLCHao.hao_fit(obj_slice.Separation,obj_slice.Force)
+    info_fit.fit_slice = fit_slice
+    to_ret = ProcessingUtil.AlignedFEC(d,info_fit,feather_info=pred_info)
     return to_ret
 
 def _align_and_cache(d,out_dir,force=False,**kw):
@@ -101,11 +134,8 @@ def run():
     force = True
     max_n_pool = multiprocessing.cpu_count() - 1
     n_pool = max_n_pool
-    min_wlc_force_fit_N = 200e-12
-    max_sep_m = 105e-9
-    data =align_data(in_dir,out_dir,max_sep_m=max_sep_m,
-                     min_wlc_force_fit_N=min_wlc_force_fit_N,force=force,
-                     n_pool=n_pool)
+    kw_feather = dict(pct_approach=0.1, tau_f=0.01, threshold=1e-4)
+    data =align_data(in_dir,out_dir,force=force,n_pool=n_pool,min_F_N=50e-12,**kw_feather)
     ProcessingUtil.make_aligned_plot(base_dir,step,data)
 
 

@@ -21,10 +21,14 @@ max_n_pool = multiprocessing.cpu_count() - 1
 
 
 class AlignedFEC(TimeSepForceObj):
-    def __init__(self,normal_fec,L0_info):
+    def __init__(self,normal_fec,info_fit,feather_info):
         super(AlignedFEC,self).__init__()
         self.LowResData = copy.deepcopy(normal_fec.LowResData)
-        self.L0_info = L0_info
+        self.info_fit = info_fit
+        self.info_feather = feather_info
+    @property
+    def L0_info(self):
+        return self.info_fit
 
 def _multiproc(func,input_v,n_pool=max_n_pool):
     """
