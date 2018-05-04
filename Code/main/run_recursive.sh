@@ -38,7 +38,7 @@ function run_recursive(){
                 continue
             fi
            echo "===== $descr $f ====" 
-           bash run_on_all_dirs.sh "$bash_file" "$f/"
+           bash run_on_all_dirs.sh "$bash_file" "$f/" "${@:4}"
         done  
 }
 

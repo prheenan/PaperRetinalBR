@@ -12,11 +12,12 @@ dateStr=`date +%Y-%m-%d:%H:%M:%S`
 
 function full_stack(){
     dir="$1"
-    bash process.sh "$dir"
+    bash process.sh "$dir" $2
+	exit
     bash generate_landscapes.sh "$dir"
 }
 
-full_stack "$1"
+full_stack "$1" $2
 
 
 

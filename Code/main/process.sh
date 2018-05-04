@@ -10,7 +10,7 @@ IFS=$'\n\t'
 dateStr=`date +%Y-%m-%d:%H:%M:%S`
 
 function process(){
-    bash run_recursive.sh "Processing for" "$1" ../Processing/main/main.sh
+    bash run_recursive.sh "Processing for" "$1" ../Processing/main/main.sh "${@:2}"
 }
 
 process "$@"

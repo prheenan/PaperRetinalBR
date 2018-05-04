@@ -39,9 +39,10 @@ def _debug_plot(to_ret):
     plt.plot(x, f, color='k', alpha=0.3)
     plt.plot(x[fit_slice], f[fit_slice], 'r')
     plt.plot(ext_total, f_grid, 'b--')
+    plt.xlim([min(x),max(x)])
     plt.show()
 
-def _detect_retract_FEATHER(d,pct_approach,tau_f,threshold):
+def _detect_retract_FEATHER(d,pct_approach,tau_f,threshold,f_refs=None):
     """
     :param d:  TimeSepForce
     :param pct_approach: how much of the retract, starting from the end,
@@ -64,8 +65,9 @@ def _detect_retract_FEATHER(d,pct_approach,tau_f,threshold):
     # set the 'approach' number of points for filtering to the retract.
     split_fec.set_tau_num_points_approach(split_fec.tau_num_points)
     # set the predicted retract surface index to a few tau. This avoids looking at adhesion
-    split_fec.get_predicted_retract_surface_index = lambda: 5 * tau_n_points
-    pred_info = Detector._predict_split_fec(split_fec, threshold=threshold)
+    split_fec.get_predicted_retract_surface_index = lambda: 5 * tau_num_points
+    pred_info = Detector._predict_split_fec(split_fec, threshold=threshold,
+                                            f_refs=f_refs)
     return pred_info
 
 def align_single(d,min_F_N,**kw):
@@ -79,11 +81,13 @@ def align_single(d,min_F_N,**kw):
     where_above_surface = np.where(force_N >= 0)[0]
     assert where_above_surface.size > 0, "Force never above surface "
     first_time_above_surface = where_above_surface[0]
-    # use FEATHER; fit to the first event
-    pred_info = _detect_retract_FEATHER(d,**kw)
-    assert len(pred_info.event_idx) > 0 , "FEATHER didn't detect anything."
+    # use FEATHER; fit to the first event, don't look for adhesion
+    d_pred_only = d._slice(slice(0,None,1))
+    pred_info = _detect_retract_FEATHER(d_pred_only,f_refs=[Detector.delta_mask_function],**kw)
+    assert len(pred_info.event_idx) > 0 , "FEATHER can't find an event..."
+    force_spline_N = pred_info.interp(d.Time)
     valid_events = [i for i in pred_info.event_idx
-                    if force_N[i] > min_F_N]
+                    if force_spline_N[i] > min_F_N]
     assert len(valid_events) > 0 , "Couldn't find any valid events"
     # make sure the event makes sense
     max_fit_idx = valid_events[0]
@@ -114,6 +118,7 @@ def align_data(base_dir,out_dir,n_pool,**kw):
     all_data = CheckpointUtilities.lazy_multi_load(base_dir)
     input_v = [ [d,out_dir,kw] for d in all_data]
     to_ret = ProcessingUtil._multiproc(func, input_v, n_pool)
+    to_ret = [r for r in to_ret if r is not None]
     return to_ret
 
 def run():
@@ -134,8 +139,8 @@ def run():
     force = True
     max_n_pool = multiprocessing.cpu_count() - 1
     n_pool = max_n_pool
-    kw_feather = dict(pct_approach=0.1, tau_f=0.01, threshold=1e-4)
-    data =align_data(in_dir,out_dir,force=force,n_pool=n_pool,min_F_N=50e-12,**kw_feather)
+    kw_feather = dict(pct_approach=0.1, tau_f=0.01, threshold=1e-3)
+    data =align_data(in_dir,out_dir,force=force,n_pool=n_pool,min_F_N=90e-12,**kw_feather)
     ProcessingUtil.make_aligned_plot(base_dir,step,data)
 
 

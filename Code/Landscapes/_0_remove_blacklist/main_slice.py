@@ -34,9 +34,9 @@ class Blacklist(object):
 
 blacklist_tuples = [ \
     # all the blacklisted BR data
-    [str_BR,f_v(50),f_date("170502"),[1374,2160]],
+    [str_BR,f_v(50),f_date("170502"),[1372,1374,2160]],
     [str_BR,f_v(50),f_date("170503"),[1268]],
-    [str_BR, f_v(300), f_date("170321"), [477,500,760,786,821]],
+    [str_BR, f_v(300), f_date("170321"), [500,760,786,821]],
     [str_BR, f_v(300), f_date("170501"), [203]],
     [str_BR, f_v(300), f_date("170502"), []], # yep, this one is OK.
     [str_BR, f_v(300), f_date("170511"), []], # this one too.
@@ -44,8 +44,8 @@ blacklist_tuples = [ \
     [str_BR, f_v(3000), f_date("170503"), [231,]],
     # all the blacklisted BO data
     [str_BO, f_v(50), f_date("170523"), [176,223]],
-    [str_BO, f_v(300), f_date("170327"), [383,]],
-    [str_BO, f_v(3000), f_date("170523"), [18,69,599]],
+    [str_BO, f_v(300), f_date("170327"), [386,]],
+    [str_BO, f_v(3000), f_date("170523"), [18,69,509,773]],
 ]
 
 blacklists = [Blacklist(*t) for t in blacklist_tuples]

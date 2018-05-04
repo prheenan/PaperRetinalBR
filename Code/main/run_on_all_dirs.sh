@@ -42,7 +42,7 @@ function run_on_all_dirs(){
             file_to_run=`basename $bash_file`
             # run the bash file where it lives
             cd_prh "$dir_to_run"
-            bash $file_to_run "$abs_f/"
+            bash $file_to_run "$abs_f/" "${@:3}"
             # go back
             cd -
         done
@@ -51,7 +51,7 @@ function run_on_all_dirs(){
 # Args:
 #   1: what to run
 #   2: run on each directory under this directory
-run_on_all_dirs "$1" "$2"
+run_on_all_dirs "$1" "$2" "${@:3}"
 
 
 

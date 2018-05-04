@@ -11,12 +11,28 @@ dateStr=`date +%Y-%m-%d:%H:%M:%S`
 
 # Description:
 
+#		if [[ $skip_reading -eq 1 ]] && ([[ "$f" != *"align"* ]] || [[ "$f" != *"polish"* ]]); then
+#			echo "Skipping $f"
+#			continue
+#		fi
+
 # Arguments:
 #### Arg 1: Description
 data_dir=${1:-../../../Data/BR+Retinal/170321FEC/}
+skip_reading=${2:-0}
 files=`find .. -name "main*.py"`
 for f in $files
     do
+		if [[ $f = *"align"* ]] || [[ "$f" = *"polish"* ]] ; then
+			# dont do anything
+			_=""
+		else
+			if [[ $skip_reading = 1 ]]; then
+				echo "Skipping $f"
+				continue
+			fi
+		fi
+		
         file_base=`basename $f`
         dir_name=`dirname $f`
         cd $dir_name

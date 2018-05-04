@@ -10,8 +10,9 @@ IFS=$'\n\t'
 dateStr=`date +%Y-%m-%d:%H:%M:%S`
 
 data_base="../../Data/FECs180307/"
-bash full_stack.sh "${data_base}BR+Retinal/"
-bash full_stack.sh "${data_base}BR-Retinal/"
+skip_reading=1
+bash full_stack.sh "${data_base}BR+Retinal/" $skip_reading
+bash full_stack.sh "${data_base}BR-Retinal/" $skip_reading
 bash analysis.sh "${data_base}"
 
 
