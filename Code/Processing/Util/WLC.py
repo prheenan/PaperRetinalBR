@@ -230,7 +230,7 @@ def hao_fit(x,f):
     range_N = (0,250)
     range_K = (50,2500)
     range_L_K = (0.1e-9,4e-9)
-    range_L0 = (10e-9,40e-9)
+    range_L0 = (8e-9,40e-9)
     Lp = 0.4e-9
     f_grid = np.linspace(min(f),max(f),endpoint=True,num=f.size)
     functor_l2 = lambda *args: _hao_fit_helper(x,f,f_grid,*(args[0]),Lp=Lp)

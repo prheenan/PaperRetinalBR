@@ -42,6 +42,15 @@ def _debug_plot(to_ret):
     plt.xlim([min(x),max(x)])
     plt.show()
 
+def _debug_plot_FEATHER(pred_info,d,force_to_use_for_idx,max_fit_idx):
+    plt.plot(d.Force)
+    plt.plot(force_to_use_for_idx)
+    for i in pred_info.event_idx:
+        plt.axvline(i)
+    plt.axvline(max_fit_idx,color='g')
+    plt.show()
+
+
 def _detect_retract_FEATHER(d,pct_approach,tau_f,threshold,f_refs=None):
     """
     :param d:  TimeSepForce
@@ -86,9 +95,16 @@ def align_single(d,min_F_N,**kw):
     first_time_above_surface = where_above_surface[0]
     # use FEATHER; fit to the first event, don't look for adhesion
     d_pred_only = d._slice(slice(0,None,1))
-    f_refs = [Detector.delta_mask_function]
-    pred_info,tau_n = _detect_retract_FEATHER(d_pred_only,
-                                              f_refs=f_refs,**kw)
+    # first, try removing surface adhesions
+    feather_kw =  dict(d=d_pred_only,**kw)
+    pred_info,tau_n = _detect_retract_FEATHER(**feather_kw)
+    # if we removed more than 20nm or we didnt find any events, then
+    # FEATHER got confused by a near-surface BR. Tell it not to look for
+    # surface adhesions
+    expected_surface_m = d.Separation[pred_info.slice_fit.start]
+    if ((len(pred_info.event_idx) == 0) or (expected_surface_m > 20e-9)):
+        f_refs = [Detector.delta_mask_function]
+        pred_info,tau_n = _detect_retract_FEATHER(f_refs=f_refs,**feather_kw)
     assert len(pred_info.event_idx) > 0 , "FEATHER can't find an event..."
     event_idx = pred_info.event_idx
     force_to_use_for_idx = FEC_Util.SavitskyFilter(force_N,10)
@@ -146,7 +162,7 @@ def run():
     max_n_pool = multiprocessing.cpu_count() - 1
     n_pool = max_n_pool
     kw_feather = dict(pct_approach=0.1, tau_f=0.01, threshold=1e-3)
-    data =align_data(in_dir,out_dir,force=force,n_pool=n_pool,min_F_N=90e-12,
+    data =align_data(in_dir,out_dir,force=force,n_pool=n_pool,min_F_N=85e-12,
                      **kw_feather)
     ProcessingUtil.make_aligned_plot(base_dir,step,data)
 
