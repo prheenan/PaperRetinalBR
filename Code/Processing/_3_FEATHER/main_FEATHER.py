@@ -27,15 +27,6 @@ from multiprocessing import Pool
 import multiprocessing
 
 
-def _debug_plot_FEATHER(pred_info,d,force_to_use_for_idx,max_fit_idx):
-    plt.plot(d.Force)
-    plt.plot(force_to_use_for_idx)
-    for i in pred_info.event_idx:
-        plt.axvline(i)
-    plt.axvline(max_fit_idx,color='g')
-    plt.show()
-
-
 def _detect_retract_FEATHER(d,pct_approach,tau_f,threshold,f_refs=None):
     """
     :param d:  TimeSepForce
@@ -133,6 +124,19 @@ def run():
     kw_feather = dict(pct_approach=0.1, tau_f=0.01, threshold=1e-3)
     data = align_data(in_dir,out_dir,force=force,n_pool=n_pool,
                       **kw_feather)
+    # plot all of the FEATHER information
+    f_x = lambda x: x.Separation
+    _, ylim = ProcessingUtil.nm_and_pN_limits(data, f_x=f_x)
+    xlim = [-20,150]
+    plot_subdir = Pipeline._plot_subdir(base_dir, step)
+    for d in data:
+        fig = PlotUtilities.figure()
+        ProcessingUtil.plot_single_fec(d, f_x, xlim, ylim, markevery=1)
+        x = f_x(d) * 1e9
+        for i in d.info_feather.event_idx:
+            plt.axvline(x[i])
+        name = FEC_Util.fec_name_func(0,d)
+        PlotUtilities.savefig(fig,plot_subdir + name + ".png")
 
 
 
