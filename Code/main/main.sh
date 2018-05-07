@@ -10,9 +10,12 @@ IFS=$'\n\t'
 dateStr=`date +%Y-%m-%d:%H:%M:%S`
 
 data_base="../../Data/FECs180307/"
+# remove all the landscape caches, since we may have changed the blacklist
+find "$data_base"  -path "*landscape_cache*" -type f -exec rm -f {} \;
 skip_reading=1
-bash full_stack.sh "${data_base}BR+Retinal/" $skip_reading
-bash full_stack.sh "${data_base}BR-Retinal/" $skip_reading
+skip_process=1
+bash full_stack.sh "${data_base}BR+Retinal/" $skip_process $skip_reading
+bash full_stack.sh "${data_base}BR-Retinal/" $skip_process $skip_reading
 bash analysis.sh "${data_base}"
 
 

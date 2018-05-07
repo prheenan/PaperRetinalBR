@@ -31,6 +31,7 @@ class EnergyWithMeta(WeightedHistogram.LandscapeWHAM):
     def __init__(self,file_name,base_dir,energy):
         self.file_name = file_name
         self.base_dir = base_dir
+        self.n_fecs = None
         self.__init__energy(energy)
     def __init__energy(self,energy):
         offset = energy._offset_G0_of_q
@@ -42,6 +43,8 @@ class EnergyWithMeta(WeightedHistogram.LandscapeWHAM):
         sliced = super(EnergyWithMeta,self)._slice(*args,**kw)
         self.__init__energy(sliced)
         return self
+    def set_n_fecs(self,n):
+        self.n_fecs = n
 
 
 def _processing_base(default_base="../../../Data/BR+Retinal/170321FEC/",**kw):

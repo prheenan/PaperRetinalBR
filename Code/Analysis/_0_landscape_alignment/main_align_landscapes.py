@@ -42,6 +42,10 @@ def read_in_energy(base_dir):
     energy_obj = CheckpointUtilities.lazy_load(file_load)
     obj = RetinalUtil.EnergyWithMeta(file_load,
                                      landscape_base, energy_obj)
+    # read in the data, determine how many curves there are
+    data_tmp = read_fecs(obj)
+    n_data = len(data_tmp)
+    obj.set_n_fecs(n_data)
     return obj
 
 def get_energy_list(base_dir_analysis):
@@ -69,14 +73,14 @@ def get_ranges(ax_list,get_x=True):
 
 def fix_axes(ax_list):
    # loop through all the axes and toss them.
-   lims = [[ax[i] for ax in ax_list] for i in range(3)]
    xlims = get_ranges(ax_list,get_x=True)
-   xlim_final = [np.min(xlims), np.max(xlims)]
    ylims = get_ranges(ax_list,get_x=False)
-   for axs in ax_list[1:]:
+   for i,axs in enumerate(ax_list):
        for j, ax in enumerate(axs):
-           PlotUtilities.no_y_label(ax)
-           PlotUtilities.ylabel("", ax=ax)
+           if (i > 0):
+               # columns after the first lose their labels
+               PlotUtilities.no_y_label(ax)
+               PlotUtilities.ylabel("", ax=ax)
            ax.set_ylim(ylims[j])
            if (j != 0):
                PlotUtilities.no_x_label(ax)
@@ -117,6 +121,17 @@ def data_plot(fecs,energies):
     plt.axvspan(q_at_max_energy,xlim,color='k',alpha=0.3)
     PlotUtilities.legend(loc='upper right',frameon=True)
 
+def read_fecs(e):
+    base_tmp = e.base_dir
+    in_dir = Pipeline._cache_dir(base=base_tmp,
+                                 enum=Pipeline.Step.REDUCED)
+    dir_exists = os.path.exists(in_dir)
+    if (dir_exists and \
+            len(GenUtilities.getAllFiles(in_dir, ext=".pkl")) > 0):
+        data = CheckpointUtilities.lazy_multi_load(in_dir)
+    else:
+        data = []
+    return data
 
 def run():
     """
@@ -132,32 +147,31 @@ def run():
     out_dir = Pipeline._cache_dir(base=base_dir_analysis,
                                   enum=Pipeline.Step.CORRECTED)
     force = True
+    min_fecs = 10
     GenUtilities.ensureDirExists(out_dir)
     energy_list_raw = CheckpointUtilities.getCheckpoint(out_dir + \
                                                     "energies.pkl",
                                                     get_energy_list,force,
                                                     base_dir_analysis)
-    # XXX do this somewhere else
+
     energy_list = [RetinalUtil.valid_landscape(e) for e in energy_list_raw]
+    # make sure we have a minimum number of FECS
+    energy_list = [e for e in energy_list if e.n_fecs >= min_fecs]
+    # the 3000nms BO data is very noisy
+    energy_list = [e for e in energy_list
+                   if "BR-Retinal/3000nms/"not in e.base_dir]
     for e in energy_list:
-        e._G0 -= min(e.G0)
+        n_pts = e.G0.size
+        e._G0 -= min(e.G0[:n_pts//2])
     fecs = []
     energies = []
     N = len(energy_list)
     for e in energy_list:
-        base_tmp = e.base_dir
-        in_dir = Pipeline._cache_dir(base=base_tmp,
-                                     enum=Pipeline.Step.REDUCED)
-        dir_exists = os.path.exists(in_dir)
-        if (dir_exists and \
-            len(GenUtilities.getAllFiles(in_dir,ext=".pkl")) > 0):
-            data = CheckpointUtilities.lazy_multi_load(in_dir)
-        else:
-            data = []
+        data = read_fecs(e)
         fecs.append(data)
         energies.append(e)
     n_cols = N
-    fig = PlotUtilities.figure(((n_cols * 1.25),7))
+    fig = PlotUtilities.figure((max(3,(n_cols * 1.25)),7))
     data_plot(fecs, energies)
     PlotUtilities.savefig(fig,out_dir + "energies.png")
     # interpolate all the energies to the same grid

@@ -30,6 +30,39 @@ class AlignedFEC(TimeSepForceObj):
     def L0_info(self):
         return self.info_fit
 
+str_BR = "BR+Retinal"
+str_BO = "BR-Retinal"
+f_v = lambda v: "{:d}nms".format(v)
+f_date = lambda s: "{:s}FEC".format(s)
+
+class Blacklist(object):
+    def __init__(self,str_pm_bR,str_vel,str_date,list_ids):
+        self.str_pm_bR = str_pm_bR
+        self.str_vel = str_vel
+        self.str_date = str_date
+        self.list_ids = list_ids
+
+blacklist_tuples = [ \
+    # all the blacklisted BR data
+    [str_BR,f_v(50),f_date("170502"),[1372,1374,2160]],
+    [str_BR,f_v(50),f_date("170503"),[1268]],
+    [str_BR, f_v(300), f_date("170321"), [500,760,786,821]],
+    [str_BR, f_v(300), f_date("170501"), [203]],
+    [str_BR, f_v(300), f_date("170502"), []], # yep, this one is OK.
+    [str_BR, f_v(300), f_date("170511"), []], # this one too.
+    [str_BR, f_v(3000), f_date("170502"), [717]],
+    [str_BR, f_v(3000), f_date("170503"), [231,]],
+    # all the blacklisted BO data
+    [str_BO, f_v(50), f_date("170523"), [176,223,148,146]],
+    [str_BO, f_v(300), f_date("170327"), [386,253,383,310]],
+    [str_BO, f_v(3000), f_date("170523"), [18,69,509,773,741,455]],
+]
+
+blacklists = [Blacklist(*t) for t in blacklist_tuples]
+blacklist_dict_vels = dict([((b.str_pm_bR,b.str_vel,b.str_date),b.list_ids)
+                            for b in blacklists])
+
+
 def _multiproc(func,input_v,n_pool=max_n_pool):
     """
     :param func: function to map; should take a single arugment (element of
