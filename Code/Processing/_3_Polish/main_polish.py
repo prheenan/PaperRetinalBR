@@ -16,9 +16,8 @@ from Lib.UtilForce.FEC import FEC_Util, FEC_Plot
 from Lib.UtilForce.UtilGeneral import CheckpointUtilities
 from Lib.UtilForce.UtilGeneral import PlotUtilities
 from Processing import ProcessingUtil
-from Lib.AppWLC.Code import WLC
-from Processing.Util import WLC as WLCHao
-from Lib.AppWLC.UtilFit import fit_base
+import RetinalUtil
+
 
 def _debug_plot(to_ret,d,ext_total,f_grid):
     plt.close()
@@ -35,48 +34,10 @@ def _debug_plot(to_ret,d,ext_total,f_grid):
     plt.ylim(ylim)
     plt.show()
 
-def offset_L(info):
-    # align by the contour length of the protein
-    offset_m = 20e-9
-    L0 = info.L0_c_terminal - offset_m
-    return L0
-
-def _ext_grid(f_grid,x0):
-    # get the extension components
-    ext_total, ext_components = WLCHao._hao_ext_grid(f_grid, *x0)
-    ext_FJC = ext_components[0]
-    # make the extension at <= force be zero
-    where_f_le = np.where(f_grid <= 0)
-    ext_FJC[where_f_le] = 0
-    ext_total[where_f_le] = 0
-    return ext_total, ext_FJC
 
 def _polish_single(d):
     # filter the data, making a copy
-    to_ret = d._slice(slice(0, None, 1))
-    # get the slice we are fitting
-    inf = to_ret.L0_info
-    fit_slice = inf.fit_slice
-    x, f = to_ret.Separation.copy(), to_ret.Force.copy()
-    # get a grid over all possible forces
-    f_grid = np.linspace(min(f), max(f), num=f.size, endpoint=True)
-    ext_total, ext_FJC = _ext_grid(f_grid, inf.x0)
-    # we now have X_FJC as a function of force. Therefore, we can subtract
-    # off the extension of the PEG3400 to determining the force-extension
-    # associated with only the protein (*including* its C-term)
-    # note we are getting ext_FJC(f), where f is each point in the original
-    # data.
-    ext_FJC_all_forces = fit_base._grid_to_data(x=f, x_grid=f_grid,
-                                                y_grid=ext_FJC,
-                                                bounds_error=False)
-    # remove the extension associated with the PEG
-    to_ret.Separation -= ext_FJC_all_forces
-    L0 = offset_L(to_ret.L0_info)
-    to_ret.Separation -= L0
-    to_ret.ZSnsr -= L0
-    # make sure the fitting object knows about the change in extensions...
-    ext_total_info, ext_FJC_correct_info = _ext_grid(inf.f_grid, inf.x0)
-    to_ret.L0_info.set_x_offset(L0 + ext_FJC_correct_info)
+    to_ret = RetinalUtil._polish_helper(d)
     return to_ret
 
 def polish_data(base_dir):

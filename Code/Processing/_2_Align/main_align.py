@@ -18,6 +18,7 @@ from Lib.UtilForce.UtilGeneral import PlotUtilities
 from Processing import ProcessingUtil
 from Lib.AppWLC.Code import WLC
 from Processing.Util import WLC as WLCHao
+import RetinalUtil
 
 import warnings
 from Lib.AppFEATHER.Code import Detector, Analysis
@@ -181,8 +182,17 @@ def run():
     data =align_data(in_dir,out_dir,force=force,n_pool=n_pool,min_F_N=min_F_N,
                      **kw_feather)
     plot_subdir = Pipeline._plot_subdir(base_dir, step)
-    ProcessingUtil.heatmap_ensemble_plot(data,
+    xlim_heatmap_nm = [-25,40]
+    ProcessingUtil.heatmap_ensemble_plot(data,xlim=xlim_heatmap_nm,
                                          out_name=plot_subdir + "heatmap.png")
+    # get the post-blacklist heapmap, too..
+    data_filtered = ProcessingUtil._filter_by_bl(data, in_dir)
+    # align the data...
+    data_aligned = [RetinalUtil._polish_helper(d) for d in data_filtered]
+    out_name = plot_subdir + "heatmap_bl.png"
+    ProcessingUtil.heatmap_ensemble_plot(data_aligned, xlim=xlim_heatmap_nm,
+                                         out_name=out_name)
+    # make individual plots
     ProcessingUtil.make_aligned_plot(base_dir,step,data,
                                      xlim=[-30,150])
 

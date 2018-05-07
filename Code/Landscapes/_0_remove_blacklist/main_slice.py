@@ -39,15 +39,16 @@ def run():
     data_input = CheckpointUtilities.lazy_multi_load(in_dir)
     force = True
     functor = lambda : ProcessingUtil.\
-        filter_by_bl(data_input,base_input_processing)
+        _filter_by_bl(data_input,base_input_processing)
     data = CheckpointUtilities.multi_load(cache_dir=out_dir,load_func=functor,
                                           force=force,
                                           name_func=FEC_Util.fec_name_func)
     # plot each individual
-    ProcessingUtil.plot_data(base_dir,step,data,xlim_override=[-50,150])
+    ProcessingUtil.plot_data(base_dir,step,data,xlim=[-50,150])
     plot_subdir = Pipeline._plot_subdir(base_dir, step)
     out_name = plot_subdir + "heatmap.png"
     ProcessingUtil.heatmap_ensemble_plot(data, out_name=out_name)
+
 
 if __name__ == "__main__":
     run()
