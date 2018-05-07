@@ -17,14 +17,28 @@ from Lib.UtilForce.UtilGeneral import CheckpointUtilities
 from Lib.UtilForce.UtilGeneral import PlotUtilities
 from Processing import ProcessingUtil
 
-def filter_data(base_dir,n_filter_points,n_decimate):
+def _filter_single(d,t_filter,f_decimate):
+    # filter the data
+    delta_t = d.Time[1] - d.Time[0]
+    n_filt = int(np.ceil(t_filter / delta_t))
+    n_decimate = int(np.ceil(f_decimate * n_filt))
+    d_filt = FEC_Util.GetFilteredForce(d, NFilterPoints=n_filt)
+    # slice it
+    to_ret = d_filt._slice(slice(0, None, n_decimate))
+    return to_ret
+
+def func(args):
+    d, out_dir, force, t_filter, f_decimate = args
+    to_ret = ProcessingUtil._cache_individual(d,out_dir,_filter_single,force,
+                                              d,t_filter,f_decimate)
+    return to_ret
+
+
+def filter_data(base_dir,out_dir,force,t_filter,f_decimate):
     all_data = CheckpointUtilities.lazy_multi_load(base_dir)
-    for d in all_data:
-        # filter the data
-        d_filt = FEC_Util.GetFilteredForce(d,NFilterPoints=n_filter_points)
-        # slice it
-        to_ret = d_filt._slice(slice(0,None,n_decimate))
-        yield to_ret
+    input_v = [[d, out_dir,force,t_filter, f_decimate] for d in all_data]
+    to_ret = ProcessingUtil._multiproc(func, input_v,n_pool=3)
+    return to_ret
 
 def run():
     """
@@ -43,13 +57,16 @@ def run():
     out_dir = Pipeline._cache_dir(base=base_dir,enum=Pipeline.Step.FILTERED)
     force = True
     limit = None
-    n_filter_points = 100
-    n_decimate = 30
-    functor = lambda : filter_data(in_dir,n_filter_points,n_decimate)
-    data =CheckpointUtilities.multi_load(cache_dir=out_dir,load_func=functor,
-                                         force=force,
-                                         limit=limit,
-                                         name_func=FEC_Util.fec_name_func)
+    f_filter_Hz = 5e3
+    # filter to X s
+    t_filter_s = 1/f_filter_Hz
+    # t_filter -> n_filter_points
+    # after filtering, take every N points, where
+    # N = f_decimate * n_filter_points
+    # in other words, we oversample by 1/f_decimate
+    f_decimate = 0.33
+    assert f_decimate < 1 and f_decimate > 0
+    data = filter_data(in_dir,out_dir,force,t_filter_s,f_decimate)
     ProcessingUtil.plot_data(base_dir,step,data,markevery=1)
 
 

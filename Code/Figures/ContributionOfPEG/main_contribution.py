@@ -12,7 +12,7 @@ import sys
 sys.path.append("../../")
 
 from Lib.UtilForce.UtilGeneral import PlotUtilities
-from Figures.Util import WLC
+from Processing.Util import WLC
 from scipy.integrate import cumtrapz
 import matplotlib.gridspec as gridspec
 from scipy.interpolate import interp1d

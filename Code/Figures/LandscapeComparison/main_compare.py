@@ -21,7 +21,7 @@ from Processing import ProcessingUtil
 from Lib.AppWHAM.Code import WeightedHistogram, UtilWHAM
 import RetinalUtil,PlotUtil
 import matplotlib.gridspec as gridspec
-from Figures.Util import WLC
+from Processing.Util import WLC
 
 class LandscapeWithError(object):
     def __init__(self,q_nm,G_kcal,G_err_kcal):

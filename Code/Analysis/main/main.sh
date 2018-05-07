@@ -9,14 +9,17 @@ IFS=$'\n\t'
 # datestring, used in many different places...
 dateStr=`date +%Y-%m-%d:%H:%M:%S`
 
+# Description:
 
-function full_stack(){
-    dir="$1"
-    bash process.sh "$dir"
-    bash generate_landscapes.sh "$dir"
-}
+# Arguments:
+#### Arg 1: Description
+cd ../_0_landscape_alignment/
+ls
+echo $1
+python main_align_landscapes.py --base "$1"
+cd -
 
-full_stack "$1"
+# Returns:
 
 
 

@@ -52,6 +52,7 @@ def plot_landscapes(data,energy_obj,ax1=None,
     k_pN_per_nm = k_N_per_m * 1e3
     plt.plot(q_nm, k_pN_per_nm,linewidth=0.5)
     plt.plot(q_nm, k_pN_per_nm,linewidth=0.5)
+    plt.xlim(xlim_nm)
     PlotUtilities.lazyLabel("q (nm)", "k (pN/nm)", "")
     lim = 75
     plt.ylim(-lim, lim)
@@ -109,3 +110,4 @@ def plot_delta_GF(q_interp,mean_energy,std_energy,max_q_nm=30,linestyle='None',
                  label=label,markersize=markersize,linestyle=linestyle,
                  capsize=capsize,**kw)
     return q_at_max_energy,max_energy_mean,max_energy_std
+

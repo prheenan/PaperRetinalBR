@@ -17,13 +17,57 @@ from Lib.UtilForce.UtilGeneral import CheckpointUtilities
 from Lib.UtilForce.UtilGeneral import PlotUtilities
 from Processing import ProcessingUtil
 from Lib.AppWLC.Code import WLC
+from Processing.Util import WLC as WLCHao
+from Lib.AppWLC.UtilFit import fit_base
 
-def polish_data(base_dir,**kw):
+def offset_L(info):
+    # align by the contour length of the protein
+    offset_m = 20e-9
+    L0 = info.L0_c_terminal - offset_m
+    return L0
+
+def _ext_grid(f_grid,x0):
+    # get the extension components
+    ext_total, ext_components = WLCHao._hao_ext_grid(f_grid, *x0)
+    ext_FJC = ext_components[0]
+    # make the extension at <= force be zero
+    where_f_le = np.where(f_grid <= 0)
+    ext_FJC[where_f_le] = 0
+    ext_total[where_f_le] = 0
+    return ext_total, ext_FJC
+
+def _polish_single(d):
+    # filter the data, making a copy
+    to_ret = d._slice(slice(0, None, 1))
+    # get the slice we are fitting
+    inf = to_ret.L0_info
+    fit_slice = inf.fit_slice
+    x, f = to_ret.Separation.copy(), to_ret.Force.copy()
+    # get a grid over all possible forces
+    f_grid = np.linspace(min(f), max(f), num=f.size, endpoint=True)
+    ext_total, ext_FJC = _ext_grid(f_grid, inf.x0)
+    # we now have X_FJC as a function of force. Therefore, we can subtract
+    # off the extension of the PEG3400 to determining the force-extension
+    # associated with only the protein (*including* its C-term)
+    # note we are getting ext_FJC(f), where f is each point in the original
+    # data.
+    ext_FJC_all_forces = fit_base._grid_to_data(x=f, x_grid=f_grid,
+                                                y_grid=ext_FJC,
+                                                bounds_error=False)
+    # remove the extension associated with the PEG
+    to_ret.Separation -= ext_FJC_all_forces
+    L0 = offset_L(to_ret.L0_info)
+    to_ret.Separation -= L0
+    to_ret.ZSnsr -= L0
+    # make sure the fitting object knows about the change in extensions...
+    ext_total_info, ext_FJC_correct_info = _ext_grid(inf.f_grid, inf.x0)
+    to_ret.L0_info.set_x_offset(L0 + ext_FJC_correct_info)
+    return to_ret
+
+def polish_data(base_dir):
     all_data = CheckpointUtilities.lazy_multi_load(base_dir)
     for d in all_data:
-        # filter the data, making a copy
-        to_ret = d._slice(slice(0, None, 1))
-        to_ret.Separation -= -20e-9
+        to_ret = _polish_single(d)
         yield to_ret
 
 def run():
@@ -49,27 +93,25 @@ def run():
                                          force=force,
                                          limit=limit,
                                          name_func=FEC_Util.fec_name_func)
-    fig = PlotUtilities.figure()
-    ax = plt.subplot(2,1,1)
-    heatmap = FEC_Plot.heat_map_fec(data, num_bins=(200, 100),
-                                    use_colorbar=False)
-    for spine_name in ["bottom","top"]:
-        PlotUtilities.color_axis_ticks(color='w',spine_name=spine_name,
-                                       axis_name="x",ax=ax)
-    xlim = plt.xlim()
-    PlotUtilities.xlabel("")
-    PlotUtilities.title("")
-    PlotUtilities.no_x_label(ax)
-    plt.xlim(xlim)
-    plt.subplot(2,1,2)
-    for d in data:
-        x,f = d.Separation*1e9,d.Force*1e12
-        FEC_Plot._fec_base_plot(x,f,style_data=dict(color=None,alpha=0.3))
-    PlotUtilities.lazyLabel("Extension (nm)","Force (pN)","")
-    plt.xlim(xlim)
-    PlotUtilities.savefig(fig,plot_dir + "heat_map.png")
+    data_unpolished = CheckpointUtilities.lazy_multi_load(in_dir)
+    ProcessingUtil.heatmap_ensemble_plot(data,out_name=plot_dir + "heatmap.png")
     # plot each individual
-    ProcessingUtil.plot_data(base_dir,step,data)
+    f_x = lambda x_tmp : x_tmp.Separation
+    plot_subdir = Pipeline._plot_subdir(base_dir, step)
+    name_func = FEC_Util.fec_name_func
+    xlim, ylim = ProcessingUtil.nm_and_pN_limits(data,f_x)
+    xlim = [-10,150]
+    for d_unpolish,d_polish in zip(data_unpolished,data):
+        fig = PlotUtilities.figure()
+        ax1 = plt.subplot(2,1,1)
+        ProcessingUtil._aligned_plot(d_unpolish,f_x,xlim,ylim)
+        PlotUtilities.xlabel("")
+        PlotUtilities.no_x_label(ax1)
+        plt.subplot(2,1,2)
+        ProcessingUtil._aligned_plot(d_polish,f_x,xlim,ylim)
+        name = plot_subdir + name_func(0, d_polish) + ".png"
+        PlotUtilities.savefig(fig,name)
+
 
 if __name__ == "__main__":
     run()

@@ -23,8 +23,6 @@ import PlotUtil
 def generate_landscape(in_dir):
     data = CheckpointUtilities.lazy_multi_load(in_dir)
     data = UtilWHAM.to_wham_input(data)
-    data.z -= min(data.z)
-    data.z += np.mean([min(e) for e in data.extensions])
     energy_obj = WeightedHistogram.wham(fwd_input=data)
     return energy_obj
 

@@ -9,14 +9,11 @@ IFS=$'\n\t'
 # datestring, used in many different places...
 dateStr=`date +%Y-%m-%d:%H:%M:%S`
 
-
-function full_stack(){
-    dir="$1"
-    bash process.sh "$dir"
-    bash generate_landscapes.sh "$dir"
+function process(){
+    bash run_recursive.sh "Processing for" "$1" ../Processing/main/main.sh
 }
 
-full_stack "$1"
+process "$@"
 
 
 

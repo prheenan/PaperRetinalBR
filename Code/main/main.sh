@@ -9,14 +9,11 @@ IFS=$'\n\t'
 # datestring, used in many different places...
 dateStr=`date +%Y-%m-%d:%H:%M:%S`
 
+data_base="../../Data/FECs180307/"
+bash full_stack.sh "${data_base}BR+Retinal/"
+bash full_stack.sh "${data_base}BR-Retinal/"
+bash analysis.sh "${data_base}"
 
-function full_stack(){
-    dir="$1"
-    bash process.sh "$dir"
-    bash generate_landscapes.sh "$dir"
-}
-
-full_stack "$1"
 
 
 

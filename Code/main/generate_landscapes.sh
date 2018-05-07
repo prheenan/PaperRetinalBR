@@ -10,13 +10,12 @@ IFS=$'\n\t'
 dateStr=`date +%Y-%m-%d:%H:%M:%S`
 
 
-function full_stack(){
-    dir="$1"
-    bash process.sh "$dir"
-    bash generate_landscapes.sh "$dir"
+function generate_landscapes(){
+    bash ./run_recursive.sh "Generating landscapes for" "$1" ../Landscapes/main/main.sh
 }
 
-full_stack "$1"
+
+generate_landscapes "$@"
 
 
 

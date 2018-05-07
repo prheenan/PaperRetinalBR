@@ -17,9 +17,30 @@ from Lib.UtilForce.UtilGeneral import CheckpointUtilities
 from Lib.UtilForce.UtilGeneral import PlotUtilities
 from Processing import ProcessingUtil
 from Lib.AppWLC.Code import WLC
+from Processing.Util import WLC as WLCHao
+
 import warnings
 
-def align_single(d,min_wlc_force_fit_N,max_sep_m,kw_wlc,brute_dict):
+from multiprocessing import Pool
+import multiprocessing
+
+def _debug_plot(to_ret):
+    plt.close()
+    inf = to_ret.L0_info
+    fit_slice = inf.fit_slice
+    x, f = to_ret.Separation, to_ret.Force
+    # get a grid over all possible forces
+    f_grid = np.linspace(min(f), max(f), num=f.size, endpoint=True)
+    # get the extension components
+    ext_total, ext_components = WLCHao._hao_ext_grid(f_grid, *inf.x0)
+    ext_FJC = ext_components[0]
+    # determine the
+    plt.plot(x, f, color='k', alpha=0.3)
+    plt.plot(x[fit_slice], f[fit_slice], 'r')
+    plt.plot(ext_total, f_grid, 'b--')
+    plt.show()
+
+def align_single(d,min_wlc_force_fit_N,max_sep_m):
     force_N = d.Force
     where_GF = np.where((force_N >= min_wlc_force_fit_N) &
                         (d.Separation <= max_sep_m))[0]
@@ -41,33 +62,26 @@ def align_single(d,min_wlc_force_fit_N,max_sep_m,kw_wlc,brute_dict):
     # slice the object to just the region we want
     obj_slice = d._slice(fit_slice)
     # fit wlc to the f vs x of that slice
-    L0_fit,_ = WLC.fit(separation=obj_slice.Separation,
-                     force=obj_slice.Force,brute_dict=brute_dict,
-                     **kw_wlc)
-    L0 = L0_fit[0]
-    x, f, _ = WLC._inverted_wlc_full(ext=obj_slice.Separation,
-                                     F=obj_slice.Force, L0=L0,
-                                     max_force=None, odjik_as_guess=True,
-                                     **kw_wlc)
-    # subtract off L0
-    d.Separation -= L0
-    d.ZSnsr -= L0
-    # return the FEC with the contour length information
-    L0_info = ProcessingUtil.ContourInformation(L0,
-                                                brute_dict=brute_dict,
-                                                kw_wlc=kw_wlc,
-                                                fit_slice=fit_slice)
-    to_ret = ProcessingUtil.AlignedFEC(d,L0_info)
+    fit_info = WLCHao.hao_fit(obj_slice.Separation,obj_slice.Force)
+    fit_info.fit_slice = fit_slice
+    to_ret = ProcessingUtil.AlignedFEC(d,fit_info)
+    return to_ret
+
+def _align_and_cache(d,out_dir,force=False,**kw):
+    return ProcessingUtil._cache_individual(d, out_dir, align_single,
+                                            force,d, **kw)
+
+def func(args):
+    x, out_dir, kw = args
+    to_ret = _align_and_cache(x,out_dir,**kw)
     return to_ret
 
 
-def align_data(base_dir,**kw):
+def align_data(base_dir,out_dir,n_pool,**kw):
     all_data = CheckpointUtilities.lazy_multi_load(base_dir)
-    for d in all_data:
-        # filter the data, making a copy
-        to_ret = d._slice(slice(0, None, 1))
-        to_ret = align_single(to_ret,**kw)
-        yield to_ret
+    input_v = [ [d,out_dir,kw] for d in all_data]
+    to_ret = ProcessingUtil._multiproc(func, input_v, n_pool)
+    return to_ret
 
 def run():
     """
@@ -85,20 +99,16 @@ def run():
     in_dir = Pipeline._cache_dir(base=base_dir, enum=Pipeline.Step.FILTERED)
     out_dir = Pipeline._cache_dir(base=base_dir,enum=step)
     force = True
-    limit = None
+    max_n_pool = multiprocessing.cpu_count() - 1
+    n_pool = max_n_pool
     min_wlc_force_fit_N = 200e-12
     max_sep_m = 105e-9
-    brute_dict = dict(Ns=100,ranges=((10e-9,100e-9),))
-    kw_wlc = dict(kbT=4.1e-21, Lp=0.3e-9, K0=1000e-12)
-    functor = lambda : align_data(in_dir,
-                                  max_sep_m=max_sep_m,
-                                  min_wlc_force_fit_N=min_wlc_force_fit_N,
-                                  kw_wlc=kw_wlc,brute_dict=brute_dict)
-    data =CheckpointUtilities.multi_load(cache_dir=out_dir,load_func=functor,
-                                         force=force,
-                                         limit=limit,
-                                         name_func=FEC_Util.fec_name_func)
-    ProcessingUtil.plot_data(base_dir,step,data)
+    data =align_data(in_dir,out_dir,max_sep_m=max_sep_m,
+                     min_wlc_force_fit_N=min_wlc_force_fit_N,force=force,
+                     n_pool=n_pool)
+    ProcessingUtil.make_aligned_plot(base_dir,step,data)
+
+
 
 if __name__ == "__main__":
     run()
