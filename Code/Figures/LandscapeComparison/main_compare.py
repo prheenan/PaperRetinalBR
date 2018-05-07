@@ -184,7 +184,7 @@ def run():
     Returns:
         This is a description of what is returned.
     """
-    input_dir = "../../../Data/"
+    input_dir = "../../../Data/FECs180307/"
     subdirs_raw = [input_dir + d + "/" for d in os.listdir(input_dir)]
     subdirs = [d for d in subdirs_raw if (os.path.isdir(d))]
     out_dir = "./"
