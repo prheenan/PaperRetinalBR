@@ -17,6 +17,7 @@ from Processing.Util import WLC as WLCHao
 
 import multiprocessing
 from multiprocessing import Pool
+import re
 max_n_pool = multiprocessing.cpu_count() - 1
 
 
@@ -63,6 +64,39 @@ blacklist_dict_vels = dict([((b.str_pm_bR,b.str_vel,b.str_date),b.list_ids)
                             for b in blacklists])
 
 
+
+def _filter_by_bl(data,base_input_processing):
+    """
+    :param data: list of FECS
+    :param base_input_processing: input associated with the data
+    :return: list of FECs which arent blacklists
+    """
+    # get the meta data associated with this data
+    pattern = \
+        r"""
+        (BR[+-]Retinal)/
+        ([^/]+)/
+        ([^/]+)/
+        """
+    match = re.search(pattern, base_input_processing, re.VERBOSE)
+    str_br_type, str_vel, str_data = match.groups()
+    # determine the blacklist...
+    blacklist_tmp = blacklist_dict_vels[(str_br_type,str_vel,str_data)]
+    ids_groups = [re.search("(\d+)", d.Meta.Name) for d in data]
+    for i in ids_groups:
+        assert i is not None
+    # POST: found all ids
+    ids = [int(i.group(0)) for i in ids_groups]
+    # make sure all ids in the blacklist are actually in this group
+    for tmp in blacklist_tmp:
+        assert tmp in ids
+    # POST: all ids in blacklist are in the data
+    to_ret = []
+    for i, d in zip(ids, data):
+        if i not in blacklist_tmp:
+            to_ret.append(d)
+    return to_ret
+
 def _multiproc(func,input_v,n_pool=max_n_pool):
     """
     :param func: function to map; should take a single arugment (element of
@@ -108,7 +142,7 @@ def plot_single_fec(d,f_x,xlim,ylim,markevery=1):
     PlotUtilities.lazyLabel("Extension (nm)", "Force (pN)", "")
 
 def plot_data(base_dir,step,data,markevery=1,f_x = lambda x: x.Separation,
-              xlim_override=None):
+              xlim=None):
     """
     :param base_dir: where the data live
     :param step:  what step we are on
@@ -149,11 +183,11 @@ def _aligned_plot(d,f_x,xlim,ylim):
     # plot the fit
     plot_single_fec(d, f_x, xlim, ylim)
 
-def make_aligned_plot(base_dir,step,data):
+def make_aligned_plot(base_dir,step,data,xlim=None):
     plot_subdir = Pipeline._plot_subdir(base_dir, step)
     f_x = lambda x: x.Separation
-    xlim, ylim = nm_and_pN_limits(data,f_x)
-    xlim = [xlim[0],200]
+    xlim_tmp, ylim = nm_and_pN_limits(data,f_x)
+    xlim = [xlim[0],200] if xlim is None else xlim
     name_func = FEC_Util.fec_name_func
     for d in data:
         f = PlotUtilities.figure()

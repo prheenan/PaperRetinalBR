@@ -102,15 +102,30 @@ def align_single(d,min_F_N,**kw):
     # FEATHER got confused by a near-surface BR. Tell it not to look for
     # surface adhesions
     expected_surface_m = d.Separation[pred_info.slice_fit.start]
-    if ((len(pred_info.event_idx) == 0) or (expected_surface_m > 20e-9)):
+    expected_gf_m = 20e-9
+    if ((len(pred_info.event_idx) == 0) or (expected_surface_m > expected_gf_m)):
         f_refs = [Detector.delta_mask_function]
         pred_info,tau_n = _detect_retract_FEATHER(f_refs=f_refs,**feather_kw)
     assert len(pred_info.event_idx) > 0 , "FEATHER can't find an event..."
-    event_idx = pred_info.event_idx
-    force_to_use_for_idx = FEC_Util.SavitskyFilter(force_N,10)
-    f_at_idx = [force_to_use_for_idx[i] for i in event_idx]
+    # POST: FEATHER found something; we need to screen for lower-force events..
+    event_idx = [i for i in pred_info.event_idx]
+    event_slices = [ slice(i-tau_n*2,i,1) for i in event_idx]
+    # determine the coefficients of the fit
+    t,f = d.Time, d.Force
+    # loading rate helper has return like:
+    #fit_x, fit_y, pred, _, _, _
+    list_v = [ Detector._loading_rate_helper(t,f,e)
+                for e in event_slices]
+    # get the predicted force (rupture force), which is the last element of the
+    # predicted force.
+    pred = [e[2] for e in list_v]
+    f_at_idx = [p[-1] for p in pred]
     valid_events = [i for i,f in zip(event_idx,f_at_idx) if f > min_F_N]
-    assert len(valid_events) > 0 , "Couldn't find any valid events"
+    if (len(valid_events) == 0):
+        warnings.warn("Couldn't find high-force events for {:s}".\
+                      format(d.Meta.Name))
+        # just take the maximum
+        valid_events = [event_idx[np.argmax(f_at_idx)]]
     # make sure the event makes sense
     max_fit_idx = valid_events[0]
     assert first_time_above_surface < max_fit_idx , \
@@ -161,10 +176,15 @@ def run():
     force = True
     max_n_pool = multiprocessing.cpu_count() - 1
     n_pool = max_n_pool
+    min_F_N = 175e-12 if "+Retinal" in base_dir else 90e-12
     kw_feather = dict(pct_approach=0.1, tau_f=0.01, threshold=1e-3)
-    data =align_data(in_dir,out_dir,force=force,n_pool=n_pool,min_F_N=85e-12,
+    data =align_data(in_dir,out_dir,force=force,n_pool=n_pool,min_F_N=min_F_N,
                      **kw_feather)
-    ProcessingUtil.make_aligned_plot(base_dir,step,data)
+    plot_subdir = Pipeline._plot_subdir(base_dir, step)
+    ProcessingUtil.heatmap_ensemble_plot(data,
+                                         out_name=plot_subdir + "heatmap.png")
+    ProcessingUtil.make_aligned_plot(base_dir,step,data,
+                                     xlim=[-30,150])
 
 
 

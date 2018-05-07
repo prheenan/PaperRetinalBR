@@ -77,7 +77,6 @@ def _polish_single(d):
     # make sure the fitting object knows about the change in extensions...
     ext_total_info, ext_FJC_correct_info = _ext_grid(inf.f_grid, inf.x0)
     to_ret.L0_info.set_x_offset(L0 + ext_FJC_correct_info)
-    _debug_plot(to_ret, d, ext_total, f_grid)
     return to_ret
 
 def polish_data(base_dir):
