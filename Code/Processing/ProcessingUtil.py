@@ -142,7 +142,7 @@ def plot_single_fec(d,f_x,xlim,ylim,markevery=1):
     PlotUtilities.lazyLabel("Extension (nm)", "Force (pN)", "")
 
 def plot_data(base_dir,step,data,markevery=1,f_x = lambda x: x.Separation,
-              xlim=None):
+              xlim=[-20,175]):
     """
     :param base_dir: where the data live
     :param step:  what step we are on

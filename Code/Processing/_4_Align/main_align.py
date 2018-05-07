@@ -43,45 +43,6 @@ def _debug_plot(to_ret):
     plt.xlim([min(x),max(x)])
     plt.show()
 
-def _debug_plot_FEATHER(pred_info,d,force_to_use_for_idx,max_fit_idx):
-    plt.plot(d.Force)
-    plt.plot(force_to_use_for_idx)
-    for i in pred_info.event_idx:
-        plt.axvline(i)
-    plt.axvline(max_fit_idx,color='g')
-    plt.show()
-
-
-def _detect_retract_FEATHER(d,pct_approach,tau_f,threshold,f_refs=None):
-    """
-    :param d:  TimeSepForce
-    :param pct_approach: how much of the retract, starting from the end,
-    to use as an effective approach curve
-    :param tau_f: fraction for tau
-    :param threshold: FEATHERs probability threshold
-    :return:
-    """
-    force_N = d.Force
-    # use the last x% as a fake 'approach' (just for noise)
-    n = force_N.size
-    n_approach = int(np.ceil(n * pct_approach))
-    tau_n_points = int(np.ceil(n * tau_f))
-    # slice the data for the approach, as described above
-    n_approach_start = n - (n_approach + 1)
-    fake_approach = d._slice(slice(n_approach_start, n, 1))
-    fake_dwell = d._slice(slice(n_approach_start - 1, n_approach_start, 1))
-    # make a 'custom' split fec (this is what FEATHER needs for its noise stuff)
-    split_fec = Analysis.split_force_extension(fake_approach, fake_dwell, d,
-                                               tau_n_points)
-    # set the 'approach' number of points for filtering to the retract.
-    split_fec.set_tau_num_points_approach(split_fec.tau_num_points)
-    # set the predicted retract surface index to a few tau. This avoids looking
-    #  at adhesion
-    split_fec.get_predicted_retract_surface_index = lambda: 5 * tau_n_points
-    pred_info = Detector._predict_split_fec(split_fec, threshold=threshold,
-                                            f_refs=f_refs)
-    return pred_info, tau_n_points
-
 def align_single(d,min_F_N,**kw):
     """
     :param d: FEC to get FJC+WLC fit of
@@ -91,23 +52,8 @@ def align_single(d,min_F_N,**kw):
     :return:
     """
     force_N = d.Force
-    where_above_surface = np.where(force_N >= 0)[0]
-    assert where_above_surface.size > 0, "Force never above surface "
-    first_time_above_surface = where_above_surface[0]
-    # use FEATHER; fit to the first event, don't look for adhesion
-    d_pred_only = d._slice(slice(0,None,1))
-    # first, try removing surface adhesions
-    feather_kw =  dict(d=d_pred_only,**kw)
-    pred_info,tau_n = _detect_retract_FEATHER(**feather_kw)
-    # if we removed more than 20nm or we didnt find any events, then
-    # FEATHER got confused by a near-surface BR. Tell it not to look for
-    # surface adhesions
-    expected_surface_m = d.Separation[pred_info.slice_fit.start]
-    expected_gf_m = 20e-9
-    if ((len(pred_info.event_idx) == 0) or (expected_surface_m > expected_gf_m)):
-        f_refs = [Detector.delta_mask_function]
-        pred_info,tau_n = _detect_retract_FEATHER(f_refs=f_refs,**feather_kw)
-    assert len(pred_info.event_idx) > 0 , "FEATHER can't find an event..."
+    pred_info = d.info_feather
+    tau_n = pred_info.tau_n
     # POST: FEATHER found something; we need to screen for lower-force events..
     event_idx = [i for i in pred_info.event_idx]
     event_slices = [ slice(i-tau_n*2,i,1) for i in event_idx]
@@ -129,6 +75,8 @@ def align_single(d,min_F_N,**kw):
         valid_events = [event_idx[np.argmax(f_at_idx)]]
     # make sure the event makes sense
     max_fit_idx = valid_events[0]
+    where_above_surface = np.where(force_N >= 0)[0]
+    first_time_above_surface = where_above_surface[0]
     assert first_time_above_surface < max_fit_idx , \
         "Couldn't find fitting region"
     # start the fit after any potential adhesions
@@ -172,7 +120,7 @@ def run():
     default_base = "../../../Data/170321FEC/"
     base_dir = Pipeline._base_dir_from_cmd(default=default_base)
     step = Pipeline.Step.ALIGNED
-    in_dir = Pipeline._cache_dir(base=base_dir, enum=Pipeline.Step.FILTERED)
+    in_dir = Pipeline._cache_dir(base=base_dir, enum=Pipeline.Step.SANITIZED)
     out_dir = Pipeline._cache_dir(base=base_dir,enum=step)
     force = True
     max_n_pool = multiprocessing.cpu_count() - 1
