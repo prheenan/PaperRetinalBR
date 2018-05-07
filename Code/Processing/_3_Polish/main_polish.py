@@ -20,6 +20,21 @@ from Lib.AppWLC.Code import WLC
 from Processing.Util import WLC as WLCHao
 from Lib.AppWLC.UtilFit import fit_base
 
+def _debug_plot(to_ret,d,ext_total,f_grid):
+    plt.close()
+    xlim = [min(to_ret.Separation) - 10e-9,max(d.Separation)]
+    ylim = [-30e-12,max(d.Force)]
+    plt.subplot(2,1,1)
+    plt.plot(d.Separation,d.Force)
+    plt.plot(ext_total,f_grid,'r--')
+    plt.xlim(xlim)
+    plt.ylim(ylim)
+    plt.subplot(2,1,2)
+    plt.plot(to_ret.Separation,to_ret.Force)
+    plt.xlim(xlim)
+    plt.ylim(ylim)
+    plt.show()
+
 def offset_L(info):
     # align by the contour length of the protein
     offset_m = 20e-9
@@ -62,6 +77,7 @@ def _polish_single(d):
     # make sure the fitting object knows about the change in extensions...
     ext_total_info, ext_FJC_correct_info = _ext_grid(inf.f_grid, inf.x0)
     to_ret.L0_info.set_x_offset(L0 + ext_FJC_correct_info)
+    _debug_plot(to_ret, d, ext_total, f_grid)
     return to_ret
 
 def polish_data(base_dir):

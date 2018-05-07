@@ -50,7 +50,7 @@ def read_energy_lists(subdirs):
     return energy_list_arr
 
 
-def make_retinal_subplot(gs,energy_list_arr,shifts):
+def make_retinal_subplot(gs,energy_list_arr,shifts,skip_arrow=True):
     q_interp_nm = energy_list_arr[0].q_nm
     means = [e.G_kcal for e in energy_list_arr]
     stdevs = [e.G_err_kcal for e in energy_list_arr]
@@ -104,6 +104,8 @@ def make_retinal_subplot(gs,energy_list_arr,shifts):
         dy = -shifts[i]
         arrow_fudge = dy / 3
         plt.errorbar(x=q, y=delta + dy, yerr=err, **delta_styles[i])
+        if (skip_arrow):
+            continue
         ax1.arrow(x=q, y=deltas[i] - abs(arrow_fudge), dx=0,
                   dy=dy - 2 * arrow_fudge, color=delta_styles[i]['color'],
                   length_includes_head=True, head_width=1.2, head_length=6)
@@ -115,7 +117,7 @@ def make_retinal_subplot(gs,energy_list_arr,shifts):
                             legend_kwargs=dict(loc='lower right'))
     return ax1, means, stdevs
 
-def make_comparison_plot(q_interp,energy_list_arr,G_no_peg):
+def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
     slice_arr = [slice(0, None, 1), slice(1, None, 1)]
     landscpes_with_error = []
     for i, energy_list_raw in enumerate(energy_list_arr):
@@ -130,14 +132,14 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg):
     peg = WLC.peg_contribution()
     ext_grid = peg.q
     # read in Hao's energy landscape
-    fec_system = WLC._make_plot_inf(ext_grid,WLC.read_haos_data)
-    shifts = [fec_system.W_at_f(f) for f in [250, 100]]
+    fec_system = WLC._make_plot_inf(ext_grid,WLC.read_hao_polypeptide)
+    shifts = [fec_system.W_at_f(f) for f in [250, 139]]
     gs = gridspec.GridSpec(nrows=1,ncols=1,width_ratios=[1])
     ax1, means, stdevs = make_retinal_subplot(gs,landscpes_with_error,shifts)
     # get the with-retinal max
     ax2 = plt.subplot(gs[0])
-    G_offset = np.max([l.G_kcal[-1] for l in landscpes_with_error]) - shifts[0]
-    q_offset = 25
+    # get the max of the last point (the retinal energy landscape is greater)
+    G_offset = np.max([l.G_kcal[-1] for l in landscpes_with_error])
     q_nm = G_no_peg.q_nm + q_offset
     G_kcal = G_no_peg.G_kcal + G_offset
     G_err_kcal = G_no_peg.G_err_kcal
@@ -149,7 +151,7 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg):
                  marker=None,markersize=0,capsize=3,**common_style)
     axes = [ax1,ax2]
     y_limits = [a.get_ylim() for a in axes]
-    ylim = [-25,None]
+    ylim = [None,np.max(G_kcal) + mean_err]
     for a in axes:
         a.set_ylim(ylim)
         a.set_xlim([0,max(q_nm)])
@@ -157,13 +159,13 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg):
     ax = axes[0]
     ylim = ax.get_ylim()
     xlim = ax.get_xlim()
-    range_scale_kcal = 170
+    range_scale_kcal = np.round((ylim[1]-ylim[0])/4,-1)
     x_range_nm = 15
     min_offset, _, rel_delta = Scalebar. \
         offsets_zero_tick(limits=ylim,range_scalebar=range_scale_kcal)
-    offset_x = 0.25
+    offset_x = 0.2
     common_kw = dict(add_minor=True)
-    scalebar_kw = dict(offset_x=offset_x,offset_y=min_offset+rel_delta,ax=ax,
+    scalebar_kw = dict(offset_x=offset_x,offset_y=min_offset+rel_delta*2,ax=ax,
                        x_on_top=True,
                        x_kwargs=dict(width=x_range_nm,unit="nm",**common_kw),
                        y_kwargs=dict(height=range_scale_kcal,unit="kcal/mol",
@@ -190,11 +192,12 @@ def run():
     out_dir = "./"
     energy_list_arr = read_energy_lists(subdirs)
     e_list_flat = [e for list_tmp in energy_list_arr for e in list_tmp ]
+    q_offset = 30
     q_interp = RetinalUtil.common_q_interp(energy_list=e_list_flat)
-    q_interp = q_interp[np.where(q_interp  <= 25)]
+    q_interp = q_interp[np.where(q_interp  <= q_offset)]
     G_no_peg = read_non_peg_landscape()
     fig = PlotUtilities.figure(figsize=(3.5,3.25))
-    make_comparison_plot(q_interp,energy_list_arr,G_no_peg)
+    make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset)
     PlotUtilities.savefig(fig,out_dir + "LandscapeComparison.png")
 
 
