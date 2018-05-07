@@ -55,7 +55,7 @@ def make_retinal_subplot(gs,energy_list_arr,shifts,skip_arrow=True):
     means = [e.G_kcal for e in energy_list_arr]
     stdevs = [e.G_err_kcal for e in energy_list_arr]
     ax1 = plt.subplot(gs[0])
-    common_error = dict(capsize=3)
+    common_error = dict(capsize=0)
     style_dicts = [dict(color='c', label=r"$\mathbf{\oplus}$ Retinal"),
                    dict(color='r', label=r"$\mathbf{\ominus}$ Retinal")]
     markers = ['v', 'x']
@@ -74,8 +74,8 @@ def make_retinal_subplot(gs,energy_list_arr,shifts,skip_arrow=True):
         plt.plot(q_interp_nm,mean,**style_dicts[i])
         q_at_max_energy, max_energy_mean, max_energy_std = \
             PlotUtil.plot_delta_GF(q_interp_nm, mean, stdev,
-                                   max_q_nm=max_q_nm,
-                                   round_energy=round_energy,
+                                   max_q_nm=max_q_nm,round_std=-1,
+                                   round_energy=-1,linewidth=0,
                                    label_offset=shifts[i],**delta_style)
         deltas.append(max_energy_mean)
         deltas_std.append(max_energy_std)
@@ -111,7 +111,7 @@ def make_retinal_subplot(gs,energy_list_arr,shifts,skip_arrow=True):
                   length_includes_head=True, head_width=1.2, head_length=6)
     plt.xlim(xlim)
     plt.ylim(ylim)
-    title_shift = "PEG3400-corrected ($\downarrow$)\n" + title_shift
+    title_shift = title_shift
     PlotUtilities.lazyLabel("Extension (nm)", "$\mathbf{\Delta}G$ (kcal/mol)",
                             title_shift,
                             legend_kwargs=dict(loc='lower right'))
@@ -126,6 +126,7 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
         energy_list = energy_list[slice_f]
         _, splines = RetinalUtil.interpolating_G0(energy_list)
         mean, stdev = PlotUtil._mean_and_stdev_landcapes(splines, q_interp)
+        mean -= mean[0]
         l = LandscapeWithError(q_nm=q_interp,G_kcal=mean,G_err_kcal=stdev)
         landscpes_with_error.append(l)
     # get the extension grid we wnt...
@@ -150,23 +151,26 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
     ax2.errorbar(q_nm[idx_errorbar],G_kcal[idx_errorbar],yerr=mean_err,
                  marker=None,markersize=0,capsize=3,**common_style)
     axes = [ax1,ax2]
-    y_limits = [a.get_ylim() for a in axes]
     ylim = [None,np.max(G_kcal) + mean_err]
     for a in axes:
         a.set_ylim(ylim)
-        a.set_xlim([0,max(q_nm)])
+        a.set_xlim([None,max(q_nm)])
     # add in the scale bar
     ax = axes[0]
-    ylim = ax.get_ylim()
     xlim = ax.get_xlim()
-    range_scale_kcal = np.round((ylim[1]-ylim[0])/4,-1)
-    x_range_nm = 15
+    ylim = ax.get_ylim()
+    y_range = (ylim[1]-ylim[0])
+    range_scale_kcal = np.round(y_range/3,-2)
+    x_range_nm = 20
     min_offset, _, rel_delta = Scalebar. \
         offsets_zero_tick(limits=ylim,range_scalebar=range_scale_kcal)
-    offset_x = 0.2
+    min_offset_x, _, rel_delta_x= Scalebar. \
+        offsets_zero_tick(limits=xlim,range_scalebar=x_range_nm)
+    offset_x = 0.75
+    offset_y = min_offset +  1 * rel_delta
     common_kw = dict(add_minor=True)
-    scalebar_kw = dict(offset_x=offset_x,offset_y=min_offset+rel_delta*2,ax=ax,
-                       x_on_top=True,
+    scalebar_kw = dict(offset_x=offset_x,offset_y=offset_y,ax=ax,
+                       x_on_top=True,y_on_right=True,
                        x_kwargs=dict(width=x_range_nm,unit="nm",**common_kw),
                        y_kwargs=dict(height=range_scale_kcal,unit="kcal/mol",
                                      **common_kw))

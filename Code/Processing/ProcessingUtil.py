@@ -185,7 +185,7 @@ def _aligned_plot(d,f_x,xlim,ylim):
     # plot the fit
     plot_single_fec(d, f_x, xlim, ylim)
 
-def make_aligned_plot(base_dir,step,data,xlim=None):
+def make_aligned_plot(base_dir,step,data,xlim=None,post=""):
     plot_subdir = Pipeline._plot_subdir(base_dir, step)
     f_x = lambda x: x.Separation
     xlim_tmp, ylim = nm_and_pN_limits(data,f_x)
@@ -194,7 +194,7 @@ def make_aligned_plot(base_dir,step,data,xlim=None):
     for d in data:
         f = PlotUtilities.figure()
         _aligned_plot(d, f_x, xlim, ylim)
-        PlotUtilities.savefig(f, plot_subdir + name_func(0, d) + ".png")
+        PlotUtilities.savefig(f, plot_subdir + name_func(0, d) + post + ".png")
 
 
 def heatmap_ensemble_plot(data,out_name,xlim=[-50, 150]):

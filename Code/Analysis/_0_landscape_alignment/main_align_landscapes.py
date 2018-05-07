@@ -90,9 +90,7 @@ def data_plot(fecs,energies):
     n_cols = len(energies)
     n_rows = 3
     all_ax = []
-    gs = gridspec.GridSpec(2,1)
-    gs1 = gridspec.GridSpecFromSubplotSpec(n_rows,n_cols,subplot_spec=gs[0,0],
-                                           wspace=0.05,hspace=0.05)
+    gs1 = gridspec.GridSpec(n_rows+1,n_cols)
     for i, (data, e) in enumerate(zip(fecs, energies)):
         axs_tmp = [plt.subplot(gs1[j,i])
                    for j in range(n_rows)]
@@ -111,15 +109,17 @@ def data_plot(fecs,energies):
         title = "v={:s}\n {:s}".format(velocity, title)
         PlotUtilities.title(title)
     fix_axes(all_ax)
+    xlim = all_ax[0][0].get_xlim()
     q_interp, splines =  RetinalUtil.interpolating_G0(energies)
     # get an average/stdev of energy
     mean_energy, std_energy = PlotUtil.plot_mean_landscape(q_interp,
-                                                           splines,ax=gs[-1,:])
+                                                           splines,ax=gs1[-1,0])
     q_at_max_energy,_,_ =  \
-        PlotUtil.plot_delta_GF(q_interp,mean_energy,std_energy,max_q_nm=25)
-    xlim = max(plt.xlim())
-    plt.axvspan(q_at_max_energy,xlim,color='k',alpha=0.3)
-    PlotUtilities.legend(loc='upper right',frameon=True)
+        PlotUtil.plot_delta_GF(q_interp,mean_energy,std_energy,
+                               max_q_nm=RetinalUtil.q_GF_nm())
+    plt.axvspan(q_at_max_energy,max(xlim),color='k',alpha=0.3)
+    PlotUtilities.legend(frameon=True,fontsize=5,
+                         bbox_to_anchor=(2,1.05))
 
 def read_fecs(e):
     base_tmp = e.base_dir
@@ -163,6 +163,7 @@ def run():
     for e in energy_list:
         n_pts = e.G0.size
         e._G0 -= min(e.G0[:n_pts//2])
+        e._q -= min(e.q)
     fecs = []
     energies = []
     N = len(energy_list)
@@ -171,7 +172,7 @@ def run():
         fecs.append(data)
         energies.append(e)
     n_cols = N
-    fig = PlotUtilities.figure((max(3,(n_cols * 1.25)),7))
+    fig = PlotUtilities.figure((n_cols * 1.5,6))
     data_plot(fecs, energies)
     PlotUtilities.savefig(fig,out_dir + "energies.png")
     # interpolate all the energies to the same grid

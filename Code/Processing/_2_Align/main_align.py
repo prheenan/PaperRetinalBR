@@ -179,8 +179,8 @@ def run():
     n_pool = max_n_pool
     min_F_N = 175e-12 if "+Retinal" in base_dir else 90e-12
     kw_feather = dict(pct_approach=0.1, tau_f=0.01, threshold=1e-3)
-    data =align_data(in_dir,out_dir,force=force,n_pool=n_pool,min_F_N=min_F_N,
-                     **kw_feather)
+    data = align_data(in_dir,out_dir,force=force,n_pool=n_pool,min_F_N=min_F_N,
+                      **kw_feather)
     plot_subdir = Pipeline._plot_subdir(base_dir, step)
     xlim_heatmap_nm = [-25,40]
     ProcessingUtil.heatmap_ensemble_plot(data,xlim=xlim_heatmap_nm,
