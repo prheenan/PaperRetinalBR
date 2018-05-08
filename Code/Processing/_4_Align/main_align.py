@@ -34,13 +34,15 @@ def _debug_plot(to_ret):
     # get a grid over all possible forces
     f_grid = np.linspace(min(f), max(f), num=f.size, endpoint=True)
     # get the extension components
-    ext_total, ext_components = WLCHao._hao_shift_grid(f_grid, *inf.x0)
-    ext_FJC = ext_components[0]
+    ext_total, ext_components = WLCHao._hao_shift(f_grid, *inf.x0,**inf.kw_fit)
     # determine the
     plt.plot(x, f, color='k', alpha=0.3)
     plt.plot(x[fit_slice], f[fit_slice], 'r')
     plt.plot(ext_total, f_grid, 'b--')
-    plt.xlim([min(x),max(x)])
+    for c in ext_components:
+        plt.plot(c,f_grid)
+    plt.xlim([min(x),150e-9])
+    plt.axvline(inf.x0[-1])
     plt.show()
 
 def align_single(d,min_F_N,**kw):

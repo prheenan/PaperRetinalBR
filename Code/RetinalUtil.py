@@ -115,7 +115,7 @@ def offset_L(info):
 
 def _ext_grid(f_grid,x0):
     # get the extension components
-    ext_total, ext_components = WLCHao._hao_shift_grid(f_grid, *x0)
+    ext_total, ext_components = WLCHao._hao_shift(f_grid, *x0)
     ext_FJC = ext_components[0]
     # make the extension at <= force be zero
     where_f_le = np.where(f_grid <= 0)
