@@ -72,13 +72,15 @@ def make_retinal_subplot(gs,energy_list_arr,shifts,skip_arrow=True):
     for i,(mean,stdev) in enumerate(zip(means,stdevs)):
         delta_style = dict(**delta_styles[i])
         plt.plot(q_interp_nm,mean,**style_dicts[i])
+        energy_error = np.mean(stdev)
         q_at_max_energy, max_energy_mean, _ = \
             PlotUtil.plot_delta_GF(q_interp_nm, mean, stdev,
+                                   max_q_idx=-1,energy_error=energy_error,
                                    max_q_nm=max_q_nm,round_std=-1,
                                    round_energy=-1,linewidth=0,
                                    label_offset=shifts[i],**delta_style)
         # for the error, use the mean error over all interpolation
-        max_energy_std = np.mean(stdev)
+        max_energy_std = energy_error
         deltas.append(max_energy_mean)
         deltas_std.append(max_energy_std)
         q_arr.append(q_at_max_energy)

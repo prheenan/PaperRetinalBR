@@ -86,7 +86,7 @@ def plot_mean_landscape(q_interp, splines, ax=None,color='c',label=None,
 
 def plot_delta_GF(q_interp,mean_energy,std_energy,max_q_nm=30,linestyle='None',
                   markersize=3,capsize=3,round_energy=-1,round_std=-1,
-                  label_offset=0,**kw):
+                  label_offset=0,max_q_idx=None,energy_error=None,**kw):
     """
     :param q_interp: extensions
     :param mean_energy:
@@ -95,19 +95,21 @@ def plot_delta_GF(q_interp,mean_energy,std_energy,max_q_nm=30,linestyle='None',
     :return:
     """
     # only look at the first X nm
-    max_q_idx = -1
+    if (max_q_idx is None):
+        max_q_idx = np.where(q_interp <= max_q_nm)[0][-1]
     # determine where the max is, and label it
     max_idx = max_q_idx
     max_energy_mean = mean_energy[max_idx]
-    max_energy_std = std_energy[max_idx]
+    if (energy_error is None):
+        energy_error = std_energy[max_idx]
     q_at_max_energy = q_interp[max_idx]
     # subtract the offset (i.e., to show the data with the PEG correction..)
     label_mean = np.round(max_energy_mean-label_offset,round_energy)
-    label_std = np.round(max_energy_std,round_std)
+    label_std = np.round(energy_error,round_std)
     label = (r"$\mathbf{\Delta G}_{GF}$")  + \
             (" = {:.0f} $\pm$ {:.0f} kcal/mol").format(label_mean,label_std)
-    plt.errorbar(q_at_max_energy,max_energy_mean,max_energy_std,
+    plt.errorbar(q_at_max_energy,max_energy_mean,energy_error,
                  label=label,markersize=markersize,linestyle=linestyle,
                  capsize=capsize,**kw)
-    return q_at_max_energy,max_energy_mean,max_energy_std
+    return q_at_max_energy,max_energy_mean,energy_error
 
