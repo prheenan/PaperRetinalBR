@@ -34,7 +34,7 @@ def _debug_plot(to_ret):
     # get a grid over all possible forces
     f_grid = np.linspace(min(f), max(f), num=f.size, endpoint=True)
     # get the extension components
-    ext_total, ext_components = WLCHao._hao_ext_grid(f_grid, *inf.x0)
+    ext_total, ext_components = WLCHao._hao_shift_grid(f_grid, *inf.x0)
     ext_FJC = ext_components[0]
     # determine the
     plt.plot(x, f, color='k', alpha=0.3)

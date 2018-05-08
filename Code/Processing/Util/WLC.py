@@ -71,13 +71,13 @@ class FitFJCandWLC(object):
         if f_grid is None:
             f_grid = self.f_grid
         # get the force and extension grid again, with the optimized parameters
-        ext_grid, _ = _hao_ext_grid(f_grid, *self.x0)
+        ext_grid, _ = _hao_shift_grid(f_grid, *self.x0)
         return ext_grid
 
     @property
     def component_grid(self,f_grid=None):
         f_grid = self.f_grid if f_grid is None else f_grid
-        _, ext_components = _hao_ext_grid(f_grid, *self.x0)
+        _, ext_components = _hao_shift_grid(f_grid, *self.x0)
         return ext_components
 
     @property
@@ -213,12 +213,22 @@ def _hao_ext_grid(force_grid,*args,**kw):
     ext_grid = ext[0] + ext[1]
     return ext_grid, ext
 
-def _hao_fit_helper(x,f,force_grid,*args,**kwargs):
+def _hao_shift_grid(force_grid,*args,**kwargs):
     # last argument is amount to shift...
-    ext_grid,_  =_hao_ext_grid(force_grid,*(args[:-1]),**kwargs)
-    x_cpy = x.copy()
-    x_shift = x_cpy - args[-1]
-    l2 = fit_base._l2_grid_to_data(x_shift,f,ext_grid,force_grid)
+    ext_grid, components  =_hao_ext_grid(force_grid,*(args[:-1]),**kwargs)
+    shift = args[-1]
+    ext_grid = ext_grid + shift
+    for c in components:
+        c += shift/2
+    return ext_grid, components
+
+def _hao_shift(force_grid,*args,**kwargs):
+    to_ret, _ = _hao_shift_grid(force_grid, *args, **kwargs)
+    return to_ret
+
+def _hao_fit_helper(x,f,force_grid,*args,**kwargs):
+    ext_grid = _hao_shift(force_grid, *args, **kwargs)
+    l2 = fit_base._l2_grid_to_data(x,f,ext_grid,force_grid)
     return l2
 
 def predicted_f_at_x(x,ext_grid,f_grid):

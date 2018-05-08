@@ -23,7 +23,7 @@ skip_reading=${2:-0}
 files=`find .. -name "main*.py"`
 for f in $files
     do
-		if [[ $f = *"align"* ]] || [[ "$f" = *"polish"* ]] ; then
+		if [[ $f = *"align"* ]] || [[ "$f" = *"polish"* ]] || [[ "$f" = *"FEATHER"* ]] ; then
 			# dont do anything
 			_=""
 		else
