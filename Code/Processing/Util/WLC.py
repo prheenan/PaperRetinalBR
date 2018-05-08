@@ -40,7 +40,8 @@ class plot_info:
         return W_int
 
 class FitFJCandWLC(object):
-    def __init__(self, brute_dict, x0, f, minimize_dict, res, output_brute):
+    def __init__(self, brute_dict, x0, f, minimize_dict, res, output_brute,
+                 kw_fit):
         self.brute_dict = brute_dict
         self.x0 = x0
         self.min_f = min(f)
@@ -50,13 +51,14 @@ class FitFJCandWLC(object):
         self.output_polishing = res
         self.output_brute = output_brute
         self.x_offset = 0
+        self.kw_fit = kw_fit
 
     def set_x_offset(self, x):
         """
         :param x: x, defined with one point at each point in f_grid
         :return: nothing, sets the x ffset
         """
-        assert x.size == self.n_f
+        assert isinstance(x,float) or (x.size == self.n_f)
         self.x_offset = x
 
     @property
@@ -77,6 +79,7 @@ class FitFJCandWLC(object):
         f_grid = self.f_grid if f_grid is None else f_grid
         _, ext_components = _hao_ext_grid(f_grid, *self.x0)
         return ext_components
+
     @property
     def _Ns(self):
         return self.x0[0]
@@ -90,8 +93,12 @@ class FitFJCandWLC(object):
         return self.x0[2]
 
     @property
-    def L0_c_terminal(self):
+    def _L_shift(self):
         return self.x0[3]
+
+    @property
+    def L0_c_terminal(self):
+        return self.kw_fit['L0_protein'] + self._L_shift
 
     @property
     def L0_PEG3400(self):
@@ -172,8 +179,8 @@ def grid_both(x,x_a,a,x_b,b):
     grid_b = grid_interp(points=x_b,values=b,grid=x)
     return grid_a, grid_b
 
-def Hao_PEGModel(F,N_s=25.318,K=906.86,L_K=0.63235e-9,L0_Protein=27.2e-9,
-                 Lp=0.4e-9):
+def Hao_PEGModel(F,N_s=25.318,K=906.86,L_K=0.63235e-9,
+                 L0_protein=9.12e-9,Lp_protein=0.4e-9):
     """
     see: communication with Hao, 
     """
@@ -181,8 +188,8 @@ def Hao_PEGModel(F,N_s=25.318,K=906.86,L_K=0.63235e-9,L0_Protein=27.2e-9,
     # get the FJC model of *just* the PEG
     ext_FJC = HaoModel(F=F, **common)
     # get the WLC model of the unfolded polypeptide
-    L0 = L0_Protein
-    polypeptide_args = dict(kbT=kbT,Lp=Lp,L0=L0,K0=10000e-12)
+    L0 = L0_protein
+    polypeptide_args = dict(kbT=kbT,Lp=Lp_protein,L0=L0,K0=10000e-12)
     ext_wlc, F_wlc = WLC._inverted_wlc_helper(F=F,odjik_as_guess=True,
                                               **polypeptide_args)
     valid_idx = np.where(ext_wlc > 0)
@@ -207,8 +214,11 @@ def _hao_ext_grid(force_grid,*args,**kw):
     return ext_grid, ext
 
 def _hao_fit_helper(x,f,force_grid,*args,**kwargs):
-    ext_grid,_  =_hao_ext_grid(force_grid,*args,**kwargs)
-    l2 = fit_base._l2_grid_to_data(x,f,ext_grid,force_grid)
+    # last argument is amount to shift...
+    ext_grid,_  =_hao_ext_grid(force_grid,*(args[:-1]),**kwargs)
+    x_cpy = x.copy()
+    x_shift = x_cpy - args[-1]
+    l2 = fit_base._l2_grid_to_data(x_shift,f,ext_grid,force_grid)
     return l2
 
 def predicted_f_at_x(x,ext_grid,f_grid):
@@ -230,13 +240,19 @@ def hao_fit(x,f):
     range_N = (0,250)
     range_K = (50,2500)
     range_L_K = (0.1e-9,4e-9)
-    range_L0 = (5e-9,40e-9)
+    range_x_shift = (-50e-9,0)
     Lp = 0.4e-9
+    # see Online methods, 74 nm / 198 AA
+    L0_per_aa = 0.38e-9
+    N_aa_tail = 24
+    L0 = L0_per_aa * (N_aa_tail + 64)
+    kw_fit = dict(Lp_protein=Lp,L0_protein=L0)
     f_grid = np.linspace(min(f),max(f),endpoint=True,num=f.size)
-    functor_l2 = lambda *args: _hao_fit_helper(x,f,f_grid,*(args[0]),Lp=Lp)
+    functor_l2 = lambda *args: _hao_fit_helper(x,f,f_grid,*(args[0]),
+                                               **kw_fit)
     # how many brute points should we use?
-    ranges = (range_N,range_K,range_L_K,range_L0)
-    n_pts = [15 for _ in ranges]
+    ranges = (range_N,range_K,range_L_K,range_x_shift)
+    n_pts = [5 for _ in ranges]
     # determine the step sizes in each dimension
     steps = [ (r[1]-r[0])/n_pts[i] for i,r in enumerate(ranges)]
     # determine the slice in each dimension
@@ -260,11 +276,11 @@ def hao_fit(x,f):
     bounded_fun = lambda *args: _constrained_L2(functor_l2,bounds_brute,*args)
     res = minimize(fun=bounded_fun,**minimize_dict)
     x0 = res.x
-    for b,x in zip(bounds,x0):
-        assert (x <= b[1]) and (x >= b[0])  , "Minimization didn't constrain"
+    for b,x_tmp in zip(bounds,x0):
+        assert (x_tmp <= b[1]) and (x_tmp >= b[0])  , "Minimization didn't constrain"
     # get the force and extension grid, interpolated back to the original data
     to_ret = FitFJCandWLC(brute_dict=brute_dict,x0=x0,f=f,
-                          output_brute=output_brute,
+                          output_brute=output_brute,kw_fit=kw_fit,
                           minimize_dict=minimize_dict,res=res)
     return to_ret
 

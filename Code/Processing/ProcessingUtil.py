@@ -14,6 +14,7 @@ from Lib.UtilForce.FEC import FEC_Util,  FEC_Plot
 from Lib.UtilForce.UtilIgor.TimeSepForceObj import TimeSepForceObj
 from Lib.UtilForce.UtilGeneral import PlotUtilities, CheckpointUtilities
 from Processing.Util import WLC as WLCHao
+import RetinalUtil
 
 import multiprocessing
 from multiprocessing import Pool
@@ -179,8 +180,9 @@ def _aligned_plot(d,f_x,xlim,ylim):
              label="Total")
     # get the two components (FJC and WLC)
     components = info.component_grid
+    component_offset = offset
     for ext,label in [ [components[1],"C-term"],[components[0],"PEG3400"] ]:
-        ext_plot = (ext-offset) * 1e9
+        ext_plot = (ext - component_offset) * 1e9
         plt.plot(ext_plot,f_plot_pred,label=label)
     # plot the fit
     plot_single_fec(d, f_x, xlim, ylim)
