@@ -95,7 +95,7 @@ def plot_delta_GF(q_interp,mean_energy,std_energy,max_q_nm=30,linestyle='None',
     :return:
     """
     # only look at the first X nm
-    max_q_idx = np.where(q_interp <= max_q_nm)[0][-1]
+    max_q_idx = -1
     # determine where the max is, and label it
     max_idx = max_q_idx
     max_energy_mean = mean_energy[max_idx]

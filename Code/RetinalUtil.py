@@ -50,7 +50,7 @@ class EnergyWithMeta(WeightedHistogram.LandscapeWHAM):
         self.n_fecs = n
 
 def q_GF_nm():
-    return 32
+    return 18.5
 
 def _processing_base(default_base="../../../Data/BR+Retinal/170321FEC/",**kw):
     return Pipeline._base_dir_from_cmd(default=default_base,**kw)

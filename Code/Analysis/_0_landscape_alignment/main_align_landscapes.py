@@ -48,7 +48,7 @@ def read_in_energy(base_dir):
     obj.set_n_fecs(n_data)
     return obj
 
-def get_energy_list(base_dir_analysis):
+def get_energy_list(base_dir_analysis,min_fecs):
     """
     :param base_dir_analysis: where we should look (e.g. BR+Retinal)
     :return: list of RetinalUtil.EnergyWithMeta objects
@@ -63,7 +63,20 @@ def get_energy_list(base_dir_analysis):
                 to_ret.append(tmp)
             except (IOError,AssertionError) as e:
                 print("Couldn't read from (so skipping): {:s}".format(d))
-    return to_ret
+    energy_list_raw = to_ret
+    # get the valid points in the landscape
+    energy_list = [RetinalUtil.valid_landscape(e) for e in energy_list_raw]
+    # make sure we have a minimum number of FECS
+    energy_list = [e for e in energy_list if e.n_fecs >= min_fecs]
+    # the 3000nms BO data is very noisy; discard it.
+    energy_list = [e for e in energy_list
+                   if "BR-Retinal/3000nms/" not in e.base_dir]
+    # zero everything
+    for e in energy_list:
+        n_pts = e.G0.size
+        e._G0 -= min(e.G0[:n_pts//2])
+        e._q -= min(e.q)
+    return energy_list
 
 def get_ranges(ax_list,get_x=True):
     f = lambda x: x.get_xlim() if get_x else x.get_ylim()
@@ -118,8 +131,9 @@ def data_plot(fecs,energies):
         PlotUtil.plot_delta_GF(q_interp,mean_energy,std_energy,
                                max_q_nm=RetinalUtil.q_GF_nm())
     plt.axvspan(q_at_max_energy,max(xlim),color='k',alpha=0.3)
+    plt.xlim(xlim)
     PlotUtilities.legend(frameon=True,fontsize=5,
-                         bbox_to_anchor=(2,1.05))
+                         bbox_to_anchor=(1.5,1.05))
 
 def read_fecs(e):
     base_tmp = e.base_dir
@@ -149,21 +163,11 @@ def run():
     force = True
     min_fecs = 10
     GenUtilities.ensureDirExists(out_dir)
-    energy_list_raw = CheckpointUtilities.getCheckpoint(out_dir + \
+    energy_list = CheckpointUtilities.getCheckpoint(out_dir + \
                                                     "energies.pkl",
                                                     get_energy_list,force,
-                                                    base_dir_analysis)
-
-    energy_list = [RetinalUtil.valid_landscape(e) for e in energy_list_raw]
-    # make sure we have a minimum number of FECS
-    energy_list = [e for e in energy_list if e.n_fecs >= min_fecs]
-    # the 3000nms BO data is very noisy
-    energy_list = [e for e in energy_list
-                   if "BR-Retinal/3000nms/"not in e.base_dir]
-    for e in energy_list:
-        n_pts = e.G0.size
-        e._G0 -= min(e.G0[:n_pts//2])
-        e._q -= min(e.q)
+                                                    base_dir_analysis,
+                                                    min_fecs)
     fecs = []
     energies = []
     N = len(energy_list)
@@ -178,8 +182,14 @@ def run():
     # interpolate all the energies to the same grid
     q_interp, splines =  RetinalUtil.interpolating_G0(energy_list)
     # get an average/stdev of energy
-    fig = PlotUtilities.figure()
-    PlotUtil.plot_mean_landscape(q_interp, splines)
+    fig = PlotUtilities.figure((7,7))
+    ax = plt.subplot(1,1,1)
+    PlotUtil.plot_mean_landscape(q_interp, splines,ax=ax)
+    max_x_show_nm= 25
+    plt.xlim([None,max_x_show_nm])
+    plt.xticks([i for i in range(max_x_show_nm)])
+    ax.xaxis.set_ticks_position('both')
+    ax.grid(True)
     PlotUtilities.savefig(fig,out_dir + "avg.png")
 
 

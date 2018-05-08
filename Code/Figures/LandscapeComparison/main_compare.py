@@ -72,11 +72,13 @@ def make_retinal_subplot(gs,energy_list_arr,shifts,skip_arrow=True):
     for i,(mean,stdev) in enumerate(zip(means,stdevs)):
         delta_style = dict(**delta_styles[i])
         plt.plot(q_interp_nm,mean,**style_dicts[i])
-        q_at_max_energy, max_energy_mean, max_energy_std = \
+        q_at_max_energy, max_energy_mean, _ = \
             PlotUtil.plot_delta_GF(q_interp_nm, mean, stdev,
                                    max_q_nm=max_q_nm,round_std=-1,
                                    round_energy=-1,linewidth=0,
                                    label_offset=shifts[i],**delta_style)
+        # for the error, use the mean error over all interpolation
+        max_energy_std = np.mean(stdev)
         deltas.append(max_energy_mean)
         deltas_std.append(max_energy_std)
         q_arr.append(q_at_max_energy)
@@ -118,15 +120,11 @@ def make_retinal_subplot(gs,energy_list_arr,shifts,skip_arrow=True):
     return ax1, means, stdevs
 
 def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
-    slice_arr = [slice(0, None, 1), slice(1, None, 1)]
     landscpes_with_error = []
-    for i, energy_list_raw in enumerate(energy_list_arr):
-        energy_list = [RetinalUtil.valid_landscape(e) for e in energy_list_raw]
-        slice_f = slice_arr[i]
-        energy_list = energy_list[slice_f]
+    for i, energy_list in enumerate(energy_list_arr):
         _, splines = RetinalUtil.interpolating_G0(energy_list)
         mean, stdev = PlotUtil._mean_and_stdev_landcapes(splines, q_interp)
-        mean -= mean[0]
+        mean -= min(mean)
         l = LandscapeWithError(q_nm=q_interp,G_kcal=mean,G_err_kcal=stdev)
         landscpes_with_error.append(l)
     # get the extension grid we wnt...
@@ -161,17 +159,17 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
     ylim = ax.get_ylim()
     y_range = (ylim[1]-ylim[0])
     range_scale_kcal = np.round(y_range/3,-2)
-    x_range_nm = 20
+    x_range_scalebar_nm = 20
     min_offset, _, rel_delta = Scalebar. \
         offsets_zero_tick(limits=ylim,range_scalebar=range_scale_kcal)
     min_offset_x, _, rel_delta_x= Scalebar. \
-        offsets_zero_tick(limits=xlim,range_scalebar=x_range_nm)
-    offset_x = 0.75
-    offset_y = min_offset +  1 * rel_delta
+        offsets_zero_tick(limits=xlim,range_scalebar=x_range_scalebar_nm)
+    offset_x = 0.70
+    offset_y = min_offset + 0.5 * rel_delta
     common_kw = dict(add_minor=True)
     scalebar_kw = dict(offset_x=offset_x,offset_y=offset_y,ax=ax,
                        x_on_top=True,y_on_right=True,
-                       x_kwargs=dict(width=x_range_nm,unit="nm",**common_kw),
+                       x_kwargs=dict(width=x_range_scalebar_nm,unit="nm",**common_kw),
                        y_kwargs=dict(height=range_scale_kcal,unit="kcal/mol",
                                      **common_kw))
     PlotUtilities.no_x_label(ax=ax)
@@ -196,9 +194,9 @@ def run():
     out_dir = "./"
     energy_list_arr = read_energy_lists(subdirs)
     e_list_flat = [e for list_tmp in energy_list_arr for e in list_tmp ]
-    q_offset = 30
+    q_offset = RetinalUtil.q_GF_nm()
     q_interp = RetinalUtil.common_q_interp(energy_list=e_list_flat)
-    q_interp = q_interp[np.where(q_interp  <= q_offset)]
+    q_interp = q_interp[np.where(q_interp-min(q_interp)  <= q_offset)]
     G_no_peg = read_non_peg_landscape()
     fig = PlotUtilities.figure(figsize=(3.5,3.25))
     make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset)
