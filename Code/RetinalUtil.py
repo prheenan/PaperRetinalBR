@@ -113,9 +113,9 @@ def offset_L(info):
     L0 = info.L0_c_terminal - offset_m
     return L0
 
-def _ext_grid(f_grid,x0):
+def _ext_grid(f_grid,x0,**kw):
     # get the extension components
-    ext_total, ext_components = WLCHao._hao_shift(f_grid, *x0)
+    ext_total, ext_components = WLCHao._hao_shift(f_grid, *x0,**kw)
     ext_FJC = ext_components[0]
     # make the extension at <= force be zero
     where_f_le = np.where(f_grid <= 0)
@@ -135,7 +135,7 @@ def _polish_helper(d):
     x, f = to_ret.Separation.copy(), to_ret.Force.copy()
     # get a grid over all possible forces
     f_grid = np.linspace(min(f), max(f), num=f.size, endpoint=True)
-    ext_total, ext_FJC = _ext_grid(f_grid, inf.x0)
+    ext_total, ext_FJC = _ext_grid(f_grid, inf.x0,**inf.kw_fit)
     # we now have X_FJC as a function of force. Therefore, we can subtract
     # off the extension of the PEG3400 to determining the force-extension
     # associated with only the protein (*including* its C-term)
@@ -145,8 +145,8 @@ def _polish_helper(d):
                                                 y_grid=ext_FJC,
                                                 bounds_error=False)
     # remove the extension associated with the PEG
-    to_ret.Separation -= ext_FJC_all_forces
     L0 = offset_L(to_ret.L0_info)
+    to_ret.Separation -= ext_FJC_all_forces
     to_ret.Separation -= L0
     to_ret.ZSnsr -= L0
     # make sure the fitting object knows about the change in extensions...
