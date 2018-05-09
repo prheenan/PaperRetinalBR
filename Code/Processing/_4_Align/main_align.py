@@ -59,7 +59,7 @@ def GF2_event_idx(d,min_F_N):
               for e in event_slices]
     # get the predicted force (rupture force), which is the last element of the
     # predicted force.
-    pred = [e[2] for e in list_v]
+    pred = [e[2] if len(e[0]) > 0 else [0] for e in list_v]
     f_at_idx = [p[-1] for p in pred]
     valid_events = [i for i, f in zip(event_idx, f_at_idx) if f > min_F_N]
     if (len(valid_events) == 0):
