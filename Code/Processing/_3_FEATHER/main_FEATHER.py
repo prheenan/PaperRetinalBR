@@ -27,36 +27,6 @@ from multiprocessing import Pool
 import multiprocessing
 
 
-def _detect_retract_FEATHER(d,pct_approach,tau_f,threshold,f_refs=None):
-    """
-    :param d:  TimeSepForce
-    :param pct_approach: how much of the retract, starting from the end,
-    to use as an effective approach curve
-    :param tau_f: fraction for tau
-    :param threshold: FEATHERs probability threshold
-    :return:
-    """
-    force_N = d.Force
-    # use the last x% as a fake 'approach' (just for noise)
-    n = force_N.size
-    n_approach = int(np.ceil(n * pct_approach))
-    tau_n_points = int(np.ceil(n * tau_f))
-    # slice the data for the approach, as described above
-    n_approach_start = n - (n_approach + 1)
-    fake_approach = d._slice(slice(n_approach_start, n, 1))
-    fake_dwell = d._slice(slice(n_approach_start - 1, n_approach_start, 1))
-    # make a 'custom' split fec (this is what FEATHER needs for its noise stuff)
-    split_fec = Analysis.split_force_extension(fake_approach, fake_dwell, d,
-                                               tau_n_points)
-    # set the 'approach' number of points for filtering to the retract.
-    split_fec.set_tau_num_points_approach(split_fec.tau_num_points)
-    # set the predicted retract surface index to a few tau. This avoids looking
-    #  at adhesion
-    split_fec.get_predicted_retract_surface_index = lambda: 5 * tau_n_points
-    pred_info = Detector._predict_split_fec(split_fec, threshold=threshold,
-                                            f_refs=f_refs)
-    return pred_info, tau_n_points
-
 def align_single(d,**kw):
     """
     :param d: FEC to get FJC+WLC fit of
@@ -72,7 +42,7 @@ def align_single(d,**kw):
     d_pred_only = d._slice(slice(0,None,1))
     # first, try removing surface adhesions
     feather_kw =  dict(d=d_pred_only,**kw)
-    pred_info,tau_n = _detect_retract_FEATHER(**feather_kw)
+    pred_info,tau_n = RetinalUtil._detect_retract_FEATHER(**feather_kw)
     # if we removed more than 20nm or we didnt find any events, then
     # FEATHER got confused by a near-surface BR. Tell it not to look for
     # surface adhesions
@@ -80,7 +50,8 @@ def align_single(d,**kw):
     expected_gf_m = 20e-9
     if ((len(pred_info.event_idx) == 0) or (expected_surface_m > expected_gf_m)):
         f_refs = [Detector.delta_mask_function]
-        pred_info,tau_n = _detect_retract_FEATHER(f_refs=f_refs,**feather_kw)
+        pred_info,tau_n = RetinalUtil._detect_retract_FEATHER(f_refs=f_refs,
+                                                              **feather_kw)
     pred_info.tau_n = tau_n
     assert len(pred_info.event_idx) > 0 , "FEATHER can't find an event..."
     to_ret = ProcessingUtil.AlignedFEC(d,info_fit=None,feather_info=pred_info)
@@ -121,7 +92,7 @@ def run():
     force = True
     max_n_pool = multiprocessing.cpu_count() - 1
     n_pool = max_n_pool
-    kw_feather = dict(pct_approach=0.1, tau_f=0.01, threshold=1e-3)
+    kw_feather = dict(pct_approach=0.1, tau_f=0.001, threshold=1e-2)
     data = align_data(in_dir,out_dir,force=force,n_pool=n_pool,
                       **kw_feather)
     # plot all of the FEATHER information

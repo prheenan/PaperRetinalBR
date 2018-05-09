@@ -45,6 +45,32 @@ def _debug_plot(to_ret):
     plt.axvline(inf.x0[-1])
     plt.show()
 
+def GF2_event_idx(d,min_F_N):
+    pred_info = d.info_feather
+    tau_n = pred_info.tau_n
+    # POST: FEATHER found something; we need to screen for lower-force events..
+    event_idx = [i for i in pred_info.event_idx]
+    event_slices = [slice(i - tau_n * 2, i, 1) for i in event_idx]
+    # determine the coefficients of the fit
+    t, f = d.Time, d.Force
+    # loading rate helper has return like:
+    # fit_x, fit_y, pred, _, _, _
+    list_v = [Detector._loading_rate_helper(t, f, e)
+              for e in event_slices]
+    # get the predicted force (rupture force), which is the last element of the
+    # predicted force.
+    pred = [e[2] for e in list_v]
+    f_at_idx = [p[-1] for p in pred]
+    valid_events = [i for i, f in zip(event_idx, f_at_idx) if f > min_F_N]
+    if (len(valid_events) == 0):
+        warnings.warn("Couldn't find high-force events for {:s}". \
+                      format(d.Meta.Name))
+        # just take the maximum
+        valid_events = [event_idx[np.argmax(f_at_idx)]]
+    # make sure the event makes sense
+    max_fit_idx = valid_events[0]
+    return max_fit_idx
+
 def align_single(d,min_F_N,**kw):
     """
     :param d: FEC to get FJC+WLC fit of
@@ -55,28 +81,7 @@ def align_single(d,min_F_N,**kw):
     """
     force_N = d.Force
     pred_info = d.info_feather
-    tau_n = pred_info.tau_n
-    # POST: FEATHER found something; we need to screen for lower-force events..
-    event_idx = [i for i in pred_info.event_idx]
-    event_slices = [ slice(i-tau_n*2,i,1) for i in event_idx]
-    # determine the coefficients of the fit
-    t,f = d.Time, d.Force
-    # loading rate helper has return like:
-    #fit_x, fit_y, pred, _, _, _
-    list_v = [ Detector._loading_rate_helper(t,f,e)
-                for e in event_slices]
-    # get the predicted force (rupture force), which is the last element of the
-    # predicted force.
-    pred = [e[2] for e in list_v]
-    f_at_idx = [p[-1] for p in pred]
-    valid_events = [i for i,f in zip(event_idx,f_at_idx) if f > min_F_N]
-    if (len(valid_events) == 0):
-        warnings.warn("Couldn't find high-force events for {:s}".\
-                      format(d.Meta.Name))
-        # just take the maximum
-        valid_events = [event_idx[np.argmax(f_at_idx)]]
-    # make sure the event makes sense
-    max_fit_idx = valid_events[0]
+    max_fit_idx = GF2_event_idx(d,min_F_N)
     where_above_surface = np.where(force_N >= 0)[0]
     first_time_above_surface = where_above_surface[0]
     assert first_time_above_surface < max_fit_idx , \

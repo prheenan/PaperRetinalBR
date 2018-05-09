@@ -17,6 +17,7 @@ from Lib.AppIWT.Code.InverseWeierstrass import FEC_Pulling_Object
 from Lib.AppWLC.Code import WLC
 from Processing.Util import WLC as WLCHao
 from Lib.AppWLC.UtilFit import fit_base
+from Lib.AppFEATHER.Code import Detector, Analysis
 
 class MetaPulling(FEC_Pulling_Object):
     def __init__(self,time_sep_force,kbT=4.1e-21,**kw):
@@ -113,15 +114,50 @@ def offset_L(info):
     L0 = info.L0_c_terminal - offset_m
     return L0
 
-def _ext_grid(f_grid,x0,**kw):
+def _ext_grid(f_grid,x0,kw,threshold=False):
     # get the extension components
     ext_total, ext_components = WLCHao._hao_shift(f_grid, *x0,**kw)
     ext_FJC = ext_components[0]
     # make the extension at <= force be zero
-    where_f_le = np.where(f_grid <= 0)
-    ext_FJC[where_f_le] = 0
-    ext_total[where_f_le] = 0
-    return ext_total, ext_FJC
+    where_f_le = np.where(f_grid <= 0)[0]
+    f_grid_ret = f_grid.copy()
+    if (threshold and where_f_le.size > 0):
+        zero_idx = where_f_le[-1]
+        ext_FJC[where_f_le] = ext_FJC[zero_idx]
+        ext_total[where_f_le] = ext_total[zero_idx]
+        f_grid_ret[where_f_le] = 0
+    return ext_total, ext_FJC, f_grid_ret
+
+
+def _detect_retract_FEATHER(d,pct_approach,tau_f,threshold,f_refs=None):
+    """
+    :param d:  TimeSepForce
+    :param pct_approach: how much of the retract, starting from the end,
+    to use as an effective approach curve
+    :param tau_f: fraction for tau
+    :param threshold: FEATHERs probability threshold
+    :return:
+    """
+    force_N = d.Force
+    # use the last x% as a fake 'approach' (just for noise)
+    n = force_N.size
+    n_approach = int(np.ceil(n * pct_approach))
+    tau_n_points = int(np.ceil(n * tau_f))
+    # slice the data for the approach, as described above
+    n_approach_start = n - (n_approach + 1)
+    fake_approach = d._slice(slice(n_approach_start, n, 1))
+    fake_dwell = d._slice(slice(n_approach_start - 1, n_approach_start, 1))
+    # make a 'custom' split fec (this is what FEATHER needs for its noise stuff)
+    split_fec = Analysis.split_force_extension(fake_approach, fake_dwell, d,
+                                               tau_n_points)
+    # set the 'approach' number of points for filtering to the retract.
+    split_fec.set_tau_num_points_approach(split_fec.tau_num_points)
+    # set the predicted retract surface index to a few tau. This avoids looking
+    #  at adhesion
+    split_fec.get_predicted_retract_surface_index = lambda: 5 * tau_n_points
+    pred_info = Detector._predict_split_fec(split_fec, threshold=threshold,
+                                            f_refs=f_refs)
+    return pred_info, tau_n_points
 
 def _polish_helper(d):
     """
@@ -131,11 +167,16 @@ def _polish_helper(d):
     to_ret = d._slice(slice(0, None, 1))
     # get the slice we are fitting
     inf = to_ret.L0_info
+    shift_m = inf._L_shift
+    to_ret.Separation -= shift_m
+    to_ret.ZSnsr -= shift_m
     fit_slice = inf.fit_slice
     x, f = to_ret.Separation.copy(), to_ret.Force.copy()
     # get a grid over all possible forces
     f_grid = np.linspace(min(f), max(f), num=f.size, endpoint=True)
-    ext_total, ext_FJC = _ext_grid(f_grid, inf.x0,**inf.kw_fit)
+    ext_total, ext_FJC,f_grid = _ext_grid(f_grid, inf.x0,inf.kw_fit)
+    ext_total -= shift_m
+    ext_FJC -= shift_m
     # we now have X_FJC as a function of force. Therefore, we can subtract
     # off the extension of the PEG3400 to determining the force-extension
     # associated with only the protein (*including* its C-term)
@@ -144,12 +185,13 @@ def _polish_helper(d):
     ext_FJC_all_forces = fit_base._grid_to_data(x=f, x_grid=f_grid,
                                                 y_grid=ext_FJC,
                                                 bounds_error=False)
+    ext_FJC_all_forces[np.isnan(ext_FJC_all_forces)] = 0
     # remove the extension associated with the PEG
-    L0 = offset_L(to_ret.L0_info)
-    to_ret.Separation -= ext_FJC_all_forces
-    to_ret.Separation -= L0
-    to_ret.ZSnsr -= L0
+    const_offset_x_m = 0
+    to_ret.Separation -= ext_FJC_all_forces + const_offset_x_m
+    to_ret.ZSnsr -= const_offset_x_m
     # make sure the fitting object knows about the change in extensions...
-    ext_total_info, ext_FJC_correct_info = _ext_grid(inf.f_grid, inf.x0)
-    to_ret.L0_info.set_x_offset(L0 + ext_FJC_correct_info)
+    ext_total_info, ext_FJC_correct_info, _  = _ext_grid(inf.f_grid, inf.x0,
+                                                         inf.kw_fit)
+    to_ret.L0_info.set_x_offset(const_offset_x_m + ext_FJC_correct_info)
     return to_ret
