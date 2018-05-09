@@ -144,7 +144,7 @@ def run():
                                          out_name=out_name)
     # make individual plots
     ProcessingUtil.make_aligned_plot(base_dir,step,data,
-                                     xlim=[-30,150])
+                                     xlim=[-30,150],use_shift=True)
 
 
 

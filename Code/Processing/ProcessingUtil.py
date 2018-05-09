@@ -164,7 +164,7 @@ def plot_data(base_dir,step,data,markevery=1,f_x = lambda x: x.Separation,
         plot_single_fec(d, f_x, xlim, ylim,markevery=markevery)
         PlotUtilities.savefig(f, plot_subdir + name_func(0, d) + ".png")
 
-def _aligned_plot(d,f_x,xlim,ylim):
+def _aligned_plot(d,f_x,xlim,ylim,use_shift=False):
     # get the fit
     # convert to reasonable units for plotting
     # get the fit
@@ -180,14 +180,15 @@ def _aligned_plot(d,f_x,xlim,ylim):
              label="Total")
     # get the two components (FJC and WLC)
     components = info.component_grid
-    component_offset = offset
+    offset_L = RetinalUtil.offset_L(info)
+    component_offset = offset if use_shift else offset_L
     for ext,label in [ [components[1],"C-term"],[components[0],"PEG3400"] ]:
         ext_plot = (ext - component_offset) * 1e9
-        plt.plot(ext_plot,f_plot_pred,label=label)
+        plt.plot(ext_plot,f_plot_pred,label=label,linestyle='--')
     # plot the fit
     plot_single_fec(d, f_x, xlim, ylim)
 
-def make_aligned_plot(base_dir,step,data,xlim=None,post=""):
+def make_aligned_plot(base_dir,step,data,xlim=None,post="",**kw):
     plot_subdir = Pipeline._plot_subdir(base_dir, step)
     f_x = lambda x: x.Separation
     xlim_tmp, ylim = nm_and_pN_limits(data,f_x)
@@ -195,7 +196,7 @@ def make_aligned_plot(base_dir,step,data,xlim=None,post=""):
     name_func = FEC_Util.fec_name_func
     for d in data:
         f = PlotUtilities.figure()
-        _aligned_plot(d, f_x, xlim, ylim)
+        _aligned_plot(d, f_x, xlim, ylim,**kw)
         PlotUtilities.savefig(f, plot_subdir + name_func(0, d) + post + ".png")
 
 
