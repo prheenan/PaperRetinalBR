@@ -114,20 +114,6 @@ def offset_L(info):
     L0 = info.L0_c_terminal - offset_m
     return L0
 
-def _ext_grid(f_grid,x0,kw,threshold=False):
-    # get the extension components
-    ext_total, ext_components = WLCHao._hao_shift(f_grid, *x0,**kw)
-    ext_FJC = ext_components[0]
-    # make the extension at <= force be zero
-    where_f_le = np.where(f_grid <= 0)[0]
-    f_grid_ret = f_grid.copy()
-    if (threshold and where_f_le.size > 0):
-        zero_idx = where_f_le[-1]
-        ext_FJC[where_f_le] = ext_FJC[zero_idx]
-        ext_total[where_f_le] = ext_total[zero_idx]
-        f_grid_ret[where_f_le] = 0
-    return ext_total, ext_FJC, f_grid_ret
-
 
 def _detect_retract_FEATHER(d,pct_approach,tau_f,threshold,f_refs=None):
     """
@@ -167,16 +153,15 @@ def _polish_helper(d):
     to_ret = d._slice(slice(0, None, 1))
     # get the slice we are fitting
     inf = to_ret.L0_info
-    shift_m = inf._L_shift
-    to_ret.Separation -= shift_m
-    to_ret.ZSnsr -= shift_m
-    fit_slice = inf.fit_slice
-    x, f = to_ret.Separation.copy(), to_ret.Force.copy()
+    min_idx = inf.fit_slice.start
+    slice_fit = slice(min_idx,None,1)
+    to_ret.Separation = to_ret.Separation[slice_fit]
+    to_ret.Force = to_ret.Force[slice_fit]
+    x,f = to_ret.Separation, to_ret.Force
     # get a grid over all possible forces
     f_grid = np.linspace(min(f), max(f), num=f.size, endpoint=True)
-    ext_total, ext_FJC,f_grid = _ext_grid(f_grid, inf.x0,inf.kw_fit)
-    ext_total -= shift_m
-    ext_FJC -= shift_m
+    info_fit = d.info_fit
+    ext_FJC = info_fit.ext_FJC(f_grid)
     # we now have X_FJC as a function of force. Therefore, we can subtract
     # off the extension of the PEG3400 to determining the force-extension
     # associated with only the protein (*including* its C-term)
@@ -191,7 +176,6 @@ def _polish_helper(d):
     to_ret.Separation -= ext_FJC_all_forces + const_offset_x_m
     to_ret.ZSnsr -= const_offset_x_m
     # make sure the fitting object knows about the change in extensions...
-    ext_total_info, ext_FJC_correct_info, _  = _ext_grid(inf.f_grid, inf.x0,
-                                                         inf.kw_fit)
+    ext_FJC_correct_info = info_fit.ext_FJC(info_fit.f_grid)
     to_ret.L0_info.set_x_offset(const_offset_x_m + ext_FJC_correct_info)
     return to_ret

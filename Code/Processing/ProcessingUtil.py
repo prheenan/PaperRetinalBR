@@ -172,16 +172,16 @@ def _aligned_plot(d,f_x,xlim,ylim,use_shift=False):
     f_grid = info.f_grid
     # convert to reasonable units for plotting
     offset = info.x_offset
-    ext_grid = info.ext_grid
+    ext_grid = info.ext_grid()
     f_plot_pred = f_grid * 1e12
     x_plot_pred = (ext_grid - offset)* 1e9
     # convert back to the grid to get rid of the offset
     plt.plot(x_plot_pred, f_plot_pred, color='r', linewidth=1.5,
              label="Total")
     # get the two components (FJC and WLC)
-    components = info.component_grid
+    components = info.component_grid()
     offset_L = RetinalUtil.offset_L(info)
-    component_offset = offset if use_shift else offset_L
+    component_offset = 0
     for ext,label in [ [components[1],"C-term"],[components[0],"PEG3400"] ]:
         ext_plot = (ext - component_offset) * 1e9
         plt.plot(ext_plot,f_plot_pred,label=label,linestyle='--')

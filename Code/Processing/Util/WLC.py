@@ -65,19 +65,30 @@ class FitFJCandWLC(object):
     def f_grid(self):
         return np.linspace(self.min_f, self.max_f, endpoint=True,
                            num=self.n_f)
-
     @property
+    def _x0_fit(self):
+        return self.x0[:-1]
+
+    def _shifted(self,f_grid):
+        return _hao_shift(f_grid,*self._x0_fit,**self.kw_fit)
+
+    def _f_grid_safe(self,f_grid):
+        to_ret = self.f_grid if f_grid is None else f_grid
+        return to_ret
+
+    def ext_FJC(self,f_grid=None):
+        f_grid = self._f_grid_safe(f_grid)
+        return ext_FJC(f_grid,*self._x0_fit,**self.kw_fit)
+
     def ext_grid(self, f_grid=None):
-        if f_grid is None:
-            f_grid = self.f_grid
+        f_grid = self._f_grid_safe(f_grid)
         # get the force and extension grid again, with the optimized parameters
-        ext_grid, _ = _hao_shift(f_grid, *self.x0,**self.kw_fit)
+        ext_grid, _ = self._shifted(f_grid)
         return ext_grid
 
-    @property
     def component_grid(self,f_grid=None):
-        f_grid = self.f_grid if f_grid is None else f_grid
-        _, ext_components = _hao_shift(f_grid, *self.x0,**self.kw_fit)
+        f_grid = self._f_grid_safe(f_grid)
+        _, ext_components = self._shifted(f_grid)
         return ext_components
 
     @property
@@ -98,7 +109,7 @@ class FitFJCandWLC(object):
 
     @property
     def L0_c_terminal(self):
-        return self.kw_fit['L0_protein'] + self._L_shift
+        return self.kw_fit['L0_protein']
 
     @property
     def L0_PEG3400(self):
@@ -216,8 +227,8 @@ def _hao_ext_grid(force_grid,*args,**kw):
 
 def _hao_shift(force_grid,*args,**kwargs):
     # last argument is amount to shift...
-    ext_grid, ext_components  =_hao_ext_grid(force_grid,*(args[:-1]),**kwargs)
-    offset = args[-1]
+    ext_grid, ext_components  =_hao_ext_grid(force_grid,*args,**kwargs)
+    offset = 0
     to_ret = ext_grid + offset
     ext_components = [ext_components[0] + offset/2,
                       ext_components[1] + offset/2]
@@ -227,9 +238,16 @@ def _hao_shift_total(*args,**kwargs):
     to_ret, _  = _hao_shift(*args, **kwargs)
     return to_ret
 
+def ext_FJC(f_grid,*args,**kwargs):
+    _, ext_components = _hao_shift(f_grid,*args,**kwargs)
+    ext_FJC = ext_components[0]
+    return ext_FJC
+
 def _hao_fit_helper(x,f,force_grid,*args,**kwargs):
-    ext_grid = _hao_shift_total(force_grid, *args, **kwargs)
-    l2 = fit_base._l2_grid_to_data(x,f,ext_grid,force_grid)
+    ext_grid = _hao_shift_total(force_grid, *(args[:-1]), **kwargs)
+    shift =  args[-1]
+    x_shift = x + shift
+    l2 = fit_base._l2_grid_to_data(x_shift,f,ext_grid,force_grid)
     return l2
 
 def predicted_f_at_x(x,ext_grid,f_grid):
@@ -251,12 +269,17 @@ def hao_fit(x,f):
     range_N = (0,250)
     range_K = (50,2500)
     range_L_K = (0.1e-9,4e-9)
-    range_x_shift = (-50e-9,0)
+    range_x_shift = (0,50e-9)
     Lp = 0.4e-9
     # see Online methods, 74 nm / 198 AA
     L0_per_aa = 0.38e-9
     N_aa_tail = 24
-    L0 = L0_per_aa * (N_aa_tail + 64)
+    L0_tail = L0_per_aa * N_aa_tail
+    # we also need to take into account the total contour length of
+    # IG1 + IG2, including distance in down into the lipid. ibid...
+    n_aa = 8
+    delta_L_IG2 = n_aa * L0_per_aa
+    L0 = L0_tail + delta_L_IG2
     kw_fit = dict(Lp_protein=Lp,L0_protein=L0)
     f_grid = np.linspace(min(f),max(f),endpoint=True,num=f.size)
     functor_l2 = lambda *args: _hao_fit_helper(x,f,f_grid,*(args[0]),
