@@ -277,7 +277,7 @@ def hao_fit(x,f):
     L0_tail = L0_per_aa * N_aa_tail
     # we also need to take into account the total contour length of
     # IG1 + IG2, including distance in down into the lipid. ibid...
-    n_aa = 8
+    n_aa = 64
     delta_L_IG2 = n_aa * L0_per_aa
     L0 = L0_tail + delta_L_IG2
     kw_fit = dict(Lp_protein=Lp,L0_protein=L0)

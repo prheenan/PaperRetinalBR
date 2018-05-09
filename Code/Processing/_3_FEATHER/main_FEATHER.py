@@ -92,7 +92,7 @@ def run():
     force = True
     max_n_pool = multiprocessing.cpu_count() - 1
     n_pool = max_n_pool
-    kw_feather = dict(pct_approach=0.1, tau_f=0.001, threshold=1e-2)
+    kw_feather = dict(pct_approach=0.3, tau_f=0.01, threshold=1e-3)
     data = align_data(in_dir,out_dir,force=force,n_pool=n_pool,
                       **kw_feather)
     # plot all of the FEATHER information

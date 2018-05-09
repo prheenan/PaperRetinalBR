@@ -71,7 +71,7 @@ def GF2_event_idx(d,min_F_N):
     max_fit_idx = valid_events[0]
     return max_fit_idx
 
-def align_single(d,min_F_N,**kw):
+def align_single(d,min_F_N):
     """
     :param d: FEC to get FJC+WLC fit of
     :param min_F_N: minimum force, in Newtons, for fitting event. helps avoid
@@ -135,11 +135,9 @@ def run():
     max_n_pool = multiprocessing.cpu_count() - 1
     n_pool = max_n_pool
     min_F_N = 175e-12 if "+Retinal" in base_dir else 90e-12
-    kw_feather = dict(pct_approach=0.1, tau_f=0.01, threshold=1e-3)
-    data = align_data(in_dir,out_dir,force=force,n_pool=n_pool,min_F_N=min_F_N,
-                      **kw_feather)
+    data = align_data(in_dir,out_dir,force=force,n_pool=n_pool,min_F_N=min_F_N)
     plot_subdir = Pipeline._plot_subdir(base_dir, step)
-    xlim_heatmap_nm = [-25,40]
+    xlim_heatmap_nm = [0,100]
     ProcessingUtil.heatmap_ensemble_plot(data,xlim=xlim_heatmap_nm,
                                          out_name=plot_subdir + "heatmap.png")
     # get the post-blacklist heapmap, too..
