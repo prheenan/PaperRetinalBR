@@ -75,7 +75,6 @@ def get_energy_list(base_dir_analysis,min_fecs):
     for e in energy_list:
         n_pts = e.G0.size
         e._G0 -= min(e.G0[:n_pts//2])
-        e._q -= min(e.q)
     return energy_list
 
 def get_ranges(ax_list,get_x=True):
@@ -186,9 +185,10 @@ def run():
     fig = PlotUtilities.figure((7,7))
     ax = plt.subplot(1,1,1)
     PlotUtil.plot_mean_landscape(q_interp, splines,ax=ax)
-    max_x_show_nm= 25
-    plt.xlim([None,max_x_show_nm])
-    plt.xticks([i for i in range(max_x_show_nm)])
+    max_x_show_nm= RetinalUtil.q_GF_nm()+ 20
+    min_x_show_nm = int(np.floor(min(q_interp)-2))
+    plt.xlim([min_x_show_nm,max_x_show_nm])
+    plt.xticks([i for i in range(min_x_show_nm,max_x_show_nm)])
     ax.xaxis.set_ticks_position('both')
     ax.grid(True)
     PlotUtilities.savefig(fig,out_dir + "avg.png")

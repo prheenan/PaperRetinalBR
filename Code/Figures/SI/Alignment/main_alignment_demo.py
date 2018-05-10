@@ -70,11 +70,14 @@ def _plot_fmt(ax,xlim,ylim,is_bottom=False):
     PlotUtilities.color_x(**color_kw)
     PlotUtilities.color_y(**color_kw)
 
-
-def _heatmap_alignment(alignment):
+def _limits(alignment):
     xlim = [-20,120]
     max_y = np.max([max(f.Force) for f in alignment._all_fecs]) * 1e12
     ylim = [-50,max_y]
+    return xlim,ylim
+
+def _heatmap_alignment(alignment):
+    xlim, ylim = _limits(alignment)
     max_x = xlim[1]
     bin_step_nm = 1
     bin_step_pN = 5
@@ -118,7 +121,8 @@ def run():
     alignment = _alignment_pipeline(energies[0])
     fig = PlotUtilities.figure((4,8))
     _heatmap_alignment(alignment)
-    PlotUtilities.savefig(fig, "./out.png",subplots_adjust=dict(hspace=0.08))
+    PlotUtilities.savefig(fig, "./FigureSX_Alignment.png",
+                          subplots_adjust=dict(hspace=0.08))
 
 
 if __name__ == "__main__":
