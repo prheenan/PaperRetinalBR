@@ -132,8 +132,7 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
         l = LandscapeWithError(q_nm=q_interp,G_kcal=mean,G_err_kcal=stdev)
         landscpes_with_error.append(l)
     # get the extension grid we wnt...
-    peg = WLC.peg_contribution()
-    ext_grid = peg.q
+    ext_grid = np.linspace(0,25,num=100)
     # read in Hao's energy landscape
     fec_system = WLC._make_plot_inf(ext_grid,WLC.read_hao_polypeptide)
     shifts = [fec_system.W_at_f(f) for f in [249, 149]]

@@ -339,7 +339,11 @@ def read_hao_polypeptide():
     :return: see  read_haos_data, except just the WLC (polypeptide) part
     """
     file_polypeptide = "../FigData/HaosFEC_Polypeptide.csv"
-    return _read_csv_fec(file_polypeptide)
+    _, F = _read_csv_fec(file_polypeptide)
+    F = np.linspace(1e-15,300e-12,F.size)
+    _, ext_components = _hao_ext_grid(F, L0_protein=24 * 0.38e-9)
+    ext_WLC = ext_components[1]
+    return ext_WLC * 1e9, F * 1e12
 
 def _make_plot_inf(ext_grid,read_functor):
     """
