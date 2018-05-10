@@ -132,6 +132,12 @@ def _read_all_energies(base_dir_analysis):
             except (IOError, AssertionError) as e:
                 print("Couldn't read from (so skipping): {:s}".format(d))
     energy_list_raw = to_ret
+    # get the valid points in the landscape
+    energy_list = [valid_landscape(e) for e in energy_list_raw]
+    # zero everything
+    for e in energy_list:
+        n_pts = e.G0.size
+        e._G0 -= min(e.G0[:n_pts//2])
     return energy_list_raw
 
 def interpolating_G0(energy_list,num_q=200,num_splines=75):

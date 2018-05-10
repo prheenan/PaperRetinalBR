@@ -38,6 +38,11 @@ class AlignmentInfo(object):
         to_ret = [f for list_v in all_lists for f in list_v.fec_list]
         return to_ret
 
+class LandscapeGallery(object):
+    def __init__(self,PEG600,PEG3400):
+        self.PEG600 = PEG600
+        self.PEG3400 = PEG3400
+
 def _snapsnot(base_dir,step):
     corrected_dir = Pipeline._cache_dir(base=base_dir,
                                         enum=step)
@@ -129,6 +134,21 @@ def _heatmap_alignment(gs,alignment,col_idx):
     _plot_fmt(ax3,xlim,ylim,True)
     PlotUtilities.title(downarrow + " Remove poorly-fit FECs",**title_kw)
 
+def read_landscapes(base_dir):
+    """
+    :param base_dir: input to RetinalUtil._read_all_energies
+    :return:
+    """
+    energies = RetinalUtil._read_all_energies(base_dir)
+    names = [e.base_dir.split("FECs180307")[1] for e in energies]
+    str_PEG600_example = "/BR+Retinal/300nms/170511FEC/landscape_"
+    str_PEG3400_example = "/BR+Retinal/3000nms/170503FEC/landscape_"
+    idx_PEG600 = names.index(str_PEG600_example)
+    idx_PEG3400 = names.index(str_PEG3400_example)
+    to_ret = LandscapeGallery(PEG600=energies[idx_PEG600],
+                              PEG3400=energies[idx_PEG3400])
+    return to_ret
+
 
 def run():
     """
@@ -142,10 +162,9 @@ def run():
     """
     base_dir = "../../../../Data/FECs180307/"
     base_dir_input = base_dir + "BR+Retinal/"
-    in_dir = Pipeline._cache_dir(base=base_dir_input,
-                                 enum=Pipeline.Step.CORRECTED)
-    energies = CheckpointUtilities.lazy_load(in_dir + "energies.pkl")
-    alignment = _alignment_pipeline(energies[0])
+    gallery = CheckpointUtilities.getCheckpoint("./caches.pkl",read_landscapes,
+                                                True,base_dir_input)
+    alignment = _alignment_pipeline(gallery.PEG600)
     fig = PlotUtilities.figure((3,4))
     gs = gridspec.GridSpec(3, 2)
     _heatmap_alignment(gs,alignment,0)

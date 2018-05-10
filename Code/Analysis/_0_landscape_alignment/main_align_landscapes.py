@@ -27,18 +27,12 @@ def get_energy_list(base_dir_analysis, min_fecs):
     :param min_fecs: see RetinalUtil._read_all_energies
     :return: list of zeroed retinal energies...
     """
-    energy_list_raw = RetinalUtil._read_all_energies(base_dir_analysis)
-    # get the valid points in the landscape
-    energy_list = [RetinalUtil.valid_landscape(e) for e in energy_list_raw]
+    energy_list = RetinalUtil._read_all_energies(base_dir_analysis)
     # make sure we have a minimum number of FECS
     energy_list = [e for e in energy_list if e.n_fecs >= min_fecs]
     # the 3000nms BO data is very noisy; discard it.
     energy_list = [e for e in energy_list
                    if "BR-Retinal/3000nms/" not in e.base_dir]
-    # zero everything
-    for e in energy_list:
-        n_pts = e.G0.size
-        e._G0 -= min(e.G0[:n_pts//2])
     return energy_list
 
 def get_ranges(ax_list,get_x=True):
