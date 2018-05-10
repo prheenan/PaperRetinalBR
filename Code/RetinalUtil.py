@@ -32,18 +32,27 @@ class MetaPulling(FEC_Pulling_Object):
         super(MetaPulling,self).__init__(**kw_time_sep_f)
         self.Meta = time_sep_force.Meta
 
-class EnergyWithMeta(WeightedHistogram.LandscapeWHAM):
+
+class DualLandscape(WeightedHistogram.LandscapeWHAM):
+    def __init__(self, wham_obj, iwt_obj):
+        self._iwt_obj = iwt_obj
+        self._wham_obj = wham_obj
+        super(DualLandscape, self).__init__(wham_obj._q, wham_obj._G0,
+                                            wham_obj._offset_G0_of_q,
+                                            wham_obj.beta)
+    def _slice(self,*args,**kwargs):
+        slice_iwt = self._iwt_obj
+        wham_obj = self._wham_obj._slice(*args,**kwargs)
+        return DualLandscape(wham_obj=wham_obj,iwt_obj=slice_iwt)
+
+class EnergyWithMeta(DualLandscape):
     def __init__(self,file_name,base_dir,energy):
         self.file_name = file_name
         self.base_dir = base_dir
         self.n_fecs = None
         self.__init__energy(energy)
     def __init__energy(self,energy):
-        offset = energy._offset_G0_of_q
-        super(EnergyWithMeta,self).__init__(q=energy._q,
-                                            G0=energy._G0,
-                                            offset_G0_of_q=offset,
-                                            beta=energy.beta)
+        super(EnergyWithMeta,self).__init__(energy._wham_obj,energy._iwt_obj)
     def _slice(self,*args,**kw):
         sliced = super(EnergyWithMeta,self)._slice(*args,**kw)
         self.__init__energy(sliced)
@@ -156,7 +165,7 @@ def interpolating_G0(energy_list,num_q=200,num_splines=75):
 
 def spline_fit(q, G0, k=3, knots=None,num=None):
     if num is None:
-        num = min(75,q.size//(k)-1)
+        num = min(100,q.size//(k)-1)
     if (knots is None):
         step = q.size//num
         assert step > 0 and step

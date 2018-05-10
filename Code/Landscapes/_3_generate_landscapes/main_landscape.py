@@ -17,14 +17,18 @@ from Lib.UtilForce.UtilGeneral import CheckpointUtilities
 from Lib.UtilForce.UtilGeneral import PlotUtilities
 from Processing import ProcessingUtil
 from Lib.AppWHAM.Code import WeightedHistogram, UtilWHAM
+from Lib.AppIWT.Code import InverseWeierstrass
 import RetinalUtil
 import PlotUtil
 
+
 def generate_landscape(in_dir):
     data = CheckpointUtilities.lazy_multi_load(in_dir)
-    data = UtilWHAM.to_wham_input(data)
-    energy_obj = WeightedHistogram.wham(fwd_input=data)
-    return energy_obj
+    data_wham = UtilWHAM.to_wham_input(data)
+    energy_wham = WeightedHistogram.wham(fwd_input=data_wham)
+    iwt_obj = InverseWeierstrass.free_energy_inverse_weierstrass(unfolding=data)
+    to_ret = RetinalUtil.DualLandscape(wham_obj=energy_wham,iwt_obj=iwt_obj)
+    return to_ret
 
 def run():
     """
