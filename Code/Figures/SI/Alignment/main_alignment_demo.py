@@ -85,13 +85,14 @@ def _limits(alignment):
     ylim = [-50,max(max_y,300)]
     return xlim,ylim
 
-def _plot_fec_list(list_v,xlim,ylim,label=None,color=None,**kw):
+def _plot_fec_list(list_v,xlim,ylim,label=None,color=None,linewidth=0.3,**kw):
     f_x = lambda x_tmp : x_tmp.Separation
     for i,d in enumerate(list_v):
         label_tmp = label if i == 0 else None
         ProcessingUtil.plot_single_fec(d, f_x, xlim, ylim,label=label_tmp,
                                        style_data=dict(color=color, alpha=0.3,
-                                                       linewidth=0.3),**kw)
+                                                       linewidth=linewidth),
+                                       **kw)
 
 def _ensemble_alignment(gs,alignment,col_idx):
     xlim, ylim = _limits(alignment)
@@ -151,6 +152,51 @@ def read_landscapes(base_dir):
                               PEG3400=energies[idx_PEG3400])
     return to_ret
 
+def _make_algned_plot(alignment,label):
+    fig = PlotUtilities.figure((3, 4))
+    gs = gridspec.GridSpec(3, 2)
+    # make the 'standard' alignment plots
+    axes = _heatmap_alignment(gs, alignment, 0)
+    _ensemble_alignment(gs, alignment, 1)
+    out_name = "./FigureS_Alignment_{:s}.png".format(label)
+    PlotUtilities.title(label, ax=axes[0])
+    PlotUtilities.savefig(fig, out_name,
+                          subplots_adjust=dict(hspace=0.12, wspace=0.02))
+
+
+
+def _make_plots(galleries_labels):
+    alignments =  [_alignment_pipeline(gallery_tmp[0])
+                   for gallery_tmp in galleries_labels]
+    for i,(_,label) in enumerate(galleries_labels):
+        # make the standard aligning plot
+        alignment = alignments[i]
+        _make_algned_plot(alignment, label)
+    # plot the final curves on the same plot
+    xlim,ylim = _limits(alignment)
+    colors = ['rebeccapurple','g']
+    fig = PlotUtilities.figure((5, 3))
+    gs = gridspec.GridSpec(2, 2)
+    # reverse everything, so PEG600 is on top
+    galleries_labels = galleries_labels[::-1]
+    alignments = alignments[::-1]
+    for i,(_,l) in enumerate(galleries_labels):
+        ax = plt.subplot(gs[i,0])
+        a = alignments[i]
+        _plot_fec_list(a.blacklisted.fec_list, xlim, ylim,label=l,
+                       color=colors[i])
+        if (i == 0):
+            PlotUtilities.no_x_label(ax)
+            PlotUtilities.xlabel("",ax=ax)
+    # plot them both on the last column
+    plt.subplot(gs[:,1])
+    kw = [dict(),dict(linewidth=0.6)]
+    for i,(_,l) in enumerate(galleries_labels):
+        a = alignments[i]
+        _plot_fec_list(a.blacklisted.fec_list, xlim, ylim,label=l,
+                       color=colors[i],**kw[i])
+    PlotUtilities.savefig(fig,"FigureS_3400vs600.png")
+
 
 def run():
     """
@@ -168,28 +214,7 @@ def run():
                                                 True,base_dir_input)
     galleries_labels = [ [gallery.PEG600,"PEG600"],
                          [gallery.PEG3400, "PEG3400"]]
-    alignments =  [_alignment_pipeline(gallery_tmp[0])
-                   for gallery_tmp in galleries_labels]
-    for i,(_,label) in enumerate(galleries_labels):
-        alignment = alignments[i]
-        fig = PlotUtilities.figure((3,4))
-        gs = gridspec.GridSpec(3, 2)
-        # make the 'standard' alignment plots
-        axes = _heatmap_alignment(gs,alignment,0)
-        _ensemble_alignment(gs, alignment,1)
-        out_name = "./FigureS_Alignment_{:s}.png".format(label)
-        PlotUtilities.title(label,ax=axes[0])
-        PlotUtilities.savefig(fig,out_name,
-                              subplots_adjust=dict(hspace=0.12,wspace=0.02))
-    # plot the final curves on the same plot
-    xlim,ylim = _limits(alignment)
-    colors = ['r','g']
-    fig = PlotUtilities.figure()
-    for i,(_,l) in enumerate(galleries_labels[::-1]):
-        a = alignments[i]
-        _plot_fec_list(a.blacklisted.fec_list, xlim, ylim,label=l,color=colors[i])
-    PlotUtilities.savefig(fig,"FigureS_3400vs600.png")
-
+    _make_plots(galleries_labels)
 
 
 if __name__ == "__main__":

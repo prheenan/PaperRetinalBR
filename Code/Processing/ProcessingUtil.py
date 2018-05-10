@@ -140,7 +140,7 @@ def plot_single_fec(d,f_x,xlim,ylim,markevery=1,**kw):
                             d.Force[::markevery] * 1e12,**kw)
     plt.xlim(xlim)
     plt.ylim(ylim)
-    PlotUtilities.lazyLabel("Extension (nm)", "Force (pN)", "")
+    PlotUtilities.lazyLabel("Extension (nm)", "$F$ (pN)", "")
 
 def plot_data(base_dir,step,data,markevery=1,f_x = lambda x: x.Separation,
               xlim=[-20,175]):
