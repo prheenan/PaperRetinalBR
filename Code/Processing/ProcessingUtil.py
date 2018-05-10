@@ -135,9 +135,9 @@ def nm_and_pN_limits(data,f_x):
     ylim = 1e12 * np.array([np.min(y_range), np.max(y_range)])
     return xlim,ylim
 
-def plot_single_fec(d,f_x,xlim,ylim,markevery=1):
+def plot_single_fec(d,f_x,xlim,ylim,markevery=1,**kw):
     FEC_Plot._fec_base_plot(f_x(d)[::markevery] * 1e9,
-                            d.Force[::markevery] * 1e12)
+                            d.Force[::markevery] * 1e12,**kw)
     plt.xlim(xlim)
     plt.ylim(ylim)
     PlotUtilities.lazyLabel("Extension (nm)", "Force (pN)", "")

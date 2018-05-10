@@ -58,7 +58,7 @@ def _alignment_pipeline(e):
     to_ret = AlignmentInfo(e,zeroed,polished,blacklist)
     return to_ret
 
-def _plot_fmt(ax,xlim,ylim,is_bottom=False):
+def _plot_fmt(ax,xlim,ylim,is_bottom=False,color=True,is_left=True):
     plt.xlim(xlim)
     plt.ylim(ylim)
     PlotUtilities.title("")
@@ -66,9 +66,13 @@ def _plot_fmt(ax,xlim,ylim,is_bottom=False):
     if (not is_bottom):
         PlotUtilities.no_x_label(ax=ax)
         PlotUtilities.xlabel("")
-    color_kw = dict(ax=ax,color='w',label_color='k')
-    PlotUtilities.color_x(**color_kw)
-    PlotUtilities.color_y(**color_kw)
+    if (not is_left):
+        PlotUtilities.no_y_label(ax=ax)
+        PlotUtilities.ylabel("")
+    if color:
+        color_kw = dict(ax=ax,color='w',label_color='k')
+        PlotUtilities.color_x(**color_kw)
+        PlotUtilities.color_y(**color_kw)
 
 def _limits(alignment):
     xlim = [-20,120]
@@ -76,7 +80,30 @@ def _limits(alignment):
     ylim = [-50,max_y]
     return xlim,ylim
 
-def _heatmap_alignment(alignment):
+def _plot_fec_list(list_v,xlim,ylim):
+    f_x = lambda x_tmp : x_tmp.Separation
+    for d in list_v:
+        ProcessingUtil.plot_single_fec(d, f_x, xlim, ylim,
+                                       style_data=dict(color=None, alpha=0.3,
+                                                       linewidth=0.3))
+
+def _ensemble_alignment(gs,alignment,col_idx):
+    xlim, ylim = _limits(alignment)
+    common_kw = dict(xlim=xlim,ylim=ylim)
+    kw_fmt = dict(color=False,is_left=(col_idx ==0),**common_kw)
+    ax1 = plt.subplot(gs[0,col_idx])
+    _plot_fec_list(alignment.zeroed.fec_list,**common_kw)
+    _plot_fmt(ax1,**kw_fmt)
+    ax2 = plt.subplot(gs[1,col_idx])
+    _plot_fec_list(alignment.polished.fec_list,**common_kw)
+    _plot_fmt(ax2,**kw_fmt)
+    PlotUtilities.no_x_label(ax=ax2)
+    ax3 = plt.subplot(gs[2,col_idx])
+    _plot_fec_list(alignment.blacklisted.fec_list,**common_kw)
+    _plot_fmt(ax3,is_bottom=True,**kw_fmt)
+
+
+def _heatmap_alignment(gs,alignment,col_idx):
     xlim, ylim = _limits(alignment)
     max_x = xlim[1]
     bin_step_nm = 1
@@ -85,19 +112,19 @@ def _heatmap_alignment(alignment):
     bins_y = np.arange(ylim[0],ylim[1] + bin_step_pN,step=bin_step_pN)
     common_kw = dict(separation_max=max_x,use_colorbar=False,title="",
                      bins=(bins_x,bins_y))
-    ax1 = plt.subplot(3, 1, 1)
+    ax1 = plt.subplot(gs[0,col_idx])
     FEC_Plot.heat_map_fec(alignment.zeroed.fec_list,**common_kw)
     _plot_fmt(ax1,xlim,ylim)
-    ax2 = plt.subplot(3, 1, 2)
+    ax2 = plt.subplot(gs[1,col_idx])
     FEC_Plot.heat_map_fec(alignment.polished.fec_list,**common_kw)
     _plot_fmt(ax2,xlim,ylim)
-    title_kw = dict(color='b',y=0.98,loc='left')
+    title_kw = dict(color='b',y=0.95,loc='left',fontsize=6)
     downarrow = "$\Downarrow$"
     title_sub = downarrow + " Subtract $X_{\mathbf{PEG3400}}(F)$ + " + \
                 "$L_{\mathbf{0,C-term}}$"
     PlotUtilities.title(title_sub,**title_kw)
     PlotUtilities.no_x_label(ax=ax2)
-    ax3 = plt.subplot(3, 1, 3)
+    ax3 = plt.subplot(gs[2,col_idx])
     FEC_Plot.heat_map_fec(alignment.blacklisted.fec_list,**common_kw)
     _plot_fmt(ax3,xlim,ylim,True)
     PlotUtilities.title(downarrow + " Remove poorly-fit FECs",**title_kw)
@@ -119,10 +146,12 @@ def run():
                                  enum=Pipeline.Step.CORRECTED)
     energies = CheckpointUtilities.lazy_load(in_dir + "energies.pkl")
     alignment = _alignment_pipeline(energies[0])
-    fig = PlotUtilities.figure((4,8))
-    _heatmap_alignment(alignment)
+    fig = PlotUtilities.figure((3,4))
+    gs = gridspec.GridSpec(3, 2)
+    _heatmap_alignment(gs,alignment,0)
+    _ensemble_alignment(gs, alignment,1)
     PlotUtilities.savefig(fig, "./FigureSX_Alignment.png",
-                          subplots_adjust=dict(hspace=0.08))
+                          subplots_adjust=dict(hspace=0.12,wspace=0.02))
 
 
 if __name__ == "__main__":
