@@ -132,8 +132,7 @@ def data_plot(fecs,energies):
                                max_q_nm=RetinalUtil.q_GF_nm())
     plt.axvspan(q_at_max_energy,max(xlim),color='k',alpha=0.3)
     plt.xlim(xlim)
-    PlotUtilities.legend(frameon=True,fontsize=5,
-                         bbox_to_anchor=(1.5,1.05))
+    PlotUtilities.legend(frameon=True,fontsize=5)
 
 def read_fecs(e):
     base_tmp = e.base_dir
@@ -176,7 +175,7 @@ def run():
         fecs.append(data)
         energies.append(e)
     n_cols = N
-    fig = PlotUtilities.figure((n_cols * 1.5,6))
+    fig = PlotUtilities.figure((n_cols * 1,6))
     data_plot(fecs, energies)
     PlotUtilities.savefig(fig,out_dir + "energies.png")
     # interpolate all the energies to the same grid
