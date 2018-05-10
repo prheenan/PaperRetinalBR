@@ -26,9 +26,6 @@ def generate_landscape(in_dir):
     energy_obj = WeightedHistogram.wham(fwd_input=data)
     return energy_obj
 
-
-
-
 def run():
     """
     <Description>
