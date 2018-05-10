@@ -140,7 +140,8 @@ def _detect_retract_FEATHER(d,pct_approach,tau_f,threshold,f_refs=None):
     split_fec.set_tau_num_points_approach(split_fec.tau_num_points)
     # set the predicted retract surface index to a few tau. This avoids looking
     #  at adhesion
-    split_fec.get_predicted_retract_surface_index = lambda: 5 * tau_n_points
+    split_fec.get_predicted_retract_surface_index = lambda: 2*tau_n_points
+    split_fec.get_predicted_approach_surface_index = lambda : 3*tau_n_points
     pred_info = Detector._predict_split_fec(split_fec, threshold=threshold,
                                             f_refs=f_refs)
     return pred_info, tau_n_points
