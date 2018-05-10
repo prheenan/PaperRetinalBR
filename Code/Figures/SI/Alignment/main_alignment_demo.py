@@ -82,15 +82,16 @@ def _plot_fmt(ax,xlim,ylim,is_bottom=False,color=True,is_left=True):
 def _limits(alignment):
     xlim = [-20,120]
     max_y = np.max([max(f.Force) for f in alignment._all_fecs]) * 1e12
-    ylim = [-50,max_y]
+    ylim = [-50,max(max_y,300)]
     return xlim,ylim
 
-def _plot_fec_list(list_v,xlim,ylim):
+def _plot_fec_list(list_v,xlim,ylim,label=None,color=None,**kw):
     f_x = lambda x_tmp : x_tmp.Separation
-    for d in list_v:
-        ProcessingUtil.plot_single_fec(d, f_x, xlim, ylim,
-                                       style_data=dict(color=None, alpha=0.3,
-                                                       linewidth=0.3))
+    for i,d in enumerate(list_v):
+        label_tmp = label if i == 0 else None
+        ProcessingUtil.plot_single_fec(d, f_x, xlim, ylim,label=label_tmp,
+                                       style_data=dict(color=color, alpha=0.3,
+                                                       linewidth=0.3),**kw)
 
 def _ensemble_alignment(gs,alignment,col_idx):
     xlim, ylim = _limits(alignment)
@@ -133,6 +134,7 @@ def _heatmap_alignment(gs,alignment,col_idx):
     FEC_Plot.heat_map_fec(alignment.blacklisted.fec_list,**common_kw)
     _plot_fmt(ax3,xlim,ylim,True)
     PlotUtilities.title(downarrow + " Remove poorly-fit FECs",**title_kw)
+    return [ax1,ax2,ax3]
 
 def read_landscapes(base_dir):
     """
@@ -164,13 +166,30 @@ def run():
     base_dir_input = base_dir + "BR+Retinal/"
     gallery = CheckpointUtilities.getCheckpoint("./caches.pkl",read_landscapes,
                                                 True,base_dir_input)
-    alignment = _alignment_pipeline(gallery.PEG600)
-    fig = PlotUtilities.figure((3,4))
-    gs = gridspec.GridSpec(3, 2)
-    _heatmap_alignment(gs,alignment,0)
-    _ensemble_alignment(gs, alignment,1)
-    PlotUtilities.savefig(fig, "./FigureSX_Alignment.png",
-                          subplots_adjust=dict(hspace=0.12,wspace=0.02))
+    galleries_labels = [ [gallery.PEG600,"PEG600"],
+                         [gallery.PEG3400, "PEG3400"]]
+    alignments =  [_alignment_pipeline(gallery_tmp[0])
+                   for gallery_tmp in galleries_labels]
+    for i,(_,label) in enumerate(galleries_labels):
+        alignment = alignments[i]
+        fig = PlotUtilities.figure((3,4))
+        gs = gridspec.GridSpec(3, 2)
+        # make the 'standard' alignment plots
+        axes = _heatmap_alignment(gs,alignment,0)
+        _ensemble_alignment(gs, alignment,1)
+        out_name = "./FigureS_Alignment_{:s}.png".format(label)
+        PlotUtilities.title(label,ax=axes[0])
+        PlotUtilities.savefig(fig,out_name,
+                              subplots_adjust=dict(hspace=0.12,wspace=0.02))
+    # plot the final curves on the same plot
+    xlim,ylim = _limits(alignment)
+    colors = ['r','g']
+    fig = PlotUtilities.figure()
+    for i,(_,l) in enumerate(galleries_labels[::-1]):
+        a = alignments[i]
+        _plot_fec_list(a.blacklisted.fec_list, xlim, ylim,label=l,color=colors[i])
+    PlotUtilities.savefig(fig,"FigureS_3400vs600.png")
+
 
 
 if __name__ == "__main__":
