@@ -21,49 +21,13 @@ import RetinalUtil,PlotUtil
 import matplotlib.gridspec as gridspec
 import re
 
-
-def subdirs(base_dir_analysis):
-    raw_dirs = [base_dir_analysis + d for d in os.listdir(base_dir_analysis)]
-    filtered_dirs = [r + "/" for r in raw_dirs if os.path.isdir(r)
-                     and "cache" not in r]
-    return filtered_dirs
-
-def read_in_energy(base_dir):
+def get_energy_list(base_dir_analysis, min_fecs):
     """
-    :param base_dir: where the landscape lives; should be a series of FECs of
-    about the same spring constant (e.g.  /BR+Retinal/300/170321FEC/)
-    :return: RetinalUtil.EnergyWithMeta
+    :param base_dir_analysis:  see RetinalUtil._read_all_energies
+    :param min_fecs: see RetinalUtil._read_all_energies
+    :return: list of zeroed retinal energies...
     """
-    landscape_base = RetinalUtil._landscape_dir(base_dir)
-    cache_tmp = \
-        Pipeline._cache_dir(base=landscape_base,
-                            enum=Pipeline.Step.POLISH)
-    file_load = cache_tmp + "energy.pkl"
-    energy_obj = CheckpointUtilities.lazy_load(file_load)
-    obj = RetinalUtil.EnergyWithMeta(file_load,
-                                     landscape_base, energy_obj)
-    # read in the data, determine how many curves there are
-    data_tmp = read_fecs(obj)
-    n_data = len(data_tmp)
-    obj.set_n_fecs(n_data)
-    return obj
-
-def get_energy_list(base_dir_analysis,min_fecs):
-    """
-    :param base_dir_analysis: where we should look (e.g. BR+Retinal)
-    :return: list of RetinalUtil.EnergyWithMeta objects
-    """
-    filtered_dirs = subdirs(base_dir_analysis)
-    to_ret = []
-    for velocity_directory in filtered_dirs:
-        fecs = subdirs(velocity_directory)
-        for d in fecs:
-            try:
-                tmp = read_in_energy(base_dir=d)
-                to_ret.append(tmp)
-            except (IOError,AssertionError) as e:
-                print("Couldn't read from (so skipping): {:s}".format(d))
-    energy_list_raw = to_ret
+    energy_list_raw = RetinalUtil._read_all_energies(base_dir_analysis)
     # get the valid points in the landscape
     energy_list = [RetinalUtil.valid_landscape(e) for e in energy_list_raw]
     # make sure we have a minimum number of FECS
@@ -134,18 +98,6 @@ def data_plot(fecs,energies):
     plt.axvspan(q_at_max_energy,max(xlim),color='k',alpha=0.3)
     plt.xlim(xlim)
 
-def read_fecs(e):
-    base_tmp = e.base_dir
-    in_dir = Pipeline._cache_dir(base=base_tmp,
-                                 enum=Pipeline.Step.REDUCED)
-    dir_exists = os.path.exists(in_dir)
-    if (dir_exists and \
-            len(GenUtilities.getAllFiles(in_dir, ext=".pkl")) > 0):
-        data = CheckpointUtilities.lazy_multi_load(in_dir)
-    else:
-        data = []
-    return data
-
 def run():
     """
     <Description>
@@ -171,7 +123,7 @@ def run():
     energies = []
     N = len(energy_list)
     for e in energy_list:
-        data = read_fecs(e)
+        data = RetinalUtil.read_fecs(e)
         fecs.append(data)
         energies.append(e)
     n_cols = N

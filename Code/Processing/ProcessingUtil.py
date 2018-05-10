@@ -51,7 +51,7 @@ blacklist_tuples = [ \
     [str_BR, f_v(300), f_date("170321"), [463,471,500,532,760,821,833]],
     [str_BR, f_v(300), f_date("170501"), [203,870,1353]],
     [str_BR, f_v(300), f_date("170502"), []],# this one is OK
-    [str_BR, f_v(300), f_date("170511"), [316,714,731]],
+    [str_BR, f_v(300), f_date("170511"), [316,731]],
     [str_BR, f_v(3000), f_date("170502"), [717]],
     [str_BR, f_v(3000), f_date("170503"), [231,]],
     # all the blacklisted BO data

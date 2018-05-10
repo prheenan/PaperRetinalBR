@@ -7,7 +7,7 @@ from __future__ import unicode_literals
 # This file is used for importing the common utilities classes.
 import numpy as np
 import matplotlib.pyplot as plt
-import sys, argparse, enum, copy
+import sys, argparse, enum, copy, os
 
 from Lib.UtilPipeline import Pipeline
 from Lib.AppWHAM.Code import WeightedHistogram
@@ -18,6 +18,7 @@ from Lib.AppWLC.Code import WLC
 from Processing.Util import WLC as WLCHao
 from Lib.AppWLC.UtilFit import fit_base
 from Lib.AppFEATHER.Code import Detector, Analysis
+from Lib.UtilForce.UtilGeneral import CheckpointUtilities, GenUtilities
 
 class MetaPulling(FEC_Pulling_Object):
     def __init__(self,time_sep_force,kbT=4.1e-21,**kw):
@@ -72,6 +73,66 @@ def common_q_interp(energy_list,num_q=200):
     q_limits = [np.max(q_mins), np.min(q_maxs)]
     q_interp = np.linspace(*q_limits,num=num_q)
     return q_interp
+
+
+def subdirs(base_dir_analysis):
+    raw_dirs = [base_dir_analysis + d for d in os.listdir(base_dir_analysis)]
+    filtered_dirs = [r + "/" for r in raw_dirs if os.path.isdir(r)
+                     and "cache" not in r]
+    return filtered_dirs
+
+
+def read_fecs(e):
+    base_tmp = e.base_dir
+    in_dir = Pipeline._cache_dir(base=base_tmp,
+                                 enum=Pipeline.Step.REDUCED)
+    dir_exists = os.path.exists(in_dir)
+    if (dir_exists and \
+            len(GenUtilities.getAllFiles(in_dir, ext=".pkl")) > 0):
+        data = CheckpointUtilities.lazy_multi_load(in_dir)
+    else:
+        data = []
+    return data
+
+
+def read_in_energy(base_dir):
+    """
+    :param base_dir: where the landscape lives; should be a series of FECs of
+    about the same spring constant (e.g.  /BR+Retinal/300/170321FEC/)
+    :return: RetinalUtil.EnergyWithMeta
+    """
+    landscape_base = _landscape_dir(base_dir)
+    cache_tmp = \
+        Pipeline._cache_dir(base=landscape_base,
+                            enum=Pipeline.Step.POLISH)
+    file_load = cache_tmp + "energy.pkl"
+    energy_obj = CheckpointUtilities.lazy_load(file_load)
+    obj = EnergyWithMeta(file_load,
+                                     landscape_base, energy_obj)
+    # read in the data, determine how many curves there are
+    data_tmp = read_fecs(obj)
+    n_data = len(data_tmp)
+    obj.set_n_fecs(n_data)
+    return obj
+
+
+def _read_all_energies(base_dir_analysis):
+    """
+    :param base_dir_analysis: where we should look (e.g. BR+Retinal)
+    :return: list of RetinalUtil.EnergyWithMeta objects
+    """
+    filtered_dirs = subdirs(base_dir_analysis)
+    to_ret = []
+    for velocity_directory in filtered_dirs:
+        fecs = subdirs(velocity_directory)
+        for d in fecs:
+            try:
+                tmp = read_in_energy(base_dir=d)
+                to_ret.append(tmp)
+            except (IOError, AssertionError) as e:
+                print("Couldn't read from (so skipping): {:s}".format(d))
+    energy_list_raw = to_ret
+    return energy_list_raw
 
 def interpolating_G0(energy_list,num_q=200,num_splines=75):
     """
