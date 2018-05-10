@@ -119,8 +119,10 @@ def data_plot(fecs,energies):
                           """, tmp_str, re.IGNORECASE | re.VERBOSE)
         groups = match.groups()
         velocity, title = groups
-        title = "v={:s}\n {:s}".format(velocity, title)
-        PlotUtilities.title(title)
+        vel_label = velocity.replace("nms","")
+        title_label = title.replace("FEC","")
+        title = "v={:s}\n {:s}".format(vel_label, title_label)
+        PlotUtilities.title(title,fontsize=5)
     fix_axes(all_ax)
     xlim = all_ax[0][0].get_xlim()
     q_interp, splines =  RetinalUtil.interpolating_G0(energies)
@@ -132,7 +134,6 @@ def data_plot(fecs,energies):
                                max_q_nm=RetinalUtil.q_GF_nm())
     plt.axvspan(q_at_max_energy,max(xlim),color='k',alpha=0.3)
     plt.xlim(xlim)
-    PlotUtilities.legend(frameon=True,fontsize=5)
 
 def read_fecs(e):
     base_tmp = e.base_dir
@@ -177,7 +178,8 @@ def run():
     n_cols = N
     fig = PlotUtilities.figure((n_cols * 1,6))
     data_plot(fecs, energies)
-    PlotUtilities.savefig(fig,out_dir + "energies.png")
+    PlotUtilities.savefig(fig,out_dir + "energies.png",
+                          subplots_adjust=dict(hspace=0.02,wspace=0.04))
     # interpolate all the energies to the same grid
     q_interp, splines =  RetinalUtil.interpolating_G0(energy_list)
     # get an average/stdev of energy
