@@ -44,7 +44,6 @@ def _snapsnot(base_dir,step):
     return SnapshotFEC(step,data)
 
 
-
 def _alignment_pipeline(e):
     base_dir_landscapes = e.base_dir
     base_dir = base_dir_landscapes.split("landscape_")[0]
@@ -56,4 +55,21 @@ def _alignment_pipeline(e):
     base_landscape = RetinalUtil._landscape_dir(base_dir)
     blacklist = _snapsnot(base_landscape, step=Pipeline.Step.MANUAL)
     to_ret = AlignmentInfo(e,zeroed,polished,blacklist)
+    return to_ret
+
+
+def read_sample_landscapes(base_dir):
+    """
+    :param base_dir: input to RetinalUtil._read_all_energies
+    :return:
+    """
+    energies = RetinalUtil._read_all_energies(base_dir)
+    names = [e.base_dir.split("FECs180307")[1] for e in energies]
+    str_PEG600_example = "/BR+Retinal/300nms/170511FEC/landscape_"
+    str_PEG3400_example = "/BR+Retinal/3000nms/170503FEC/landscape_"
+    idx_PEG600 = names.index(str_PEG600_example)
+    idx_PEG3400 = names.index(str_PEG3400_example)
+    assert (idx_PEG600 >= 0) and (idx_PEG3400 >= 0)
+    to_ret = LandscapeGallery(PEG600=energies[idx_PEG600],
+                              PEG3400=energies[idx_PEG3400])
     return to_ret

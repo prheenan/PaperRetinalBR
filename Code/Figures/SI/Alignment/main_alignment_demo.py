@@ -99,21 +99,6 @@ def _heatmap_alignment(gs,alignment,col_idx):
     PlotUtilities.title(downarrow + " Remove poorly-fit FECs",**title_kw)
     return [ax1,ax2,ax3]
 
-def read_landscapes(base_dir):
-    """
-    :param base_dir: input to RetinalUtil._read_all_energies
-    :return:
-    """
-    energies = RetinalUtil._read_all_energies(base_dir)
-    names = [e.base_dir.split("FECs180307")[1] for e in energies]
-    str_PEG600_example = "/BR+Retinal/300nms/170511FEC/landscape_"
-    str_PEG3400_example = "/BR+Retinal/3000nms/170503FEC/landscape_"
-    idx_PEG600 = names.index(str_PEG600_example)
-    idx_PEG3400 = names.index(str_PEG3400_example)
-    to_ret = FigureUtil.LandscapeGallery(PEG600=energies[idx_PEG600],
-                                         PEG3400=energies[idx_PEG3400])
-    return to_ret
-
 def _make_algned_plot(alignment,label):
     fig = PlotUtilities.figure((3, 4))
     gs = gridspec.GridSpec(3, 2)
@@ -172,8 +157,9 @@ def run():
     """
     base_dir = "../../../../Data/FECs180307/"
     base_dir_input = base_dir + "BR+Retinal/"
-    gallery = CheckpointUtilities.getCheckpoint("./caches.pkl",read_landscapes,
-                                                True,base_dir_input)
+    read_f = FigureUtil.read_sample_landscapes
+    gallery = CheckpointUtilities.getCheckpoint("./caches.pkl",
+                                                read_f,True,base_dir_input)
     galleries_labels = [ [gallery.PEG600,"PEG600"],
                          [gallery.PEG3400, "PEG3400"]]
     _make_plots(galleries_labels)
