@@ -52,7 +52,8 @@ class EnergyWithMeta(DualLandscape):
         self.n_fecs = None
         self.__init__energy(energy)
     def __init__energy(self,energy):
-        super(EnergyWithMeta,self).__init__(energy._wham_obj,energy._iwt_obj)
+        super(EnergyWithMeta,self).__init__(wham_obj=energy._wham_obj,
+                                            iwt_obj=energy._iwt_obj)
     def _slice(self,*args,**kw):
         sliced = super(EnergyWithMeta,self)._slice(*args,**kw)
         self.__init__energy(sliced)
@@ -147,6 +148,7 @@ def _read_all_energies(base_dir_analysis):
     for e in energy_list:
         n_pts = e.G0.size
         e._G0 -= min(e.G0[:n_pts//2])
+        e._iwt_obj._G0 -= e._iwt_obj._G0[0]
     return energy_list_raw
 
 def interpolating_G0(energy_list,num_q=200,num_splines=75):
@@ -181,6 +183,9 @@ def valid_landscape(e):
     good_idx = np.where(np.isfinite(e.G0) & ~np.isnan(e.G0))[0]
     assert good_idx.size > 0
     tmp_e = e._slice(good_idx)
+    # offset the IWT
+    tmp_e._iwt_obj.q -= tmp_e._iwt_obj.q[0]
+    tmp_e._iwt_obj.q += e.q[0]
     return tmp_e
 
 

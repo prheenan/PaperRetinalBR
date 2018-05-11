@@ -45,8 +45,6 @@ def read_energy_lists(subdirs):
         in_file = in_dir + "energies.pkl"
         e = CheckpointUtilities.lazy_load(in_file)
         energy_list_arr.append(e)
-    energy_list_arr = [ [RetinalUtil.valid_landscape(e) for e in list_tmp]
-                        for list_tmp in energy_list_arr]
     return energy_list_arr
 
 
@@ -193,13 +191,14 @@ def run():
     """
     input_dir = "../../../Data/FECs180307/"
     subdirs_raw = [input_dir + d + "/" for d in os.listdir(input_dir)]
-    subdirs = [d for d in subdirs_raw if (os.path.isdir(d))]
+    subdirs = [d for d in subdirs_raw if (os.path.isdir(d))
+               and "David" not in d]
     out_dir = "./"
     energy_list_arr = read_energy_lists(subdirs)
     e_list_flat = [e for list_tmp in energy_list_arr for e in list_tmp ]
     q_offset = RetinalUtil.q_GF_nm()
     q_interp = RetinalUtil.common_q_interp(energy_list=e_list_flat)
-    q_interp = q_interp[np.where(q_interp  <= q_offset)]
+    q_interp = q_interp[np.where(q_interp-q_interp[0]  <= q_offset)]
     G_no_peg = read_non_peg_landscape()
     fig = PlotUtilities.figure(figsize=(3.5,3.25))
     make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset)

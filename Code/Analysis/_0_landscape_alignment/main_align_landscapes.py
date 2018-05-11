@@ -83,7 +83,9 @@ def data_plot(fecs,energies):
         PlotUtilities.title(title,fontsize=5)
     fix_axes(all_ax)
     xlim = all_ax[0][0].get_xlim()
-    q_interp, splines =  RetinalUtil.interpolating_G0(energies)
+    # just get the IWT
+    energies_plot = [e._iwt_obj for e in energies]
+    q_interp, splines =  RetinalUtil.interpolating_G0(energies_plot)
     # get an average/stdev of energy
     mean_energy, std_energy = PlotUtil.plot_mean_landscape(q_interp,
                                                            splines,ax=gs1[-1,0])
