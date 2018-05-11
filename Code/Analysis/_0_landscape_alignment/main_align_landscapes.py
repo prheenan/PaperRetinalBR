@@ -112,7 +112,7 @@ def run():
     min_fecs = 10
     GenUtilities.ensureDirExists(out_dir)
     energy_list = CheckpointUtilities.getCheckpoint(out_dir + \
-                                                    "energies.pkl",
+                                                    "energy.pkl",
                                                     get_energy_list,force,
                                                     base_dir_analysis,
                                                     min_fecs)
