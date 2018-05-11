@@ -48,11 +48,14 @@ def _snapsnot(base_dir,step):
     data = CheckpointUtilities.lazy_multi_load(corrected_dir)
     return SnapshotFEC(step,data)
 
-def _plot_fmt(ax,xlim,ylim,is_bottom=False,color=False,is_left=True):
+def _plot_fmt(ax,xlim,ylim,is_bottom=False,color=False,is_left=True,
+              ylabel="$F$ (pN)",xlabel="Extension (nm)"):
+    PlotUtilities.tickAxisFont(ax=ax)
     plt.xlim(xlim)
     plt.ylim(ylim)
     PlotUtilities.title("")
-    PlotUtilities.ylabel("$F$ (pN)")
+    PlotUtilities.ylabel(ylabel)
+    PlotUtilities.xlabel(xlabel)
     if (not is_bottom):
         PlotUtilities.no_x_label(ax=ax)
         PlotUtilities.xlabel("")
