@@ -21,47 +21,9 @@ import RetinalUtil,PlotUtil
 import matplotlib.gridspec as gridspec
 import re
 
-class SnapshotFEC(object):
-    def __init__(self,step,fec_list):
-        self.step = step
-        self.fec_list = fec_list
-
-class AlignmentInfo(object):
-    def __init__(self,e,zeroed,polished,blacklisted):
-        self.landscape = e
-        self.zeroed = zeroed
-        self.polished = polished
-        self.blacklisted = blacklisted
-    @property
-    def _all_fecs(self):
-        all_lists = [self.zeroed,self.polished,self.blacklisted]
-        to_ret = [f for list_v in all_lists for f in list_v.fec_list]
-        return to_ret
-
-class LandscapeGallery(object):
-    def __init__(self,PEG600,PEG3400):
-        self.PEG600 = PEG600
-        self.PEG3400 = PEG3400
-
-def _snapsnot(base_dir,step):
-    corrected_dir = Pipeline._cache_dir(base=base_dir,
-                                        enum=step)
-    data = CheckpointUtilities.lazy_multi_load(corrected_dir)
-    return SnapshotFEC(step,data)
+from Figures import FigureUtil
 
 
-def _alignment_pipeline(e):
-    base_dir_landscapes = e.base_dir
-    base_dir = base_dir_landscapes.split("landscape_")[0]
-    # get the corrected directory (this is *zeroed*)
-    zeroed = _snapsnot(base_dir,step=Pipeline.Step.CORRECTED)
-    # get the polished / aligned dir
-    polished = _snapsnot(base_dir,step=Pipeline.Step.POLISH)
-    # get the directory after blacklisting bad curves
-    base_landscape = RetinalUtil._landscape_dir(base_dir)
-    blacklist = _snapsnot(base_landscape, step=Pipeline.Step.MANUAL)
-    to_ret = AlignmentInfo(e,zeroed,polished,blacklist)
-    return to_ret
 
 def _plot_fmt(ax,xlim,ylim,is_bottom=False,color=True,is_left=True):
     plt.xlim(xlim)
@@ -148,8 +110,8 @@ def read_landscapes(base_dir):
     str_PEG3400_example = "/BR+Retinal/3000nms/170503FEC/landscape_"
     idx_PEG600 = names.index(str_PEG600_example)
     idx_PEG3400 = names.index(str_PEG3400_example)
-    to_ret = LandscapeGallery(PEG600=energies[idx_PEG600],
-                              PEG3400=energies[idx_PEG3400])
+    to_ret = FigureUtil.LandscapeGallery(PEG600=energies[idx_PEG600],
+                                         PEG3400=energies[idx_PEG3400])
     return to_ret
 
 def _make_algned_plot(alignment,label):
@@ -166,7 +128,7 @@ def _make_algned_plot(alignment,label):
 
 
 def _make_plots(galleries_labels):
-    alignments =  [_alignment_pipeline(gallery_tmp[0])
+    alignments =  [FigureUtil._alignment_pipeline(gallery_tmp[0])
                    for gallery_tmp in galleries_labels]
     for i,(_,label) in enumerate(galleries_labels):
         # make the standard aligning plot

@@ -33,6 +33,7 @@ def get_energy_list(base_dir_analysis, min_fecs):
     # the 3000nms BO data is very noisy; discard it.
     energy_list = [e for e in energy_list
                    if "BR-Retinal/3000nms/" not in e.base_dir]
+
     return energy_list
 
 def get_ranges(ax_list,get_x=True):
