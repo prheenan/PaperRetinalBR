@@ -46,18 +46,18 @@ class Blacklist(object):
 
 blacklist_tuples = [ \
     # all the blacklisted BR data
-    [str_BR,f_v(50),f_date("170502"),[1372,1374,2160]],
-    [str_BR,f_v(50),f_date("170503"),[1268]],
-    [str_BR, f_v(300), f_date("170321"), [500,760,786,821]],
-    [str_BR, f_v(300), f_date("170501"), [203]],
-    [str_BR, f_v(300), f_date("170502"), []], # yep, this one is OK.
-    [str_BR, f_v(300), f_date("170511"), []], # this one too.
+    [str_BR,f_v(50),f_date("170502"),[1245,2160]],
+    [str_BR,f_v(50),f_date("170503"),[819,837,1161]],
+    [str_BR, f_v(300), f_date("170321"), [463,471,500,532,760,821,833]],
+    [str_BR, f_v(300), f_date("170501"), [203,870,1353]],
+    [str_BR, f_v(300), f_date("170502"), []],# this one is OK
+    [str_BR, f_v(300), f_date("170511"), [316,731]],
     [str_BR, f_v(3000), f_date("170502"), [717]],
     [str_BR, f_v(3000), f_date("170503"), [231,]],
     # all the blacklisted BO data
-    [str_BO, f_v(50), f_date("170523"), [176,223,148,146]],
-    [str_BO, f_v(300), f_date("170327"), [386,253,383,310]],
-    [str_BO, f_v(3000), f_date("170523"), [18,69,509,773,741,455]],
+    [str_BO, f_v(50), f_date("170523"), [117,176,204,223]],
+    [str_BO, f_v(300), f_date("170327"), [121,236,310,347,383,386,473,484,486]],
+    [str_BO, f_v(3000), f_date("170523"), [18,20,22,67,69,349,773]],
 ]
 
 blacklists = [Blacklist(*t) for t in blacklist_tuples]
@@ -135,12 +135,12 @@ def nm_and_pN_limits(data,f_x):
     ylim = 1e12 * np.array([np.min(y_range), np.max(y_range)])
     return xlim,ylim
 
-def plot_single_fec(d,f_x,xlim,ylim,markevery=1):
+def plot_single_fec(d,f_x,xlim,ylim,markevery=1,**kw):
     FEC_Plot._fec_base_plot(f_x(d)[::markevery] * 1e9,
-                            d.Force[::markevery] * 1e12)
+                            d.Force[::markevery] * 1e12,**kw)
     plt.xlim(xlim)
     plt.ylim(ylim)
-    PlotUtilities.lazyLabel("Extension (nm)", "Force (pN)", "")
+    PlotUtilities.lazyLabel("Extension (nm)", "$F$ (pN)", "")
 
 def plot_data(base_dir,step,data,markevery=1,f_x = lambda x: x.Separation,
               xlim=[-20,175]):

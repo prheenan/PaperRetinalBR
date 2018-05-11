@@ -12,7 +12,6 @@ dateStr=`date +%Y-%m-%d:%H:%M:%S`
 data_base="../../Data/FECs180307/"
 # remove all the landscape caches, since we may have changed the blacklist
 find "$data_base"  -path "*landscape_cache*" -type f -exec rm -rf {} \;
-find "$data_base"  -name "*.png" -type f -exec rm -f {} \;
 
 skip_reading=${1:-0}
 skip_process=${2:-0}

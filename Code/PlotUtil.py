@@ -86,6 +86,7 @@ def plot_mean_landscape(q_interp, splines, ax=None,color='c',label=None,
 
 def plot_delta_GF(q_interp,mean_energy,std_energy,max_q_nm=30,linestyle='None',
                   markersize=3,capsize=3,round_energy=-1,round_std=-1,
+                  energy_label=None,
                   label_offset=0,max_q_idx=None,energy_error=None,**kw):
     """
     :param q_interp: extensions
@@ -106,7 +107,9 @@ def plot_delta_GF(q_interp,mean_energy,std_energy,max_q_nm=30,linestyle='None',
     # subtract the offset (i.e., to show the data with the PEG correction..)
     label_mean = np.round(max_energy_mean-label_offset,round_energy)
     label_std = np.round(energy_error,round_std)
-    label = (r"$\mathbf{\Delta G}_{GF}$")  + \
+    if energy_label is None:
+        energy_label = (r"$\mathbf{\Delta G}_{GF}$")
+    label =  energy_label + \
             (" = {:.0f} $\pm$ {:.0f} kcal/mol").format(label_mean,label_std)
     plt.errorbar(q_at_max_energy,max_energy_mean,energy_error,
                  label=label,markersize=markersize,linestyle=linestyle,

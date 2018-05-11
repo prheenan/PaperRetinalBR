@@ -28,10 +28,15 @@ def to_iwt(in_dir):
     velocities = [d.Velocity for d in data]
     # make sure the velocities match within X%
     np.testing.assert_allclose(velocities,velocities[0],atol=0,rtol=1e-2)
+    # just set them all equal now
+    v_mean = np.mean(velocities)
+    for d in data:
+        d.Velocity = v_mean
     # repeat for the spring constant
     spring_constants = [d.SpringConstant for d in data]
     K_key = spring_constants[0]
-    K_diff = np.max(np.abs(np.array(spring_constants)-K_key))/np.mean(spring_constants)
+    K_diff = np.max(np.abs(np.array(spring_constants)-K_key))/\
+             np.mean(spring_constants)
     if (K_diff > 1e-2):
         msg ="For {:s}, not all spring constants ({:s}) the same. Replace <K>".\
             format(in_dir,spring_constants)
@@ -76,7 +81,10 @@ def run():
                                          force=force,
                                          limit=limit,
                                          name_func=FEC_Util.fec_name_func)
-    pass
+    ProcessingUtil.plot_data(base_dir,step,data,xlim=[-50,150])
+    plot_subdir = Pipeline._plot_subdir(base_dir, step)
+    out_name = plot_subdir + "heatmap.png"
+    ProcessingUtil.heatmap_ensemble_plot(data, out_name=out_name)
 
 if __name__ == "__main__":
     run()

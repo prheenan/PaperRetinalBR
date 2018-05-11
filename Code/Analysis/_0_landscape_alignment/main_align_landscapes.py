@@ -21,61 +21,18 @@ import RetinalUtil,PlotUtil
 import matplotlib.gridspec as gridspec
 import re
 
-
-def subdirs(base_dir_analysis):
-    raw_dirs = [base_dir_analysis + d for d in os.listdir(base_dir_analysis)]
-    filtered_dirs = [r + "/" for r in raw_dirs if os.path.isdir(r)
-                     and "cache" not in r]
-    return filtered_dirs
-
-def read_in_energy(base_dir):
+def get_energy_list(base_dir_analysis, min_fecs):
     """
-    :param base_dir: where the landscape lives; should be a series of FECs of
-    about the same spring constant (e.g.  /BR+Retinal/300/170321FEC/)
-    :return: RetinalUtil.EnergyWithMeta
+    :param base_dir_analysis:  see RetinalUtil._read_all_energies
+    :param min_fecs: see RetinalUtil._read_all_energies
+    :return: list of zeroed retinal energies...
     """
-    landscape_base = RetinalUtil._landscape_dir(base_dir)
-    cache_tmp = \
-        Pipeline._cache_dir(base=landscape_base,
-                            enum=Pipeline.Step.POLISH)
-    file_load = cache_tmp + "energy.pkl"
-    energy_obj = CheckpointUtilities.lazy_load(file_load)
-    obj = RetinalUtil.EnergyWithMeta(file_load,
-                                     landscape_base, energy_obj)
-    # read in the data, determine how many curves there are
-    data_tmp = read_fecs(obj)
-    n_data = len(data_tmp)
-    obj.set_n_fecs(n_data)
-    return obj
-
-def get_energy_list(base_dir_analysis,min_fecs):
-    """
-    :param base_dir_analysis: where we should look (e.g. BR+Retinal)
-    :return: list of RetinalUtil.EnergyWithMeta objects
-    """
-    filtered_dirs = subdirs(base_dir_analysis)
-    to_ret = []
-    for velocity_directory in filtered_dirs:
-        fecs = subdirs(velocity_directory)
-        for d in fecs:
-            try:
-                tmp = read_in_energy(base_dir=d)
-                to_ret.append(tmp)
-            except (IOError,AssertionError) as e:
-                print("Couldn't read from (so skipping): {:s}".format(d))
-    energy_list_raw = to_ret
-    # get the valid points in the landscape
-    energy_list = [RetinalUtil.valid_landscape(e) for e in energy_list_raw]
+    energy_list = RetinalUtil._read_all_energies(base_dir_analysis)
     # make sure we have a minimum number of FECS
     energy_list = [e for e in energy_list if e.n_fecs >= min_fecs]
     # the 3000nms BO data is very noisy; discard it.
     energy_list = [e for e in energy_list
                    if "BR-Retinal/3000nms/" not in e.base_dir]
-    # zero everything
-    for e in energy_list:
-        n_pts = e.G0.size
-        e._G0 -= min(e.G0[:n_pts//2])
-        e._q -= min(e.q)
     return energy_list
 
 def get_ranges(ax_list,get_x=True):
@@ -119,8 +76,10 @@ def data_plot(fecs,energies):
                           """, tmp_str, re.IGNORECASE | re.VERBOSE)
         groups = match.groups()
         velocity, title = groups
-        title = "v={:s}\n {:s}".format(velocity, title)
-        PlotUtilities.title(title)
+        vel_label = velocity.replace("nms","")
+        title_label = title.replace("FEC","")
+        title = "v={:s}\n {:s}".format(vel_label, title_label)
+        PlotUtilities.title(title,fontsize=5)
     fix_axes(all_ax)
     xlim = all_ax[0][0].get_xlim()
     q_interp, splines =  RetinalUtil.interpolating_G0(energies)
@@ -132,19 +91,6 @@ def data_plot(fecs,energies):
                                max_q_nm=RetinalUtil.q_GF_nm())
     plt.axvspan(q_at_max_energy,max(xlim),color='k',alpha=0.3)
     plt.xlim(xlim)
-    PlotUtilities.legend(frameon=True,fontsize=5)
-
-def read_fecs(e):
-    base_tmp = e.base_dir
-    in_dir = Pipeline._cache_dir(base=base_tmp,
-                                 enum=Pipeline.Step.REDUCED)
-    dir_exists = os.path.exists(in_dir)
-    if (dir_exists and \
-            len(GenUtilities.getAllFiles(in_dir, ext=".pkl")) > 0):
-        data = CheckpointUtilities.lazy_multi_load(in_dir)
-    else:
-        data = []
-    return data
 
 def run():
     """
@@ -171,22 +117,24 @@ def run():
     energies = []
     N = len(energy_list)
     for e in energy_list:
-        data = read_fecs(e)
+        data = RetinalUtil.read_fecs(e)
         fecs.append(data)
         energies.append(e)
     n_cols = N
     fig = PlotUtilities.figure((n_cols * 1,6))
     data_plot(fecs, energies)
-    PlotUtilities.savefig(fig,out_dir + "energies.png")
+    PlotUtilities.savefig(fig,out_dir + "energies.png",
+                          subplots_adjust=dict(hspace=0.02,wspace=0.04))
     # interpolate all the energies to the same grid
     q_interp, splines =  RetinalUtil.interpolating_G0(energy_list)
     # get an average/stdev of energy
     fig = PlotUtilities.figure((7,7))
     ax = plt.subplot(1,1,1)
     PlotUtil.plot_mean_landscape(q_interp, splines,ax=ax)
-    max_x_show_nm= 25
-    plt.xlim([None,max_x_show_nm])
-    plt.xticks([i for i in range(max_x_show_nm)])
+    max_x_show_nm= RetinalUtil.q_GF_nm()+ 20
+    min_x_show_nm = int(np.floor(min(q_interp)-2))
+    plt.xlim([min_x_show_nm,max_x_show_nm])
+    plt.xticks([i for i in range(min_x_show_nm,max_x_show_nm)])
     ax.xaxis.set_ticks_position('both')
     ax.grid(True)
     PlotUtilities.savefig(fig,out_dir + "avg.png")

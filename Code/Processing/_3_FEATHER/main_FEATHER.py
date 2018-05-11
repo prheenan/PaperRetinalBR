@@ -26,6 +26,14 @@ from Lib.AppFEATHER.Code import Detector, Analysis
 from multiprocessing import Pool
 import multiprocessing
 
+def _is_PEG600(d):
+    PEG600_keys = ["BR+Retinal/300nms/170511FEC/"]
+    src = d.Meta.SourceFile
+    for key in PEG600_keys:
+        if key in src:
+            return True
+    return False
+
 
 def align_single(d,**kw):
     """
@@ -41,8 +49,11 @@ def align_single(d,**kw):
     # use FEATHER; fit to the first event, don't look for adhesion
     d_pred_only = d._slice(slice(0,None,1))
     # first, try removing surface adhesions
+    is_600 = _is_PEG600(d)
+    f_refs_initial = [Detector.delta_mask_function] if is_600 else None
     feather_kw =  dict(d=d_pred_only,**kw)
-    pred_info,tau_n = RetinalUtil._detect_retract_FEATHER(**feather_kw)
+    pred_info,tau_n = RetinalUtil._detect_retract_FEATHER(f_refs=f_refs_initial,
+                                                          **feather_kw)
     # if we removed more than 20nm or we didnt find any events, then
     # FEATHER got confused by a near-surface BR. Tell it not to look for
     # surface adhesions

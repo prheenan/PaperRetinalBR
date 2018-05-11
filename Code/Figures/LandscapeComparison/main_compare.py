@@ -73,11 +73,13 @@ def make_retinal_subplot(gs,energy_list_arr,shifts,skip_arrow=True):
         delta_style = dict(**delta_styles[i])
         plt.plot(q_interp_nm,mean,**style_dicts[i])
         energy_error = np.mean(stdev)
+        energy_label = (r"$\mathbf{\Delta G}_{GF,\overline{\mathbf{PEG3400}}}$")
         q_at_max_energy, max_energy_mean, _ = \
             PlotUtil.plot_delta_GF(q_interp_nm, mean, stdev,
                                    max_q_idx=-1,energy_error=energy_error,
                                    max_q_nm=max_q_nm,round_std=-1,
                                    round_energy=-1,linewidth=0,
+                                   energy_label=energy_label,
                                    label_offset=shifts[i],**delta_style)
         # for the error, use the mean error over all interpolation
         max_energy_std = energy_error
@@ -130,11 +132,10 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
         l = LandscapeWithError(q_nm=q_interp,G_kcal=mean,G_err_kcal=stdev)
         landscpes_with_error.append(l)
     # get the extension grid we wnt...
-    peg = WLC.peg_contribution()
-    ext_grid = peg.q
+    ext_grid = np.linspace(0,25,num=100)
     # read in Hao's energy landscape
     fec_system = WLC._make_plot_inf(ext_grid,WLC.read_hao_polypeptide)
-    shifts = [fec_system.W_at_f(f) for f in [250, 139]]
+    shifts = [fec_system.W_at_f(f) for f in [249, 149]]
     gs = gridspec.GridSpec(nrows=1,ncols=1,width_ratios=[1])
     ax1, means, stdevs = make_retinal_subplot(gs,landscpes_with_error,shifts)
     # get the with-retinal max
@@ -198,11 +199,11 @@ def run():
     e_list_flat = [e for list_tmp in energy_list_arr for e in list_tmp ]
     q_offset = RetinalUtil.q_GF_nm()
     q_interp = RetinalUtil.common_q_interp(energy_list=e_list_flat)
-    q_interp = q_interp[np.where(q_interp-min(q_interp)  <= q_offset)]
+    q_interp = q_interp[np.where(q_interp  <= q_offset)]
     G_no_peg = read_non_peg_landscape()
     fig = PlotUtilities.figure(figsize=(3.5,3.25))
     make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset)
-    PlotUtilities.savefig(fig,out_dir + "LandscapeComparison.png")
+    PlotUtilities.savefig(fig,out_dir + "FigureX_LandscapeComparison.png")
 
 
 
