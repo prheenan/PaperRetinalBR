@@ -1,0 +1,159 @@
+
+\documentclass{article}
+
+\usepackage[hyperref,doi=false,url=false,backref,style=alphabetic,maxbibnames=99,backend=bibtex,citestyle=authoryear]{biblatex}
+\usepackage{gensymb} % for Celsius
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb} 
+\usepackage{braket}
+\usepackage{geometry}
+\geometry{margin=1in}
+
+% graphics...
+\usepackage{graphicx}
+\usepackage{fancyhdr} % Custom headers and footers
+\pagestyle{fancyplain} % Makes all pages in the document conform to the custom headers and footers
+\fancyhead{} % No page header - if you want one, create it in the same way as the footers below
+\fancyfoot[L]{} % Empty left footer
+\fancyfoot[C]{} % Empty center footer
+\fancyfoot[R]{\thepage} % Page numbering for right footer
+\renewcommand{\headrulewidth}{0pt} % Remove header underlines
+\renewcommand{\footrulewidth}{0pt} % Remove footer underlines
+\setlength{\headheight}{13.6pt} % Customize the height of the header
+
+\setlength\parindent{0pt} % Removes all indentation from paragraphs - comment this line for an assignment with lots of text
+
+%----------------------------------------------------------------------------------------
+%	TITLE SECTION
+%----------------------------------------------------------------------------------------
+
+\newcommand{\ndiffn}[3]{\frac{\partial^{#3}#1}{\partial^{#3}#2}}
+\newcommand{\diffn}[2]{\ndiffn{#1}{#2}{}}
+\newcommand{\eqs}[1]{
+\begin{align*} 
+\begin{split}
+#1
+\end{split}					
+\end{align*}}
+
+\newcommand{\pFig}[3]{
+\begin{figure}[h!]
+\centering
+\caption{#2}
+\boxed{\includegraphics[width=0.75\textwidth]{#1}}
+\label{figure:#3}
+\end{figure}}
+
+
+
+\newcommand{\eqlab}[2]{
+\begin{equation}
+\label{equation:#2}
+\begin{split}
+#1
+\end{split}
+\end{equation}
+}
+
+
+\newcommand{\brac}[1]
+{
+  \Big[ #1 \Big]
+}
+
+\newcommand{\tab}[2]
+{
+\begin{tabular}[h!]{#1}
+\hline
+#2
+\end{tabular}
+}
+
+\newcommand{\e}[0]{\\ \hline}
+
+\newcommand{\pMat}[1]{
+ \left[ \begin{array}
+#1 \end{array} \right]
+}
+
+\newcommand{\code}[1]{
+  \begin{lstlisting}[language=Python]
+#1
+\end{lstlisting}
+}
+
+% for making specific references.
+\newcommand{\tRef}[1]{Table \ref{table:#1}}
+\newcommand{\fRef}[1]{Figure \ref{figure:#1}}
+\newcommand{\sRef}[1]{Section \ref{section:#1}}
+\newcommand{\eRef}[1]{Equation \ref{equation:#1}}
+
+\newcommand{\pLit}[4]{
+\cite{#1}
+\begin{adjustwidth}{2.5em}{0pt}
+\textbf{Title}: \citetitle{#1} \\
+\textbf{Keywords}: #4 \\
+\textbf{Big Picture}: #2 \\
+\textbf{Summary}: #3 
+\end{adjustwidth}
+}
+
+
+
+\title{}
+\author{Patrick Heenan} % Your name
+
+\date{\normalsize\today} % Today's date or a custom date
+
+\begin{document}
+
+\maketitle
+
+Our current BR/BO data measures the total work as a function of cantilever base position z:
+
+\eqlab{W_{\text{total}}(z) = W_{\text{PEG}}(z) + W_{\text{probe}}(z) + W_{\text{protein}}(z) }{tot}
+
+However, we are interested in the system work (this is essentially what we meaured for the JCP paper, in the absence of PEG3400)
+
+\eqlab{W_{\text{system}}(z) = W_{\text{probe}}(z) + W_{\text{protein}}(z) }{sys}
+
+Note, the probe work is included as an input to Jarzynski, but we eventually remove it using and IWT or WHAM (not discussed here). By Jarzynski, we have:
+
+\eqlab{ 
+\exp(-\beta A_{\text{total}}(z))&= \braket{\exp(-\beta W_{\text{total}}(z))}_N \\
+\exp(-\beta A_{\text{PEG}}(z)) &=  \braket{\exp(-\beta W_{\text{PEG}}(z))}_N\\
+}{common}
+
+where $\beta=\frac{1}{k_\text{B} T}$, $\braket{W(z)}_N$ denotes the enesemble average of the works at a given z. Dividing the two equations above gives (making z-dependence implicit for notational simplicity):
+
+\eqlab{ \exp(-\beta (A_{\text{total}}-A_{\text{PEG}})) =
+\frac{\braket{\exp(-\beta W_{\text{total}})}_N }
+{\braket{\exp(-\beta W_{\text{PEG}})}_N} = \exp(-\beta A_{\text{system}}) 
+ }{diff}
+
+Where in the last step we used that $A_{\text{total}}-A_{\text{system}} = A_{\text{PEG}}$, by \eRef{tot} and \eRef{sys}. We also know by Jarzynski
+
+\eqs{ \exp(-\beta (A_{\text{total}}-A_{\text{PEG}})) 
+&=\braket{\exp(-\beta (W_{\text{total}} - W_{PEG}))}_N \\
+&= \braket{\exp(-\beta  ((W_{\text{PEG}} + W_{\text{probe}} + W_{\text{protein}}) - W_{PEG}))}_N   \\
+&= \braket{\exp(-\beta  (W_{\text{probe}} + W_{\text{protein}}))}_N \\
+&= \exp(-\beta A_{\text{system}}) }
+
+Where the last step used \eRef{diff}. In other words
+
+\eqs{  \exp(-\beta A_{\text{system}}) =  
+\boxed{\exp(-\beta  (A_{\text{probe}}(z) + A_{\text{protein}}) ) = 
+\braket{\exp(-\beta  (W_{\text{probe}} + W_{\text{protein}}))}_N } \qed}
+
+
+
+
+
+
+
+
+
+%----------------------------------------------------------------------------------------
+
+\end{document}
