@@ -151,23 +151,24 @@ def _read_all_energies(base_dir_analysis):
         e._iwt_obj._G0 -= e._iwt_obj._G0[0]
     return energy_list_raw
 
-def interpolating_G0(energy_list,num_q=200,num_splines=75):
+def interpolating_G0(energy_list,num_q=200,
+                     f=lambda x_tmp: x_tmp.G0_kcal_per_mol ):
     """
     :param energy_list: list of energy objects to get splines from
     :param num_q: h
-    :param num_splines:
+    :param f: takes in a function, returns what property we want splines of
     :return: tuple of <q (nm) in range of all energy objects,
                       splines for objects' energy in kcal/mol(q in nm)>
     """
     q_interp =  common_q_interp(energy_list,num_q=num_q)
     # get all the splines
-    splines = [spline_fit(q=e.q_nm, G0=e.G0_kcal_per_mol)
+    splines = [spline_fit(q=e.q_nm, G0=f(e))
                for e in energy_list]
     return q_interp, splines
 
 def spline_fit(q, G0, k=3, knots=None,num=None):
     if num is None:
-        num = min(100,q.size//(k)-1)
+        num = min(150,q.size//(k)-1)
     if (knots is None):
         step = q.size//num
         assert step > 0 and step

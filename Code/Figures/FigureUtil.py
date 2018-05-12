@@ -131,7 +131,7 @@ def read_sample_landscapes(base_dir):
                               BO_PEG3400=BO_PEG3400)
     return to_ret
 
-def _get_error_landscapes(q_interp,energy_list_arr):
+def _get_error_landscapes(q_interp,energy_list_arr,**kw):
     landscpes_with_error = []
     for i, energy_list in enumerate(energy_list_arr):
         _, splines = RetinalUtil.interpolating_G0(energy_list)
