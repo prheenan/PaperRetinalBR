@@ -42,7 +42,7 @@ def read_energy_lists(subdirs):
     for base in subdirs:
         in_dir = Pipeline._cache_dir(base=base,
                                      enum=Pipeline.Step.CORRECTED)
-        in_file = in_dir + "energies.pkl"
+        in_file = in_dir + "energy.pkl"
         e = CheckpointUtilities.lazy_load(in_file)
         energy_list_arr.append(e)
     return energy_list_arr
@@ -121,7 +121,7 @@ def make_retinal_subplot(gs,energy_list_arr,shifts,skip_arrow=True):
                             legend_kwargs=dict(loc='lower right'))
     return ax1, means, stdevs
 
-def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
+def _get_error_landscapes(q_interp,energy_list_arr):
     landscpes_with_error = []
     for i, energy_list in enumerate(energy_list_arr):
         _, splines = RetinalUtil.interpolating_G0(energy_list)
@@ -129,6 +129,10 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
         mean -= min(mean)
         l = LandscapeWithError(q_nm=q_interp,G_kcal=mean,G_err_kcal=stdev)
         landscpes_with_error.append(l)
+    return landscpes_with_error
+
+def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
+    landscpes_with_error = _get_error_landscapes(q_interp, energy_list_arr)
     # get the extension grid we wnt...
     ext_grid = np.linspace(0,25,num=100)
     # read in Hao's energy landscape
@@ -140,7 +144,7 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
     ax2 = plt.subplot(gs[0])
     # get the max of the last point (the retinal energy landscape is greater)
     G_offset = np.max([l.G_kcal[-1] for l in landscpes_with_error])
-    q_nm = G_no_peg.q_nm + q_offset
+    q_nm = G_no_peg.q_nm + max(q_interp)
     G_kcal = G_no_peg.G_kcal + G_offset
     G_err_kcal = G_no_peg.G_err_kcal
     mean_err = np.mean(G_err_kcal)
@@ -170,7 +174,8 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
     common_kw = dict(add_minor=True)
     scalebar_kw = dict(offset_x=offset_x,offset_y=offset_y,ax=ax,
                        x_on_top=True,y_on_right=True,
-                       x_kwargs=dict(width=x_range_scalebar_nm,unit="nm",**common_kw),
+                       x_kwargs=dict(width=x_range_scalebar_nm,unit="nm",
+                                     **common_kw),
                        y_kwargs=dict(height=range_scale_kcal,unit="kcal/mol",
                                      **common_kw))
     PlotUtilities.no_x_label(ax=ax)
@@ -195,8 +200,10 @@ def run():
                and "David" not in d]
     out_dir = "./"
     energy_list_arr = read_energy_lists(subdirs)
+    energy_list_arr = [ [e._iwt_obj for e in list_v]
+                        for list_v in energy_list_arr]
     e_list_flat = [e for list_tmp in energy_list_arr for e in list_tmp ]
-    q_offset = RetinalUtil.q_GF_nm()
+    q_offset = 30
     q_interp = RetinalUtil.common_q_interp(energy_list=e_list_flat)
     q_interp = q_interp[np.where(q_interp-q_interp[0]  <= q_offset)]
     G_no_peg = read_non_peg_landscape()

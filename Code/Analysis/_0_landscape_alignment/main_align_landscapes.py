@@ -98,7 +98,8 @@ def data_plot(fecs,energies):
 
 def _energy_plot(energy_list,out_dir):
     # interpolate all the energies to the same grid
-    q_interp, splines = RetinalUtil.interpolating_G0(energy_list)
+    energies_plot = [e._iwt_obj for e in energy_list]
+    q_interp, splines = RetinalUtil.interpolating_G0(energies_plot)
     # get an average/stdev of energy
     fig = PlotUtilities.figure((7, 7))
     ax = plt.subplot(1, 1, 1)
