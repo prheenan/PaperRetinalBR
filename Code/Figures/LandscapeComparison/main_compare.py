@@ -24,18 +24,13 @@ import matplotlib.gridspec as gridspec
 from Processing.Util import WLC
 from Figures import FigureUtil
 
-class LandscapeWithError(object):
-    def __init__(self,q_nm,G_kcal,G_err_kcal):
-        self.q_nm = q_nm
-        self.G_kcal = G_kcal
-        self.G_err_kcal = G_err_kcal
 
 def read_non_peg_landscape():
     input_file = "../FigData/Fig2c_iwt_diagram.csv"
     arr =  np.loadtxt(input_file,delimiter=",").T
     q, G, G_low, G_upper = arr
     G_std = (G_upper - G_low) * 0.5
-    return LandscapeWithError(q_nm=q,G_kcal=G,G_err_kcal=G_std)
+    return FigureUtil.LandscapeWithError(q_nm=q,G_kcal=G,G_err_kcal=G_std)
 
 
 
@@ -112,18 +107,11 @@ def make_retinal_subplot(gs,energy_list_arr,shifts,skip_arrow=True):
                             legend_kwargs=dict(loc='lower right'))
     return ax1, means, stdevs
 
-def _get_error_landscapes(q_interp,energy_list_arr):
-    landscpes_with_error = []
-    for i, energy_list in enumerate(energy_list_arr):
-        _, splines = RetinalUtil.interpolating_G0(energy_list)
-        mean, stdev = PlotUtil._mean_and_stdev_landcapes(splines, q_interp)
-        mean -= min(mean)
-        l = LandscapeWithError(q_nm=q_interp,G_kcal=mean,G_err_kcal=stdev)
-        landscpes_with_error.append(l)
-    return landscpes_with_error
+
 
 def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
-    landscpes_with_error = _get_error_landscapes(q_interp, energy_list_arr)
+    landscpes_with_error = \
+        FigureUtil._get_error_landscapes(q_interp, energy_list_arr)
     # get the extension grid we wnt...
     ext_grid = np.linspace(0,25,num=100)
     # read in Hao's energy landscape

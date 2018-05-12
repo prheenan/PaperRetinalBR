@@ -18,7 +18,14 @@ from Lib.UtilForce.FEC import FEC_Util
 from Lib.UtilForce.UtilGeneral import CheckpointUtilities, GenUtilities, \
     PlotUtilities
 import RetinalUtil
+import PlotUtil
 
+
+class LandscapeWithError(object):
+    def __init__(self,q_nm,G_kcal,G_err_kcal):
+        self.q_nm = q_nm
+        self.G_kcal = G_kcal
+        self.G_err_kcal = G_err_kcal
 
 class SnapshotFEC(object):
     def __init__(self,step,fec_list):
@@ -122,8 +129,21 @@ def read_sample_landscapes(base_dir):
                               BO_PEG3400=BO_PEG3400)
     return to_ret
 
+def _get_error_landscapes(q_interp,energy_list_arr):
+    landscpes_with_error = []
+    for i, energy_list in enumerate(energy_list_arr):
+        _, splines = RetinalUtil.interpolating_G0(energy_list)
+        mean, stdev = PlotUtil._mean_and_stdev_landcapes(splines, q_interp)
+        mean -= min(mean)
+        l = LandscapeWithError(q_nm=q_interp,G_kcal=mean,G_err_kcal=stdev)
+        landscpes_with_error.append(l)
+    return landscpes_with_error
 
 def read_energy_lists(subdirs):
+    """
+    :param subdirs: which directories to look in (e.g. BR+Retinal/)
+    :return: list, elements are all the landscapes in the subdirs
+    """
     energy_list_arr =[]
     # get all the energy objects
     for base in subdirs:
