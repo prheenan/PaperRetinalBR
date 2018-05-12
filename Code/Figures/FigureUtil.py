@@ -8,6 +8,7 @@ from __future__ import unicode_literals
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
+import os
 
 sys.path.append("../")
 from Processing import ProcessingUtil
@@ -120,3 +121,33 @@ def read_sample_landscapes(base_dir):
                               PEG3400=PEG3400,
                               BO_PEG3400=BO_PEG3400)
     return to_ret
+
+
+def read_energy_lists(subdirs):
+    energy_list_arr =[]
+    # get all the energy objects
+    for base in subdirs:
+        in_dir = Pipeline._cache_dir(base=base,
+                                     enum=Pipeline.Step.CORRECTED)
+        in_file = in_dir + "energy.pkl"
+        e = CheckpointUtilities.lazy_load(in_file)
+        energy_list_arr.append(e)
+    return energy_list_arr
+
+def _read_energy_list_and_q_interp(input_dir,q_offset):
+    """
+    :param input_dir: where all the data live, e.g.  Data/FECs180307/"
+    :param q_offset: how much of the landscape to use...
+    :return:  tuple of (q to interpolate to, list, each element is a list
+    of landcapes associated with one of the dirctories under input_dir)
+    """
+    subdirs_raw = [input_dir + d + "/" for d in os.listdir(input_dir)]
+    subdirs = [d for d in subdirs_raw if (os.path.isdir(d))
+               and "David" not in d]
+    energy_list_arr = read_energy_lists(subdirs)
+    energy_list_arr = [ [e._iwt_obj for e in list_v]
+                        for list_v in energy_list_arr]
+    e_list_flat = [e for list_tmp in energy_list_arr for e in list_tmp ]
+    q_interp = RetinalUtil.common_q_interp(energy_list=e_list_flat)
+    q_interp = q_interp[np.where(q_interp-q_interp[0]  <= q_offset)]
+    return q_interp,energy_list_arr

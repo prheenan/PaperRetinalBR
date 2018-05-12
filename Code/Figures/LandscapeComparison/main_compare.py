@@ -22,6 +22,7 @@ from Lib.AppWHAM.Code import WeightedHistogram, UtilWHAM
 import RetinalUtil,PlotUtil
 import matplotlib.gridspec as gridspec
 from Processing.Util import WLC
+from Figures import FigureUtil
 
 class LandscapeWithError(object):
     def __init__(self,q_nm,G_kcal,G_err_kcal):
@@ -36,16 +37,6 @@ def read_non_peg_landscape():
     G_std = (G_upper - G_low) * 0.5
     return LandscapeWithError(q_nm=q,G_kcal=G,G_err_kcal=G_std)
 
-def read_energy_lists(subdirs):
-    energy_list_arr =[]
-    # get all the energy objects
-    for base in subdirs:
-        in_dir = Pipeline._cache_dir(base=base,
-                                     enum=Pipeline.Step.CORRECTED)
-        in_file = in_dir + "energy.pkl"
-        e = CheckpointUtilities.lazy_load(in_file)
-        energy_list_arr.append(e)
-    return energy_list_arr
 
 
 def make_retinal_subplot(gs,energy_list_arr,shifts,skip_arrow=True):
@@ -183,7 +174,6 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
     Scalebar.crossed_x_and_y_relative(**scalebar_kw)
 
 
-
 def run():
     """
     <Description>
@@ -195,20 +185,13 @@ def run():
         This is a description of what is returned.
     """
     input_dir = "../../../Data/FECs180307/"
-    subdirs_raw = [input_dir + d + "/" for d in os.listdir(input_dir)]
-    subdirs = [d for d in subdirs_raw if (os.path.isdir(d))
-               and "David" not in d]
     out_dir = "./"
-    energy_list_arr = read_energy_lists(subdirs)
-    energy_list_arr = [ [e._iwt_obj for e in list_v]
-                        for list_v in energy_list_arr]
-    e_list_flat = [e for list_tmp in energy_list_arr for e in list_tmp ]
-    q_offset = 30
-    q_interp = RetinalUtil.common_q_interp(energy_list=e_list_flat)
-    q_interp = q_interp[np.where(q_interp-q_interp[0]  <= q_offset)]
+    q_offset_nm = 30
+    q_interp, energy_list_arr = FigureUtil.\
+        _read_energy_list_and_q_interp(input_dir, q_offset=q_offset_nm)
     G_no_peg = read_non_peg_landscape()
     fig = PlotUtilities.figure(figsize=(3.5,3.25))
-    make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset)
+    make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset_nm)
     PlotUtilities.savefig(fig,out_dir + "FigureX_LandscapeComparison.png")
 
 
