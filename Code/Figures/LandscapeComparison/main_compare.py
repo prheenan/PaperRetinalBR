@@ -30,7 +30,8 @@ def read_non_peg_landscape():
     arr =  np.loadtxt(input_file,delimiter=",").T
     q, G, G_low, G_upper = arr
     G_std = (G_upper - G_low) * 0.5
-    return FigureUtil.LandscapeWithError(q_nm=q,G_kcal=G,G_err_kcal=G_std)
+    return FigureUtil.LandscapeWithError(q_nm=q,G_kcal=G,G_err_kcal=G_std,
+                                         beta=1/(4.1e-21))
 
 
 

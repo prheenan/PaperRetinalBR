@@ -14,6 +14,7 @@ sys.path.append("../")
 from Processing import ProcessingUtil
 
 from Lib.UtilPipeline import Pipeline
+from Lib.AppIWT.Code.UtilLandscape import BidirectionalUtil, Conversions
 from Lib.UtilForce.FEC import FEC_Util
 from Lib.UtilForce.UtilGeneral import CheckpointUtilities, GenUtilities, \
     PlotUtilities
@@ -21,10 +22,11 @@ import RetinalUtil
 import PlotUtil
 
 
-class LandscapeWithError(object):
-    def __init__(self,q_nm,G_kcal,G_err_kcal):
-        self.q_nm = q_nm
-        self.G_kcal = G_kcal
+class LandscapeWithError(BidirectionalUtil._BaseLandscape):
+    def __init__(self,q_nm,G_kcal,G_err_kcal,beta):
+        convert_kcal_to_J = 1/Conversions.kcal_per_mol_per_J()
+        super(LandscapeWithError,self).\
+            __init__(q=q_nm*1e-9,G0=G_kcal*convert_kcal_to_J,beta=beta)
         self.G_err_kcal = G_err_kcal
 
 class SnapshotFEC(object):
@@ -133,9 +135,11 @@ def _get_error_landscapes(q_interp,energy_list_arr):
     landscpes_with_error = []
     for i, energy_list in enumerate(energy_list_arr):
         _, splines = RetinalUtil.interpolating_G0(energy_list)
+        beta = energy_list[0].beta
         mean, stdev = PlotUtil._mean_and_stdev_landcapes(splines, q_interp)
         mean -= min(mean)
-        l = LandscapeWithError(q_nm=q_interp,G_kcal=mean,G_err_kcal=stdev)
+        l = LandscapeWithError(q_nm=q_interp,G_kcal=mean,G_err_kcal=stdev,
+                               beta=beta)
         landscpes_with_error.append(l)
     return landscpes_with_error
 
