@@ -29,7 +29,8 @@ def get_energy_list(base_dir_analysis, min_fecs):
     """
     energy_list = RetinalUtil._read_all_energies(base_dir_analysis)
     # make sure we have a minimum number of FECS
-    energy_list = [e for e in energy_list if e.n_fecs >= min_fecs]
+    energy_list = [e for e in energy_list
+                   if e.n_fecs >= min_fecs]
     # the 3000nms BO data is very noisy; discard it.
     energy_list = [e for e in energy_list
                    if "BR-Retinal/3000nms/" not in e.base_dir]
@@ -95,6 +96,35 @@ def data_plot(fecs,energies):
     plt.axvspan(q_at_max_energy,max(xlim),color='k',alpha=0.3)
     plt.xlim(xlim)
 
+def _energy_plot(energy_list,out_dir):
+    # interpolate all the energies to the same grid
+    q_interp, splines = RetinalUtil.interpolating_G0(energy_list)
+    # get an average/stdev of energy
+    fig = PlotUtilities.figure((7, 7))
+    ax = plt.subplot(1, 1, 1)
+    PlotUtil.plot_mean_landscape(q_interp, splines, ax=ax)
+    max_x_show_nm = RetinalUtil.q_GF_nm() + 20
+    min_x_show_nm = int(np.floor(min(q_interp) - 2))
+    plt.xlim([min_x_show_nm, max_x_show_nm])
+    plt.xticks([i for i in range(min_x_show_nm, max_x_show_nm)])
+    ax.xaxis.set_ticks_position('both')
+    ax.grid(True)
+    PlotUtilities.savefig(fig, out_dir + "avg.png")
+
+def _fec_demo_plot(energy_list,out_dir):
+    fecs = []
+    energies = []
+    N = len(energy_list)
+    for e in energy_list:
+        data = RetinalUtil.read_fecs(e)
+        fecs.append(data)
+        energies.append(e)
+    n_cols = N
+    fig = PlotUtilities.figure((n_cols * 1,6))
+    data_plot(fecs, energies)
+    PlotUtilities.savefig(fig,out_dir + "energies.png",
+                          subplots_adjust=dict(hspace=0.02,wspace=0.04))
+
 def run():
     """
     <Description>
@@ -109,38 +139,16 @@ def run():
     out_dir = Pipeline._cache_dir(base=base_dir_analysis,
                                   enum=Pipeline.Step.CORRECTED)
     force = True
-    min_fecs = 10
+    min_fecs = 0
     GenUtilities.ensureDirExists(out_dir)
     energy_list = CheckpointUtilities.getCheckpoint(out_dir + \
                                                     "energy.pkl",
                                                     get_energy_list,force,
                                                     base_dir_analysis,
                                                     min_fecs)
-    fecs = []
-    energies = []
-    N = len(energy_list)
-    for e in energy_list:
-        data = RetinalUtil.read_fecs(e)
-        fecs.append(data)
-        energies.append(e)
-    n_cols = N
-    fig = PlotUtilities.figure((n_cols * 1,6))
-    data_plot(fecs, energies)
-    PlotUtilities.savefig(fig,out_dir + "energies.png",
-                          subplots_adjust=dict(hspace=0.02,wspace=0.04))
-    # interpolate all the energies to the same grid
-    q_interp, splines =  RetinalUtil.interpolating_G0(energy_list)
-    # get an average/stdev of energy
-    fig = PlotUtilities.figure((7,7))
-    ax = plt.subplot(1,1,1)
-    PlotUtil.plot_mean_landscape(q_interp, splines,ax=ax)
-    max_x_show_nm= RetinalUtil.q_GF_nm()+ 20
-    min_x_show_nm = int(np.floor(min(q_interp)-2))
-    plt.xlim([min_x_show_nm,max_x_show_nm])
-    plt.xticks([i for i in range(min_x_show_nm,max_x_show_nm)])
-    ax.xaxis.set_ticks_position('both')
-    ax.grid(True)
-    PlotUtilities.savefig(fig,out_dir + "avg.png")
+    _energy_plot(energy_list, out_dir)
+    _fec_demo_plot(energy_list,out_dir)
+
 
 
 
