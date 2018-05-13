@@ -158,10 +158,11 @@ def read_energy_lists(subdirs):
         energy_list_arr.append(e)
     return energy_list_arr
 
-def _read_energy_list_and_q_interp(input_dir,q_offset):
+def _read_energy_list_and_q_interp(input_dir,q_offset,iwt_only=True):
     """
     :param input_dir: where all the data live, e.g.  Data/FECs180307/"
     :param q_offset: how much of the landscape to use...
+    :param iwt_only: if true, only return the IWT, not WHAM
     :return:  tuple of (q to interpolate to, list, each element is a list
     of landcapes associated with one of the dirctories under input_dir)
     """
@@ -169,8 +170,9 @@ def _read_energy_list_and_q_interp(input_dir,q_offset):
     subdirs = [d for d in subdirs_raw if (os.path.isdir(d))
                and "David" not in d]
     energy_list_arr = read_energy_lists(subdirs)
-    energy_list_arr = [ [e._iwt_obj for e in list_v]
-                        for list_v in energy_list_arr]
+    if iwt_only:
+        energy_list_arr = [ [e._iwt_obj for e in list_v]
+                            for list_v in energy_list_arr]
     e_list_flat = [e for list_tmp in energy_list_arr for e in list_tmp ]
     q_interp = RetinalUtil.common_q_interp(energy_list=e_list_flat)
     q_interp = q_interp[np.where(q_interp-q_interp[0]  <= q_offset)]
