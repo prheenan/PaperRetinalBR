@@ -47,17 +47,17 @@ class Blacklist(object):
 blacklist_tuples = [ \
     # all the blacklisted BR data
     [str_BR,f_v(50),f_date("170502"),[1245,2160]],
-    [str_BR,f_v(50),f_date("170503"),[819,837,1161]],
-    [str_BR, f_v(300), f_date("170321"), [463,471,500,532,760,821,833]],
+    [str_BR,f_v(50),f_date("170503"),[819,837]],
+    [str_BR, f_v(300), f_date("170321"), [463,471,500,532,760,786,821,833]],
     [str_BR, f_v(300), f_date("170501"), [203,870,1353]],
     [str_BR, f_v(300), f_date("170502"), []],# this one is OK
     [str_BR, f_v(300), f_date("170511"), [316,731]],
     [str_BR, f_v(3000), f_date("170502"), [717]],
     [str_BR, f_v(3000), f_date("170503"), [231,]],
     # all the blacklisted BO data
-    [str_BO, f_v(50), f_date("170523"), [117,176,204,223]],
+    [str_BO, f_v(50), f_date("170523"), [117,176,203,204,223]],
     [str_BO, f_v(300), f_date("170327"), [121,236,310,347,383,386,473,484,486]],
-    [str_BO, f_v(3000), f_date("170523"), [18,20,22,67,69,349,773]],
+    [str_BO, f_v(3000), f_date("170523"), [18,20,22,69,349,741,773]],
 ]
 
 blacklists = [Blacklist(*t) for t in blacklist_tuples]

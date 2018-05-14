@@ -110,6 +110,7 @@ def make_retinal_subplot(gs,energy_list_arr,shifts,skip_arrow=True):
 
 
 
+
 def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
     landscpes_with_error = \
         FigureUtil._get_error_landscapes(q_interp, energy_list_arr)
@@ -162,6 +163,23 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
     PlotUtilities.no_y_label(ax=ax)
     Scalebar.crossed_x_and_y_relative(**scalebar_kw)
 
+def _giant_debugging_plot(out_dir,energy_list_arr):
+    fig = PlotUtilities.figure((8,12))
+    gs = gridspec.GridSpec(nrows=2,ncols=1,hspace=0.15)
+    n_cols = max([len(list_v) for list_v in energy_list_arr])
+    for i,energy_list in enumerate(energy_list_arr):
+        fecs = []
+        energies = []
+        for e in energy_list:
+            data = RetinalUtil.read_fecs(e)
+            fecs.append(data)
+            energies.append(e)
+        gs_tmp = gridspec.GridSpecFromSubplotSpec(nrows=4,
+                                                  ncols=n_cols,
+                                                  subplot_spec=gs[i])
+        FigureUtil.data_plot(fecs, energies,gs1=gs_tmp)
+    PlotUtilities.savefig(fig, out_dir + "FigureS_Mega_Debug.png",
+                          subplots_adjust=dict(hspace=0.02, wspace=0.04))
 
 def run():
     """
@@ -175,10 +193,13 @@ def run():
     """
     input_dir = "../../../Data/FECs180307/"
     out_dir = "./"
-    q_offset_nm = 30
+    q_offset_nm = RetinalUtil.min_sep_landscape() * 1e9
+    min_fecs = 8
     q_interp, energy_list_arr = FigureUtil.\
-        _read_energy_list_and_q_interp(input_dir, q_offset=q_offset_nm)
+        _read_energy_list_and_q_interp(input_dir, q_offset=q_offset_nm,
+                                       min_fecs=min_fecs,remove_noisy=True)
     G_no_peg = read_non_peg_landscape()
+    _giant_debugging_plot(out_dir, energy_list_arr)
     fig = PlotUtilities.figure(figsize=(3.5,3.25))
     make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset_nm)
     PlotUtilities.savefig(fig,out_dir + "FigureX_LandscapeComparison.png")

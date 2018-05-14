@@ -29,7 +29,6 @@ def plot_landscapes(data,energy_obj,ax1=None,
     if ax3 is None:
         ax3 = plt.subplot(3,1,3)
     energy_obj = RetinalUtil.valid_landscape(energy_obj)
-    energy_obj = energy_obj._iwt_obj
     q = energy_obj.q
     q_nm = q * 1e9
     xlim_nm = [min(q_nm), max(q_nm)]

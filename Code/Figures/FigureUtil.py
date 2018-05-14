@@ -14,6 +14,7 @@ sys.path.append("../")
 from Processing import ProcessingUtil
 
 from Lib.UtilPipeline import Pipeline
+from Lib.AppIWT.Code import InverseWeierstrass
 from Lib.AppIWT.Code.UtilLandscape import BidirectionalUtil, Conversions
 from Lib.UtilForce.FEC import FEC_Util
 from Lib.UtilForce.UtilGeneral import CheckpointUtilities, GenUtilities, \
@@ -160,8 +161,16 @@ def read_energy_lists(subdirs):
         energy_list_arr.append(e)
     return energy_list_arr
 
+def _iwt_meta_obj(e):
+    to_ret = RetinalUtil.EnergyWithMeta(e.file_name, e.base_dir, e)
+    # re-initialize the object so the IWT is the default (not WHAM)
+    iwt = e._iwt_obj
+    super(RetinalUtil.DualLandscape, to_ret).__init__(iwt._q, iwt._G0,
+                                                      iwt.beta)
+    return to_ret
+
 def _read_energy_list_and_q_interp(input_dir,q_offset,iwt_only=True,
-                                   min_fecs=None,remove_noisy=True):
+                                   min_fecs=None,remove_noisy=False):
     """
     :param input_dir: where all the data live, e.g.  Data/FECs180307/"
     :param q_offset: how much of the landscape to use...
@@ -181,7 +190,7 @@ def _read_energy_list_and_q_interp(input_dir,q_offset,iwt_only=True,
                             if "BR-Retinal/3000nms/" not in e.base_dir]
                             for energy_list in energy_list_arr]
     if iwt_only:
-        energy_list_arr = [ [e._iwt_obj for e in list_v]
+        energy_list_arr = [ [_iwt_meta_obj(e) for e in list_v]
                             for list_v in energy_list_arr]
     e_list_flat = [e for list_tmp in energy_list_arr for e in list_tmp ]
     q_interp = RetinalUtil.common_q_interp(energy_list=e_list_flat)
@@ -227,13 +236,14 @@ def data_plot(fecs,energies,gs1=None):
         plt.sca(ax1)
         tmp_str = e.file_name
         match = re.search(r"""
-                          Retinal/([\d\w]+)/([\d\w]+)/
+                          ([\w+-]+Retinal)/([\d\w]+)/([\d\w]+)/
                           """, tmp_str, re.IGNORECASE | re.VERBOSE)
+        assert match is not None
         groups = match.groups()
-        velocity, title = groups
+        BR, velocity, title = groups
         vel_label = velocity.replace("nms","")
         title_label = title.replace("FEC","")
-        title = "v={:s}\n {:s}".format(vel_label, title_label)
+        title = "{:s}, v={:s}\n {:s}".format(BR, vel_label, title_label)
         PlotUtilities.title(title,fontsize=5)
     fix_axes(all_ax)
     xlim = all_ax[0][0].get_xlim()

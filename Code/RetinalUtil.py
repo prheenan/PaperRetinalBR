@@ -14,7 +14,7 @@ from Lib.AppWHAM.Code import WeightedHistogram
 from scipy.interpolate import LSQUnivariateSpline
 
 from Lib.AppIWT.Code.InverseWeierstrass import FEC_Pulling_Object
-from Lib.AppWLC.Code import WLC
+from Lib.AppIWT.Code.UtilLandscape import BidirectionalUtil
 from Processing.Util import WLC as WLCHao
 from Lib.AppWLC.UtilFit import fit_base
 from Lib.AppFEATHER.Code import Detector, Analysis
@@ -33,13 +33,12 @@ class MetaPulling(FEC_Pulling_Object):
         self.Meta = time_sep_force.Meta
 
 
-class DualLandscape(WeightedHistogram.LandscapeWHAM):
+class DualLandscape(BidirectionalUtil._BaseLandscape):
     def __init__(self, wham_obj, iwt_obj):
         self._iwt_obj = iwt_obj
         self._wham_obj = wham_obj
-        super(DualLandscape, self).__init__(wham_obj._q, wham_obj._G0,
-                                            wham_obj._offset_G0_of_q,
-                                            wham_obj.beta)
+        super(DualLandscape, self).__init__(iwt_obj._q, iwt_obj._G0,
+                                            iwt_obj.beta)
     def _slice(self,*args,**kwargs):
         slice_iwt = self._iwt_obj
         wham_obj = self._wham_obj._slice(*args,**kwargs)
@@ -183,12 +182,12 @@ def valid_landscape(e):
     """
     good_idx = np.where(np.isfinite(e.G0) & ~np.isnan(e.G0))[0]
     assert good_idx.size > 0
-    tmp_e = e._slice(good_idx)
-    # offset the IWT
-    tmp_e._iwt_obj.q -= tmp_e._iwt_obj.q[0]
-    tmp_e._iwt_obj.q += e.q[0]
-    return tmp_e
+    # XXX dont slice anything
+    return e._slice(slice(0,None,1))
 
+
+def min_sep_landscape():
+    return 25e-9
 
 def offset_L(info):
     # align by the contour length of the protein

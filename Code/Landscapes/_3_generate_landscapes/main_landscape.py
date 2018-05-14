@@ -27,6 +27,11 @@ def generate_landscape(in_dir):
     data_wham = UtilWHAM.to_wham_input(data)
     energy_wham = WeightedHistogram.wham(fwd_input=data_wham)
     iwt_obj = InverseWeierstrass.free_energy_inverse_weierstrass(unfolding=data)
+    # offset the IWT so that it matches the offset of WHAM...
+    iwt_obj.q -= iwt_obj.q[0]
+    offset_q = energy_wham.q[0]
+    iwt_obj.q += energy_wham.q[0]
+    iwt_obj._z += energy_wham.q[0]
     to_ret = RetinalUtil.DualLandscape(wham_obj=energy_wham,iwt_obj=iwt_obj)
     return to_ret
 
