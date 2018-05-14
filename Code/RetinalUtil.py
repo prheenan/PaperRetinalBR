@@ -72,14 +72,23 @@ class HelicalSearch(object):
         self._landscape = iwt_EF
         self.N_GF = N_GF
 
-def slice_data_for_helix(data,min_ext_m):
-    v = data[0].Velocity
-    t = data[0].Time
+def _to_pts(d,meters):
+    t = d.Time
+    v = d.Velocity
     dt = t[1] - t[0]
-    t_GF = min_ext_m / v
+    t_GF = meters / v
     N_GF = int(np.ceil(t_GF / dt))
-    data_iwt_EF = [d._slice(slice(N_GF, None, 1)) for d in data]
-    return N_GF, data_iwt_EF
+    return N_GF
+
+def _slice_single(d,min_ext_m,max_ext_m):
+    N_GF = 0 if min_ext_m is None else _to_pts(d,min_ext_m)
+    N_final = None if max_ext_m is None else _to_pts(d,max_ext_m)
+    data_iwt_EF = d._slice(slice(N_GF, N_final, 1))
+    return N_GF, N_final, data_iwt_EF
+
+def slice_data_for_helix(data,min_ext_m,max_ext_m=None):
+    data_iwt_EF = [_slice_single(d,min_ext_m,max_ext_m) for d in data]
+    return data_iwt_EF[0][0], [d[-1] for d in data_iwt_EF]
 
 def q_GF_nm():
     return 35
@@ -208,7 +217,7 @@ def valid_landscape(e):
 
 
 def min_sep_landscape():
-    return 25e-9
+    return 15e-9
 
 def offset_L(info):
     # align by the contour length of the protein
