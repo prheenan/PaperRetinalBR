@@ -67,15 +67,19 @@ class EnergyWithMeta(DualLandscape):
 class HelicalSearch(object):
     def __init__(self,data,min_ext_m):
         self.min_ext_m = min_ext_m
-        v = data[0].Velocity
-        t = data[0].Time
-        dt = t[1] - t[0]
-        t_GF = min_ext_m / v
-        N_GF = int(np.ceil(t_GF / dt))
-        data_iwt_EF = [d._slice(slice(N_GF, None, 1)) for d in data]
+        N_GF, data_iwt_EF = slice_data_for_helix(data, min_ext_m)
         iwt_EF = InverseWeierstrass.free_energy_inverse_weierstrass(data_iwt_EF)
         self._landscape = iwt_EF
         self.N_GF = N_GF
+
+def slice_data_for_helix(data,min_ext_m):
+    v = data[0].Velocity
+    t = data[0].Time
+    dt = t[1] - t[0]
+    t_GF = min_ext_m / v
+    N_GF = int(np.ceil(t_GF / dt))
+    data_iwt_EF = [d._slice(slice(N_GF, None, 1)) for d in data]
+    return N_GF, data_iwt_EF
 
 def q_GF_nm():
     return 35
