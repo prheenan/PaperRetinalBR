@@ -26,13 +26,24 @@ def generate_landscape(in_dir):
     data = CheckpointUtilities.lazy_multi_load(in_dir)
     data_wham = UtilWHAM.to_wham_input(data)
     energy_wham = WeightedHistogram.wham(fwd_input=data_wham)
-    iwt_obj = InverseWeierstrass.free_energy_inverse_weierstrass(unfolding=data)
+    f_iwt = InverseWeierstrass.free_energy_inverse_weierstrass
+    iwt_obj = f_iwt(unfolding=data)
     # offset the IWT so that it matches the offset of WHAM...
     iwt_obj.q -= iwt_obj.q[0]
     offset_q = energy_wham.q[0]
-    iwt_obj.q += energy_wham.q[0]
-    iwt_obj._z += energy_wham.q[0]
-    to_ret = RetinalUtil.DualLandscape(wham_obj=energy_wham,iwt_obj=iwt_obj)
+    iwt_obj.q += offset_q
+    iwt_obj._z += offset_q
+    # also reconstruct just the EF-A helices...
+    v = data[0].Velocity
+    t = data[0].Time
+    dt = t[1] - t[0]
+    min_ext_m = 33e-9
+    t_GF = min_ext_m/v
+    N_GF = int(np.ceil(t_GF / dt))
+    data_iwt_EF = [d._slice(slice(N_GF,None,1)) for d in data]
+    iwt_EF = f_iwt(unfolding=data_iwt_EF)
+    to_ret = RetinalUtil.DualLandscape(wham_obj=energy_wham,iwt_obj=iwt_obj,
+                                       other_helices=iwt_EF)
     return to_ret
 
 def run():

@@ -34,15 +34,17 @@ class MetaPulling(FEC_Pulling_Object):
 
 
 class DualLandscape(BidirectionalUtil._BaseLandscape):
-    def __init__(self, wham_obj, iwt_obj):
+    def __init__(self, wham_obj, iwt_obj,other_helices):
         self._iwt_obj = iwt_obj
         self._wham_obj = wham_obj
+        self._other_helices = other_helices
         super(DualLandscape, self).__init__(iwt_obj._q, iwt_obj._G0,
                                             iwt_obj.beta)
     def _slice(self,*args,**kwargs):
         slice_iwt = self._iwt_obj
         wham_obj = self._wham_obj._slice(*args,**kwargs)
-        return DualLandscape(wham_obj=wham_obj,iwt_obj=slice_iwt)
+        return DualLandscape(wham_obj=wham_obj,iwt_obj=slice_iwt,
+                             other_helices=self._other_helices)
 
 class EnergyWithMeta(DualLandscape):
     def __init__(self,file_name,base_dir,energy):

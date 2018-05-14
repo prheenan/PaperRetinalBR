@@ -187,7 +187,7 @@ def _read_energy_list_and_q_interp(input_dir,q_offset,iwt_only=True,
                             for list_v in energy_list_arr]
     if remove_noisy:
         energy_list_arr = [[e for e in energy_list
-                            if "BR-Retinal/3000nms/" not in e.base_dir]
+                            if "/3000nms/" not in e.base_dir]
                             for energy_list in energy_list_arr]
     if iwt_only:
         energy_list_arr = [ [_iwt_meta_obj(e) for e in list_v]
