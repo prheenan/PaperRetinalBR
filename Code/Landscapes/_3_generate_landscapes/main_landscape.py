@@ -21,18 +21,6 @@ from Lib.AppIWT.Code import InverseWeierstrass
 import RetinalUtil
 import PlotUtil
 
-class HelicalSearch(object):
-    def __init__(self,data,min_ext_m):
-        self.min_ext_m = min_ext_m
-        v = data[0].Velocity
-        t = data[0].Time
-        dt = t[1] - t[0]
-        t_GF = min_ext_m / v
-        N_GF = int(np.ceil(t_GF / dt))
-        data_iwt_EF = [d._slice(slice(N_GF, None, 1)) for d in data]
-        iwt_EF = InverseWeierstrass.free_energy_inverse_weierstrass(data_iwt_EF)
-        self._landscape = iwt_EF
-        self.N_GF = N_GF
 
 def generate_landscape(in_dir):
     data = CheckpointUtilities.lazy_multi_load(in_dir)
@@ -46,7 +34,7 @@ def generate_landscape(in_dir):
     iwt_obj.q += offset_q
     iwt_obj._z += offset_q
     min_ext_m = np.arange(20,40,step=1) * 1e-9
-    iwt_EF = [HelicalSearch(data,e) for e in min_ext_m]
+    iwt_EF = [RetinalUtil.HelicalSearch(data,e) for e in min_ext_m]
     to_ret = RetinalUtil.DualLandscape(wham_obj=energy_wham,iwt_obj=iwt_obj,
                                        other_helices=iwt_EF)
     return to_ret

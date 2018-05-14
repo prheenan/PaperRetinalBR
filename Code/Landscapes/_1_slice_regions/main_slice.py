@@ -55,7 +55,7 @@ def run():
     out_dir = Pipeline._cache_dir(base=base_dir,enum=step)
     force = True
     limit = None
-    min_sep = RetinalUtil.min_sep_landscapes()
+    min_sep = RetinalUtil.min_sep_landscape()
     max_sep = min_sep + 100e-9
     functor = lambda : slice_data(in_dir,min_sep=min_sep,max_sep=max_sep)
     data =CheckpointUtilities.multi_load(cache_dir=out_dir,load_func=functor,

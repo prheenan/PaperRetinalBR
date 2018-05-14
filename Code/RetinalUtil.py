@@ -13,6 +13,7 @@ from Lib.UtilPipeline import Pipeline
 from Lib.AppWHAM.Code import WeightedHistogram
 from scipy.interpolate import LSQUnivariateSpline
 
+from Lib.AppIWT.Code import InverseWeierstrass
 from Lib.AppIWT.Code.InverseWeierstrass import FEC_Pulling_Object
 from Lib.AppIWT.Code.UtilLandscape import BidirectionalUtil
 from Processing.Util import WLC as WLCHao
@@ -54,13 +55,27 @@ class EnergyWithMeta(DualLandscape):
         self.__init__energy(energy)
     def __init__energy(self,energy):
         super(EnergyWithMeta,self).__init__(wham_obj=energy._wham_obj,
-                                            iwt_obj=energy._iwt_obj)
+                                            iwt_obj=energy._iwt_obj,
+                                            other_helices=energy._other_helices)
     def _slice(self,*args,**kw):
         sliced = super(EnergyWithMeta,self)._slice(*args,**kw)
         self.__init__energy(sliced)
         return self
     def set_n_fecs(self,n):
         self.n_fecs = n
+
+class HelicalSearch(object):
+    def __init__(self,data,min_ext_m):
+        self.min_ext_m = min_ext_m
+        v = data[0].Velocity
+        t = data[0].Time
+        dt = t[1] - t[0]
+        t_GF = min_ext_m / v
+        N_GF = int(np.ceil(t_GF / dt))
+        data_iwt_EF = [d._slice(slice(N_GF, None, 1)) for d in data]
+        iwt_EF = InverseWeierstrass.free_energy_inverse_weierstrass(data_iwt_EF)
+        self._landscape = iwt_EF
+        self.N_GF = N_GF
 
 def q_GF_nm():
     return 35
