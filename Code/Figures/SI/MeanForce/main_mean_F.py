@@ -43,8 +43,12 @@ def mean_A_jarzynski(energy_list_arr,q_interp):
     return _mean_f(f,energy_list_arr, q_interp)
 
 
-def mean_G_jarzynski(energy_list_arr, q_interp):
+def mean_G_iwt(energy_list_arr, q_interp):
     f = lambda x_tmp : x_tmp.G0
+    return _mean_f(f, energy_list_arr, q_interp)
+
+def mean_A_dot_iwt(energy_list_arr, q_interp):
+    f = lambda x_tmp : x_tmp.A_z_dot
     return _mean_f(f, energy_list_arr, q_interp)
 
 def Exp(arg,tol=700):
@@ -173,15 +177,6 @@ def _plot_f_at_iter_idx(lr,i,**kw):
     plt.plot(q * 1e9, F * 1e12,**kw)
 
 def run():
-    """
-    <Description>
-
-    Args:
-        param1: This is the first param.
-    
-    Returns:
-        This is a description of what is returned.
-    """
     input_dir = "../../../../Data/FECs180307/"
     out_dir = "./"
     q_offset_nm = 100
@@ -195,8 +190,10 @@ def run():
     # read in the FECs
     fecs = FigureUtil._snapsnot(PEG600.base_dir,
                                 step=Pipeline.Step.REDUCED).fec_list
-    mean_A = mean_A_jarzynski(energy_list_arr, q_interp)
-    mean_G = mean_G_jarzynski(energy_list_arr, q_interp)
+    args_mean = (energy_list_arr, q_interp)
+    mean_A = mean_A_jarzynski(*args_mean)
+    mean_G = mean_G_iwt(*args_mean)
+    mean_F_from_dot = mean_A_dot_iwt(*args_mean)[0]
     ex = fecs[0]
     q = q_interp * 1e-9
     # xxx offset q and z... probably a little off!
@@ -231,7 +228,9 @@ def run():
     FigureUtil._plot_fec_list(fecs, xlim, ylim=[None,None])
     for i in idx_to_use:
         _plot_f_at_iter_idx(lr, i)
-    _plot_f_at_iter_idx(lr, 0,label="Original",linewidth=4)
+    _plot_f_at_iter_idx(lr, 0,label="F from G0",linewidth=4)
+    plt.plot(q_interp,mean_F_from_dot*1e12,label="F from A_z_dot",linewidth=2)
+    # also plot the force we expect from the original A_z_dot
     FigureUtil._plot_fmt(ax1,is_bottom=True,xlim=xlim,ylim=[None,None])
     PlotUtilities.legend()
     PlotUtilities.savefig(fig,"FigureS_A_z.png")
