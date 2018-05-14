@@ -18,83 +18,18 @@ from Lib.UtilForce.UtilGeneral import PlotUtilities
 from Processing import ProcessingUtil
 from Lib.AppWHAM.Code import WeightedHistogram, UtilWHAM
 import RetinalUtil,PlotUtil
-import matplotlib.gridspec as gridspec
-import re
+from Figures import FigureUtil
 
-def get_energy_list(base_dir_analysis, min_fecs):
+
+def get_energy_list(base_dir_analysis):
     """
     :param base_dir_analysis:  see RetinalUtil._read_all_energies
-    :param min_fecs: see RetinalUtil._read_all_energies
     :return: list of zeroed retinal energies...
     """
     energy_list = RetinalUtil._read_all_energies(base_dir_analysis)
-    # make sure we have a minimum number of FECS
-    energy_list = [e for e in energy_list
-                   if e.n_fecs >= min_fecs]
-    # the 3000nms BO data is very noisy; discard it.
-    energy_list = [e for e in energy_list
-                   if "BR-Retinal/3000nms/" not in e.base_dir]
-
     return energy_list
 
-def get_ranges(ax_list,get_x=True):
-    f = lambda x: x.get_xlim() if get_x else x.get_ylim()
-    lims = [ [f(ax[i]) for ax in ax_list] for i in range(3)]
-    to_ret = [ [np.min(l),np.max(l)] for l in lims]
-    return to_ret
 
-def fix_axes(ax_list):
-   # loop through all the axes and toss them.
-   xlims = get_ranges(ax_list,get_x=True)
-   ylims = get_ranges(ax_list,get_x=False)
-   for i,axs in enumerate(ax_list):
-       for j, ax in enumerate(axs):
-           if (i > 0):
-               # columns after the first lose their labels
-               PlotUtilities.no_y_label(ax)
-               PlotUtilities.ylabel("", ax=ax)
-           ax.set_ylim(ylims[j])
-           if (j != 0):
-               PlotUtilities.no_x_label(ax)
-               PlotUtilities.xlabel("", ax=ax)
-
-def data_plot(fecs,energies):
-    n_cols = len(energies)
-    n_rows = 3
-    all_ax = []
-    gs1 = gridspec.GridSpec(n_rows+1,n_cols)
-    for i, (data, e) in enumerate(zip(fecs, energies)):
-        axs_tmp = [plt.subplot(gs1[j,i])
-                   for j in range(n_rows)]
-        ax1, ax2, ax3 = axs_tmp
-        PlotUtil.plot_landscapes(data, e, ax1=ax1, ax2=ax2, ax3=ax3)
-        # every axis after the first gets more of the decoaration chopped...
-        all_ax.append(axs_tmp)
-        # XXX should really put this into the meta class...
-        plt.sca(ax1)
-        tmp_str = e.file_name
-        match = re.search(r"""
-                          Retinal/([\d\w]+)/([\d\w]+)/
-                          """, tmp_str, re.IGNORECASE | re.VERBOSE)
-        groups = match.groups()
-        velocity, title = groups
-        vel_label = velocity.replace("nms","")
-        title_label = title.replace("FEC","")
-        title = "v={:s}\n {:s}".format(vel_label, title_label)
-        PlotUtilities.title(title,fontsize=5)
-    fix_axes(all_ax)
-    xlim = all_ax[0][0].get_xlim()
-    # just get the IWT
-    energies_plot = [e._iwt_obj for e in energies]
-    q_interp, splines =  RetinalUtil.interpolating_G0(energies_plot)
-    # get an average/stdev of energy
-    mean_energy, std_energy = PlotUtil.plot_mean_landscape(q_interp,
-                                                           splines,ax=gs1[-1,0])
-    q_at_max_energy,_,_ =  \
-        PlotUtil.plot_delta_GF(q_interp,mean_energy,std_energy,
-                               max_q_nm=RetinalUtil.q_GF_nm())
-    plt.axvspan(q_at_max_energy,max(xlim),color='k',alpha=0.3)
-    plt.xlim(xlim)
 
 def _energy_plot(energy_list,out_dir):
     # interpolate all the energies to the same grid
@@ -122,7 +57,7 @@ def _fec_demo_plot(energy_list,out_dir):
         energies.append(e)
     n_cols = N
     fig = PlotUtilities.figure((n_cols * 1,6))
-    data_plot(fecs, energies)
+    FigureUtil.data_plot(fecs, energies)
     PlotUtilities.savefig(fig,out_dir + "energies.png",
                           subplots_adjust=dict(hspace=0.02,wspace=0.04))
 
@@ -140,13 +75,11 @@ def run():
     out_dir = Pipeline._cache_dir(base=base_dir_analysis,
                                   enum=Pipeline.Step.CORRECTED)
     force = True
-    min_fecs = 0
     GenUtilities.ensureDirExists(out_dir)
     energy_list = CheckpointUtilities.getCheckpoint(out_dir + \
                                                     "energy.pkl",
                                                     get_energy_list,force,
-                                                    base_dir_analysis,
-                                                    min_fecs)
+                                                    base_dir_analysis)
     _energy_plot(energy_list, out_dir)
     _fec_demo_plot(energy_list,out_dir)
 

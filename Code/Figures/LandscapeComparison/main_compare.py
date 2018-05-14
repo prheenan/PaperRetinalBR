@@ -37,7 +37,7 @@ def read_non_peg_landscape():
 
 def make_retinal_subplot(gs,energy_list_arr,shifts,skip_arrow=True):
     q_interp_nm = energy_list_arr[0].q_nm
-    means = [e.G_kcal for e in energy_list_arr]
+    means = [e.G0_kcal_per_mol for e in energy_list_arr]
     stdevs = [e.G_err_kcal for e in energy_list_arr]
     ax1 = plt.subplot(gs[0])
     common_error = dict(capsize=0)
@@ -123,9 +123,9 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
     # get the with-retinal max
     ax2 = plt.subplot(gs[0])
     # get the max of the last point (the retinal energy landscape is greater)
-    G_offset = np.max([l.G_kcal[-1] for l in landscpes_with_error])
+    G_offset = np.max([l.G0_kcal_per_mol[-1] for l in landscpes_with_error])
     q_nm = G_no_peg.q_nm + max(q_interp)
-    G_kcal = G_no_peg.G_kcal + G_offset
+    G_kcal = G_no_peg.G0_kcal_per_mol + G_offset
     G_err_kcal = G_no_peg.G_err_kcal
     mean_err = np.mean(G_err_kcal)
     idx_errorbar = q_nm.size//2

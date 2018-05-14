@@ -181,8 +181,8 @@ def run():
     out_dir = "./"
     q_offset_nm = 100
     q_interp, energy_list_arr = FigureUtil.\
-        _read_energy_list_and_q_interp(input_dir, q_offset=q_offset_nm)
-
+        _read_energy_list_and_q_interp(input_dir, q_offset=q_offset_nm,
+                                       min_fecs=9)
     # read in some example data
     base_dir_BR = input_dir + "BR+Retinal/"
     names_BR = ["/BR+Retinal/3000nms/170503FEC/landscape_"]
@@ -203,9 +203,10 @@ def run():
     A = mean_A[0]
     G = mean_G[0]
     n_iters = 5000
+    force =True
     kw_lr = dict(G0=G, A=A, q=q, z=z, k=k, beta=beta,n_iters=n_iters)
     lr = CheckpointUtilities.getCheckpoint("./lr_deconv.pkl",
-                                           _deconvoled_lr,False,**kw_lr)
+                                           _deconvoled_lr,force,**kw_lr)
     diff_kT = np.array(lr.mean_diffs) * beta
     min_idx = np.argmin(diff_kT)
     idx_search = np.logspace(start=3,stop=np.floor(np.log2(min_idx)),

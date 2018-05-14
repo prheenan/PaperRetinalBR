@@ -21,6 +21,8 @@ from Lib.UtilForce.UtilGeneral import CheckpointUtilities, GenUtilities, \
 import RetinalUtil
 import PlotUtil
 
+import matplotlib.gridspec as gridspec
+import re
 
 class LandscapeWithError(BidirectionalUtil._BaseLandscape):
     def __init__(self,q_nm,G_kcal,G_err_kcal,beta):
@@ -158,7 +160,8 @@ def read_energy_lists(subdirs):
         energy_list_arr.append(e)
     return energy_list_arr
 
-def _read_energy_list_and_q_interp(input_dir,q_offset,iwt_only=True):
+def _read_energy_list_and_q_interp(input_dir,q_offset,iwt_only=True,
+                                   min_fecs=None,remove_noisy=True):
     """
     :param input_dir: where all the data live, e.g.  Data/FECs180307/"
     :param q_offset: how much of the landscape to use...
@@ -170,6 +173,13 @@ def _read_energy_list_and_q_interp(input_dir,q_offset,iwt_only=True):
     subdirs = [d for d in subdirs_raw if (os.path.isdir(d))
                and "David" not in d]
     energy_list_arr = read_energy_lists(subdirs)
+    if min_fecs is not None:
+        energy_list_arr = [ [e for e in list_v if e.n_fecs > min_fecs]
+                            for list_v in energy_list_arr]
+    if remove_noisy:
+        energy_list_arr = [[e for e in energy_list
+                            if "BR-Retinal/3000nms/" not in e.base_dir]
+                            for energy_list in energy_list_arr]
     if iwt_only:
         energy_list_arr = [ [e._iwt_obj for e in list_v]
                             for list_v in energy_list_arr]
@@ -177,3 +187,64 @@ def _read_energy_list_and_q_interp(input_dir,q_offset,iwt_only=True):
     q_interp = RetinalUtil.common_q_interp(energy_list=e_list_flat)
     q_interp = q_interp[np.where(q_interp-q_interp[0]  <= q_offset)]
     return q_interp,energy_list_arr
+
+
+def get_ranges(ax_list,get_x=True):
+    f = lambda x: x.get_xlim() if get_x else x.get_ylim()
+    lims = [ [f(ax[i]) for ax in ax_list] for i in range(3)]
+    to_ret = [ [np.min(l),np.max(l)] for l in lims]
+    return to_ret
+
+def fix_axes(ax_list):
+   # loop through all the axes and toss them.
+   xlims = get_ranges(ax_list,get_x=True)
+   ylims = get_ranges(ax_list,get_x=False)
+   for i,axs in enumerate(ax_list):
+       for j, ax in enumerate(axs):
+           if (i > 0):
+               # columns after the first lose their labels
+               PlotUtilities.no_y_label(ax)
+               PlotUtilities.ylabel("", ax=ax)
+           ax.set_ylim(ylims[j])
+           if (j != 0):
+               PlotUtilities.no_x_label(ax)
+               PlotUtilities.xlabel("", ax=ax)
+
+def data_plot(fecs,energies,gs1=None):
+    n_cols = len(energies)
+    n_rows = 3
+    all_ax = []
+    if gs1 is None:
+        gs1 = gridspec.GridSpec(n_rows + 1, n_cols)
+    for i, (data, e) in enumerate(zip(fecs, energies)):
+        axs_tmp = [plt.subplot(gs1[j,i])
+                   for j in range(n_rows)]
+        ax1, ax2, ax3 = axs_tmp
+        PlotUtil.plot_landscapes(data, e, ax1=ax1, ax2=ax2, ax3=ax3)
+        # every axis after the first gets more of the decoaration chopped...
+        all_ax.append(axs_tmp)
+        # XXX should really put this into the meta class...
+        plt.sca(ax1)
+        tmp_str = e.file_name
+        match = re.search(r"""
+                          Retinal/([\d\w]+)/([\d\w]+)/
+                          """, tmp_str, re.IGNORECASE | re.VERBOSE)
+        groups = match.groups()
+        velocity, title = groups
+        vel_label = velocity.replace("nms","")
+        title_label = title.replace("FEC","")
+        title = "v={:s}\n {:s}".format(vel_label, title_label)
+        PlotUtilities.title(title,fontsize=5)
+    fix_axes(all_ax)
+    xlim = all_ax[0][0].get_xlim()
+    # just get the IWT
+    energies_plot = [e._iwt_obj for e in energies]
+    q_interp, splines =  RetinalUtil.interpolating_G0(energies_plot)
+    # get an average/stdev of energy
+    mean_energy, std_energy = PlotUtil.plot_mean_landscape(q_interp,
+                                                           splines,ax=gs1[-1,0])
+    q_at_max_energy,_,_ =  \
+        PlotUtil.plot_delta_GF(q_interp,mean_energy,std_energy,
+                               max_q_nm=RetinalUtil.q_GF_nm())
+    plt.axvspan(q_at_max_energy,max(xlim),color='k',alpha=0.3)
+    plt.xlim(xlim)
