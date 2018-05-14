@@ -140,11 +140,14 @@ class LucyRichardson(BidirectionalUtil._BaseLandscape):
         self.k = k
         self.beta = beta
         self.Gf = Gf
-        kw_base = dict(beta=beta,q=q)
-        self._G0_initial_lr = BidirectionalUtil._BaseLandscape(G0=G0,**kw_base)
+        self.kw_base = dict(beta=beta,q=q)
         self._G_iters = G_iters
+        self._G0_initial_lr = self.landscape_at_idx(0)
         # set up this as a landscape with the final itertation
-        super(LucyRichardson,self).__init__(G0=Gf,**kw_base)
+        super(LucyRichardson,self).__init__(G0=Gf,**self.kw_base)
+    def landscape_at_idx(self,idx):
+        return BidirectionalUtil._BaseLandscape(G0=self._G_iters[idx],
+                                                **self.kw_base)
     @property
     def mean_diffs(self,):
         to_ret = [ np.mean(np.abs(G2-G1))
@@ -154,6 +157,20 @@ class LucyRichardson(BidirectionalUtil._BaseLandscape):
     def n_iters(self):
         # we include the first
         return len(self._G_iters) - 1
+
+def _deconvoled_lr(**kw):
+    lr = lucy_richardson(**kw)
+    return lr
+
+def _plot_f_at_iter_idx(lr,i,**kw):
+    converged = lr.landscape_at_idx(i)
+    q = lr.q
+    fit_conv = RetinalUtil.spline_fit(q=q, G0=converged.G0)
+    fit_landscape = fit_conv(q)
+    # re-zero
+    fit_landscape -= min(fit_landscape)
+    F = fit_conv.derivative(n=1)(q)
+    plt.plot(q * 1e9, F * 1e12,**kw)
 
 def run():
     """
@@ -188,21 +205,35 @@ def run():
     beta = ex.Beta
     A = mean_A[0]
     G = mean_G[0]
-    n_iters = 300
-    lr = lucy_richardson(G, A, q, z, k, beta,n_iters=n_iters)
-    plt.close()
-    plt.subplot(2,1,1)
-    plt.plot(lr._G0_initial_lr.G0_kT,color='b',linewidth=3)
-    plt.plot(lr.G0_kT,color='r',linewidth=3)
-    plt.subplot(2,1,2)
-    plt.plot(np.array(lr.mean_diffs) * beta)
-    plt.show()
-    xlim, ylim = FigureUtil._limits(fecs)
-    fig = PlotUtilities.figure()
-    ax1 = plt.subplot(1,1,1)
-    plt.plot(q_interp,A)
-    plt.plot(q_interp,G)
-    FigureUtil._plot_fmt(ax1,[None,None],[None,None],is_bottom=False)
+    n_iters = 5000
+    kw_lr = dict(G0=G, A=A, q=q, z=z, k=k, beta=beta,n_iters=n_iters)
+    lr = CheckpointUtilities.getCheckpoint("./lr_deconv.pkl",
+                                           _deconvoled_lr,False,**kw_lr)
+    diff_kT = np.array(lr.mean_diffs) * beta
+    min_idx = np.argmin(diff_kT)
+    idx_search = np.logspace(start=3,stop=np.floor(np.log2(min_idx)),
+                             endpoint=True,num=10,base=2)
+    idx_to_use = [int(i) for i in idx_search]
+    # fit a spline to the converged G to get the mean restoring force
+    fig = PlotUtilities.figure((4,6))
+    xlim = [min(q_interp)-5, max(q_interp)]
+    fmt_kw = dict(xlim=xlim,ylim=[None,None])
+    ax1 = plt.subplot(3,1,1)
+    plt.plot(diff_kT)
+    plt.axvline(min_idx)
+    FigureUtil._plot_fmt(ax1,is_bottom=True,xlabel="iter #",
+                         ylabel="diff G (kT)",xlim=[None,None],ylim=[None,None])
+    ax2 = plt.subplot(3,1,2)
+    plt.plot(q_interp,lr._G0_initial_lr.G0_kT,color='b',linewidth=3)
+    plt.plot(q_interp,lr.G0_kT,color='r',linewidth=3)
+    FigureUtil._plot_fmt(ax2,is_bottom=False,ylabel="G (kT)",**fmt_kw)
+    ax1 = plt.subplot(3,1,3)
+    FigureUtil._plot_fec_list(fecs, xlim, ylim=[None,None])
+    for i in idx_to_use:
+        _plot_f_at_iter_idx(lr, i)
+    _plot_f_at_iter_idx(lr, 0,label="Original",linewidth=4)
+    FigureUtil._plot_fmt(ax1,is_bottom=True,xlim=xlim,ylim=[None,None])
+    PlotUtilities.legend()
     PlotUtilities.savefig(fig,"FigureS_A_z.png")
     pass
 
