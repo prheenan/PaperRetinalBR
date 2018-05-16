@@ -43,7 +43,7 @@ def run():
                                        min_fecs=min_fecs,remove_noisy=True)
     ex = energy_list_arr[0][0]
     q_start_nm = np.array([e._landscape.q_nm[0] for e in ex._other_helices])
-    q_target_nm = 35
+    q_target_nm = 45
     helix_idx = np.argmin(np.abs(q_start_nm - q_target_nm))
     helix = ex._other_helices[helix_idx]
     landscape = helix._landscape
@@ -63,7 +63,7 @@ def run():
     xlim, ylim = FigureUtil._limits(data)
     fmt = dict(xlim=xlim,ylim=ylim)
     ax1 = plt.subplot(2,1,1)
-    #FigureUtil._plot_fec_list(data,color='k',**fmt)
+    FigureUtil._plot_fec_list(data,color='k',**fmt)
     FigureUtil._plot_fec_list(data_sliced,**fmt)
     FigureUtil._plot_fmt(ax1, **fmt)
     ax2 = plt.subplot(2,1,2)
