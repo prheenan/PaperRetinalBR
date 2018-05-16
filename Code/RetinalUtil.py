@@ -231,7 +231,19 @@ def offset_L(info):
     L0 = info.L0_c_terminal - offset_m
     return L0
 
-def _manual_split(approach,dwell,retract,tau_n_points,f=1):
+def _manual_split(approach,dwell,retract,tau_n_points,
+                  short_circuit_adhesion=False):
+    """
+    :param approach: to use for the no-event model
+    :param dwell: if needed, can manually specify a dwell
+    :param retract: actual data to use.
+    :param tau_n_points: number of points for tau
+    :param short_circuit_adhesion: if True, then the approach is just
+    representative, and FEATHER wont attempt to find the surface by the
+    method of the zero force crossing the baseline. Useful if the approach
+    doesnt have an existing INVOLS portion
+    :return:
+    """
     # make a 'custom' split fec (this is what FEATHER needs for its noise stuff)
     split_fec = Analysis.split_force_extension(approach, dwell, retract,
                                                tau_n_points)
@@ -239,11 +251,20 @@ def _manual_split(approach,dwell,retract,tau_n_points,f=1):
     split_fec.set_tau_num_points_approach(split_fec.tau_num_points)
     # set the predicted retract surface index to a few tau. This avoids looking
     #  at adhesion
-    split_fec.get_predicted_retract_surface_index = lambda: tau_n_points * f
-    split_fec.get_predicted_approach_surface_index = lambda : tau_n_points * f
+    if short_circuit_adhesion:
+        N = tau_n_points
+        split_fec.get_predicted_retract_surface_index = lambda: N
+        split_fec.get_predicted_approach_surface_index = lambda : N
     return split_fec
 
 def _split_from_retract(d,pct_approach,tau_f):
+    """
+    :param d: retract-only curve
+    :param pct_approach: how much of the *end* of the retract to use for the
+    'effective' approach. Shouldn't have any events
+    :param tau_f: fraction to use for tau
+    :return: split_fec object
+    """
     force_N = d.Force
     # use the last x% as a fake 'approach' (just for noise)
     n = force_N.size
@@ -264,7 +285,8 @@ def _detect_retract_FEATHER(d,pct_approach,tau_f,threshold,f_refs=None):
     to use as an effective approach curve
     :param tau_f: fraction for tau
     :param threshold: FEATHERs probability threshold
-    :return:
+    :return: tuple of <output of Detector._predict_split_fec, tau number of
+    points>
     """
     split_fec =  _split_from_retract(d,pct_approach,tau_f)
     tau_n_points = split_fec.tau_num_points
