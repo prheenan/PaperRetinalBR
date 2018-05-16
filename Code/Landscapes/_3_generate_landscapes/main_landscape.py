@@ -33,7 +33,7 @@ def generate_landscape(in_dir):
     offset_q = energy_wham.q[0]
     iwt_obj.q += offset_q
     iwt_obj._z += offset_q
-    min_ext_m = np.arange(20,60,step=1) * 1e-9
+    min_ext_m = np.arange(40,60,step=1) * 1e-9
     iwt_EF = [RetinalUtil.HelicalSearch(data,e) for e in min_ext_m]
     to_ret = RetinalUtil.DualLandscape(wham_obj=energy_wham,iwt_obj=iwt_obj,
                                        other_helices=iwt_EF)

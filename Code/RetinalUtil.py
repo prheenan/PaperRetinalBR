@@ -68,26 +68,32 @@ class HelicalSearch(object):
     def __init__(self,data,min_ext_m):
         self.min_ext_m = min_ext_m
         N_GF, data_iwt_EF = slice_data_for_helix(data, min_ext_m)
+        plt.subplot(2,1,1)
+        for i in data_iwt_EF:
+            plt.plot(i.Separation,i.Force)
+        plt.show()
         iwt_EF = InverseWeierstrass.free_energy_inverse_weierstrass(data_iwt_EF)
+        plt.subplot(2,1,2)
+        plt.plot(iwt_EF.q,iwt_EF.G0)
+        plt.show()
         self._landscape = iwt_EF
-        self.N_GF = N_GF
 
 def _to_pts(d,meters):
     t = d.Time
     v = d.Velocity
-    dt = t[1] - t[0]
-    t_GF = meters / v
-    N_GF = int(np.ceil(t_GF / dt))
+    idx_gt = np.where(d.Separation >= meters)[0]
+    assert idx_gt.size > 0
+    N_GF = idx_gt[0]
     return N_GF
 
-def _slice_single(d,min_ext_m,max_ext_m):
+def _slice_single(d,min_ext_m):
     N_GF = 0 if min_ext_m is None else _to_pts(d,min_ext_m)
-    N_final = None if max_ext_m is None else _to_pts(d,max_ext_m)
+    N_final = None
     data_iwt_EF = d._slice(slice(N_GF, N_final, 1))
     return N_GF, N_final, data_iwt_EF
 
-def slice_data_for_helix(data,min_ext_m,max_ext_m=None):
-    data_iwt_EF = [_slice_single(d,min_ext_m,max_ext_m) for d in data]
+def slice_data_for_helix(data,min_ext_m):
+    data_iwt_EF = [_slice_single(d,min_ext_m) for d in data]
     return data_iwt_EF[0][0], [d[-1] for d in data_iwt_EF]
 
 def q_GF_nm():
