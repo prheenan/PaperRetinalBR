@@ -257,7 +257,7 @@ def _manual_split(approach,dwell,retract,tau_n_points,
         split_fec.get_predicted_approach_surface_index = lambda : N
     return split_fec
 
-def _split_from_retract(d,pct_approach,tau_f):
+def _split_from_retract(d,pct_approach,tau_f,**kw):
     """
     :param d: retract-only curve
     :param pct_approach: how much of the *end* of the retract to use for the
@@ -275,7 +275,8 @@ def _split_from_retract(d,pct_approach,tau_f):
     fake_approach = d._slice(slice(n_approach_start, n, 1))
     fake_dwell = d._slice(slice(n_approach_start - 1, n_approach_start, 1))
     split_fec = _manual_split(approach=fake_approach, dwell=fake_dwell,
-                              retract=d,tau_n_points=tau_n_points)
+                              retract=d,tau_n_points=tau_n_points,
+                              **kw)
     return split_fec
 
 def _detect_retract_FEATHER(d,pct_approach,tau_f,threshold,f_refs=None):
@@ -288,7 +289,8 @@ def _detect_retract_FEATHER(d,pct_approach,tau_f,threshold,f_refs=None):
     :return: tuple of <output of Detector._predict_split_fec, tau number of
     points>
     """
-    split_fec =  _split_from_retract(d,pct_approach,tau_f)
+    split_fec =  _split_from_retract(d,pct_approach,tau_f,
+                                     short_circuit_adhesion=True)
     tau_n_points = split_fec.tau_num_points
     pred_info = Detector._predict_split_fec(split_fec, threshold=threshold,
                                             f_refs=f_refs)
