@@ -231,6 +231,31 @@ def offset_L(info):
     L0 = info.L0_c_terminal - offset_m
     return L0
 
+def _manual_split(approach,dwell,retract,tau_n_points,f=1):
+    # make a 'custom' split fec (this is what FEATHER needs for its noise stuff)
+    split_fec = Analysis.split_force_extension(approach, dwell, retract,
+                                               tau_n_points)
+    # set the 'approach' number of points for filtering to the retract.
+    split_fec.set_tau_num_points_approach(split_fec.tau_num_points)
+    # set the predicted retract surface index to a few tau. This avoids looking
+    #  at adhesion
+    split_fec.get_predicted_retract_surface_index = lambda: tau_n_points * f
+    split_fec.get_predicted_approach_surface_index = lambda : tau_n_points * f
+    return split_fec
+
+def _split_from_retract(d,pct_approach,tau_f):
+    force_N = d.Force
+    # use the last x% as a fake 'approach' (just for noise)
+    n = force_N.size
+    n_approach = int(np.ceil(n * pct_approach))
+    tau_n_points = int(np.ceil(n * tau_f))
+    # slice the data for the approach, as described above
+    n_approach_start = n - (n_approach + 1)
+    fake_approach = d._slice(slice(n_approach_start, n, 1))
+    fake_dwell = d._slice(slice(n_approach_start - 1, n_approach_start, 1))
+    split_fec = _manual_split(approach=fake_approach, dwell=fake_dwell,
+                              retract=d,tau_n_points=tau_n_points)
+    return split_fec
 
 def _detect_retract_FEATHER(d,pct_approach,tau_f,threshold,f_refs=None):
     """
@@ -241,24 +266,8 @@ def _detect_retract_FEATHER(d,pct_approach,tau_f,threshold,f_refs=None):
     :param threshold: FEATHERs probability threshold
     :return:
     """
-    force_N = d.Force
-    # use the last x% as a fake 'approach' (just for noise)
-    n = force_N.size
-    n_approach = int(np.ceil(n * pct_approach))
-    tau_n_points = int(np.ceil(n * tau_f))
-    # slice the data for the approach, as described above
-    n_approach_start = n - (n_approach + 1)
-    fake_approach = d._slice(slice(n_approach_start, n, 1))
-    fake_dwell = d._slice(slice(n_approach_start - 1, n_approach_start, 1))
-    # make a 'custom' split fec (this is what FEATHER needs for its noise stuff)
-    split_fec = Analysis.split_force_extension(fake_approach, fake_dwell, d,
-                                               tau_n_points)
-    # set the 'approach' number of points for filtering to the retract.
-    split_fec.set_tau_num_points_approach(split_fec.tau_num_points)
-    # set the predicted retract surface index to a few tau. This avoids looking
-    #  at adhesion
-    split_fec.get_predicted_retract_surface_index = lambda: 2*tau_n_points
-    split_fec.get_predicted_approach_surface_index = lambda : 3*tau_n_points
+    split_fec =  _split_from_retract(d,pct_approach,tau_f)
+    tau_n_points = split_fec.tau_num_points
     pred_info = Detector._predict_split_fec(split_fec, threshold=threshold,
                                             f_refs=f_refs)
     return pred_info, tau_n_points
