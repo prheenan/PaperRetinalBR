@@ -68,7 +68,7 @@ class EnergyWithMeta(DualLandscape):
         self.n_fecs = n
 
 def min_ext_m():
-    to_ret = np.arange(40, 60, step=1) * 1e-9
+    to_ret =  np.arange(30,50,step=1)*1e-9
     return to_ret
 
 def _to_pts(d,meters):
@@ -85,9 +85,23 @@ def _slice_single(d,min_ext_m):
     data_iwt_EF = d._slice(slice(N_GF, N_final, 1))
     return N_GF, N_final, data_iwt_EF
 
-def slice_data_for_helix(data,min_ext_m):
-    data_iwt_EF = [_slice_single(d,min_ext_m) for d in data]
-    return data_iwt_EF[0][0], [d[-1] for d in data_iwt_EF]
+def _fit_sep(d):
+    return spline_fit(q=d.Time, G0=d.Separation)(d.Time)
+
+def _get_slice(data,min_ext_m):
+    fits_d = [ _fit_sep(d) for d in data]
+    min_idx = [np.where(d > min_ext_m)[0][0] for d in fits_d]
+    max_sizes = [d.Separation.size - (i+1) for i,d  in zip(min_idx,data)]
+    max_delta = int(min(max_sizes))
+    slices = [slice(i,i+max_delta,1) for i in min_idx]
+    return slices
+
+def process_helical_slice(data_sliced):
+    for d in data_sliced:
+        d.SetOffsetAndVelocity(0, d.Velocity)
+        sep_fit = _fit_sep(d)
+        sep_offset = sep_fit[0]
+    return data_sliced
 
 def q_GF_nm():
     return 35

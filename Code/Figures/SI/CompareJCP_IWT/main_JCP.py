@@ -41,36 +41,40 @@ def run():
     q_interp, energy_list_arr = FigureUtil.\
         _read_energy_list_and_q_interp(input_dir, q_offset=q_offset_nm,
                                        min_fecs=min_fecs,remove_noisy=True)
-    ex = energy_list_arr[0][0]
-    q_start_nm = np.array([e.q_nm[0] for e in ex._other_helices])
-    q_target_nm = 0
+    ex = energy_list_arr[0][1]
+    q_start_nm = RetinalUtil.min_ext_m() * 1e9
+    q_target_nm = 45
     helix_idx = np.argmin(np.abs(q_start_nm - q_target_nm))
     helix = ex._other_helices[helix_idx]
     landscape = helix
     data = RetinalUtil.read_fecs(ex)
-    _, data_sliced = RetinalUtil.slice_data_for_helix(data,
-                                                      min_ext_m=q_target_nm)
+    slices = RetinalUtil._get_slice(data,q_target_nm * 1e-9)
+    data_sliced = [d._slice(s) for s,d in zip(slices,data)]
+    data_sliced = RetinalUtil.process_helical_slice(data_sliced)
+
     # XXX why is this necessary?? screwing up absolute values
     previous_JCP = FigureUtil.read_non_peg_landscape(base="../../FigData/")
     offset_s = np.mean([d.Separation[0] for d in data_sliced])
-    offset_jcp_nm = -35
-    G_hao = landscape.G0_kcal_per_mol - landscape.G0_kcal_per_mol[0]
+    offset_jcp_nm = -50
+    G_hao = landscape.G0_kcal_per_mol
+    idx_zero = np.where(landscape.q_nm <= 100)
+    G_hao = G_hao - landscape.G0_kcal_per_mol[0]
     G_JCP = previous_JCP.G0_kcal_per_mol - previous_JCP.G0_kcal_per_mol[0]
-    offset_jcp_kcal = -1 * (np.median(G_hao[-G_hao.size//20:]) - \
-                            np.median(G_JCP[-G_JCP.size//10:]))
+    G_hao -= np.median(G_hao[idx_zero][-G_hao.size//20:])
+    G_JCP -= np.median(G_JCP[-G_JCP.size//20:])
     landscape_offset_nm = (landscape.q_nm[0]-offset_s * 1e9)
     fig = PlotUtilities.figure()
     xlim, ylim = FigureUtil._limits(data)
     fmt = dict(xlim=xlim,ylim=ylim)
     ax1 = plt.subplot(2,1,1)
-    FigureUtil._plot_fec_list(data,color='k',**fmt)
+    #FigureUtil._plot_fec_list(data,color='k',**fmt)
     FigureUtil._plot_fec_list(data_sliced,**fmt)
     FigureUtil._plot_fmt(ax1, **fmt)
     ax2 = plt.subplot(2,1,2)
     plt.plot(landscape.q_nm-landscape_offset_nm,
              G_hao)
     plt.plot(previous_JCP.q_nm-offset_jcp_nm,
-             G_JCP-offset_jcp_kcal,'r--')
+             G_JCP,'r--')
     FigureUtil._plot_fmt(ax2, ylabel="G (kcal/mol)",is_bottom=True,
                          xlim=xlim,ylim=[None,None])
     PlotUtilities.savefig(fig,"./out.png")

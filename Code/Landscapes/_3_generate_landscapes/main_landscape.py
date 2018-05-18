@@ -37,8 +37,8 @@ def generate_landscape(in_dir):
     iwt_EF = []
     for i in range(n):
         data_sliced = [d._slice(d._iwt_slices[i]) for d in data]
-        for d in data_sliced:
-            d.SetOffsetAndVelocity(0,d.Velocity)
+        data_sliced = RetinalUtil.process_helical_slice(data_sliced)
+        # zero the separations
         iwt_tmp = f_iwt(unfolding=data_sliced)
         iwt_tmp.q += offset_q
         iwt_tmp._z += offset_q

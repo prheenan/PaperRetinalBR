@@ -55,17 +55,19 @@ def to_iwt(in_dir):
     data = [d._slice(slice(0,min_of_max_sizes,1)) for d in data]
     # determine the slices we want for finding the EF helix.
     ex = data[0]
-    min_ext_m = 25e-9
-    min_idx = [np.where(d.Separation > min_ext_m)[0][0] for d in data]
-    max_sizes = [d.Separation.size - (i+1) for i,d  in zip(min_idx,data)]
-    max_delta = int(min(max_sizes))
+    min_ext_m = RetinalUtil.min_ext_m()
+    slices = _get_slices(data, min_ext_m)
     for i,d in enumerate(data):
         # find where we should start
         converted = RetinalUtil.MetaPulling(d)
-        slice_v = [slice(min_idx[i],min_idx[i]+max_delta,1)]
-        converted._set_iwt_slices(slice_v)
-        assert converted._slice(slice_v[0]).Force.size == max_delta
+        converted._set_iwt_slices(slices[i])
         yield converted
+
+def _get_slices(data,exts):
+    slices_by_exts = [RetinalUtil._get_slice(data,e) for e in exts]
+    slices_by_data = [ [s_list[i] for s_list in slices_by_exts ]
+                       for i in range(len(data))]
+    return slices_by_data
 
 
 def run():
