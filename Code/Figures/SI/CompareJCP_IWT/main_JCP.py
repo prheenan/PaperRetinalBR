@@ -41,7 +41,7 @@ def run():
     q_interp, energy_list_arr = FigureUtil.\
         _read_energy_list_and_q_interp(input_dir, q_offset=q_offset_nm,
                                        min_fecs=min_fecs,remove_noisy=True)
-    ex = energy_list_arr[0][1]
+    ex = energy_list_arr[0][0]
     q_start_nm = RetinalUtil.min_ext_m() * 1e9
     q_target_nm = 45
     helix_idx = np.argmin(np.abs(q_start_nm - q_target_nm))
@@ -55,7 +55,6 @@ def run():
     # XXX why is this necessary?? screwing up absolute values
     previous_JCP = FigureUtil.read_non_peg_landscape(base="../../FigData/")
     offset_s = np.mean([d.Separation[0] for d in data_sliced])
-    offset_jcp_nm = -50
     G_hao = landscape.G0_kcal_per_mol
     idx_zero = np.where(landscape.q_nm <= 100)
     G_hao = G_hao - landscape.G0_kcal_per_mol[0]
@@ -63,6 +62,8 @@ def run():
     G_hao -= np.median(G_hao[idx_zero][-G_hao.size//20:])
     G_JCP -= np.median(G_JCP[-G_JCP.size//20:])
     landscape_offset_nm = (landscape.q_nm[0]-offset_s * 1e9)
+    offset_jcp_nm = (landscape.q_nm[np.argmax(G_hao)] -
+                     previous_JCP.q_nm[np.argmax(G_JCP)]) + landscape_offset_nm
     fig = PlotUtilities.figure()
     xlim, ylim = FigureUtil._limits(data)
     fmt = dict(xlim=xlim,ylim=ylim)
