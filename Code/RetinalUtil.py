@@ -32,6 +32,9 @@ class MetaPulling(FEC_Pulling_Object):
                               **kw)
         super(MetaPulling,self).__init__(**kw_time_sep_f)
         self.Meta = time_sep_force.Meta
+        self._iwt_slices = []
+    def _set_iwt_slices(self,s):
+        self._iwt_slices = s
 
 
 class DualLandscape(BidirectionalUtil._BaseLandscape):
@@ -64,19 +67,9 @@ class EnergyWithMeta(DualLandscape):
     def set_n_fecs(self,n):
         self.n_fecs = n
 
-class HelicalSearch(object):
-    def __init__(self,data,min_ext_m):
-        self.min_ext_m = min_ext_m
-        N_GF, data_iwt_EF = slice_data_for_helix(data, min_ext_m)
-        plt.subplot(2,1,1)
-        for i in data_iwt_EF:
-            plt.plot(i.Separation,i.Force)
-        plt.show()
-        iwt_EF = InverseWeierstrass.free_energy_inverse_weierstrass(data_iwt_EF)
-        plt.subplot(2,1,2)
-        plt.plot(iwt_EF.q,iwt_EF.G0)
-        plt.show()
-        self._landscape = iwt_EF
+def min_ext_m():
+    to_ret = np.arange(40, 60, step=1) * 1e-9
+    return to_ret
 
 def _to_pts(d,meters):
     t = d.Time

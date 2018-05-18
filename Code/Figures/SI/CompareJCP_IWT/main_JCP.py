@@ -42,14 +42,14 @@ def run():
         _read_energy_list_and_q_interp(input_dir, q_offset=q_offset_nm,
                                        min_fecs=min_fecs,remove_noisy=True)
     ex = energy_list_arr[0][0]
-    q_start_nm = np.array([e._landscape.q_nm[0] for e in ex._other_helices])
-    q_target_nm = 45
+    q_start_nm = np.array([e.q_nm[0] for e in ex._other_helices])
+    q_target_nm = 0
     helix_idx = np.argmin(np.abs(q_start_nm - q_target_nm))
     helix = ex._other_helices[helix_idx]
-    landscape = helix._landscape
+    landscape = helix
     data = RetinalUtil.read_fecs(ex)
     _, data_sliced = RetinalUtil.slice_data_for_helix(data,
-                                                      min_ext_m=helix.min_ext_m)
+                                                      min_ext_m=q_target_nm)
     # XXX why is this necessary?? screwing up absolute values
     previous_JCP = FigureUtil.read_non_peg_landscape(base="../../FigData/")
     offset_s = np.mean([d.Separation[0] for d in data_sliced])

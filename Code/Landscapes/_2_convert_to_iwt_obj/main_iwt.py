@@ -53,9 +53,18 @@ def to_iwt(in_dir):
     min_of_max_sizes = min(max_sizes)
     # re-slice each data set so they are exactly the same size (as IWT needs)
     data = [d._slice(slice(0,min_of_max_sizes,1)) for d in data]
-    for d in data:
+    # determine the slices we want for finding the EF helix.
+    ex = data[0]
+    min_ext_m = 25e-9
+    min_idx = [np.where(d.Separation > min_ext_m)[0][0] for d in data]
+    max_sizes = [d.Separation.size - (i+1) for i,d  in zip(min_idx,data)]
+    max_delta = int(min(max_sizes))
+    for i,d in enumerate(data):
         # find where we should start
         converted = RetinalUtil.MetaPulling(d)
+        slice_v = [slice(min_idx[i],min_idx[i]+max_delta,1)]
+        converted._set_iwt_slices(slice_v)
+        assert converted._slice(slice_v[0]).Force.size == max_delta
         yield converted
 
 
