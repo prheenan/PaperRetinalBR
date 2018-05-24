@@ -264,7 +264,7 @@ def _constrained_L2(L2,bounds,*args):
     else:
         return raw_L2
 
-def hao_fit(x,f):
+def hao_fit(x,f,N_fit_pts=5):
     # write dfown the ranges for everything
     range_N = (0,250)
     range_K = (50,2500)
@@ -286,7 +286,7 @@ def hao_fit(x,f):
                                                **kw_fit)
     # how many brute points should we use?
     ranges = (range_N,range_K,range_L_K,range_x_shift)
-    n_pts = [15 for _ in ranges]
+    n_pts = [N_fit_pts for _ in ranges]
     # determine the step sizes in each dimension
     steps = [ (r[1]-r[0])/n_pts[i] for i,r in enumerate(ranges)]
     # determine the slice in each dimension

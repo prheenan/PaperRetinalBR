@@ -33,18 +33,8 @@ def generate_landscape(in_dir):
     offset_q = energy_wham.q[0]
     iwt_obj.q += offset_q
     iwt_obj._z += offset_q
-    n = len(data[0]._iwt_slices)
-    iwt_EF = []
-    for i in range(n):
-        data_sliced = [d._slice(d._iwt_slices[i]) for d in data]
-        data_sliced = RetinalUtil.process_helical_slice(data_sliced)
-        # zero the separations
-        iwt_tmp = f_iwt(unfolding=data_sliced)
-        iwt_tmp.q += offset_q
-        iwt_tmp._z += offset_q
-        iwt_EF.append(iwt_tmp)
     to_ret = RetinalUtil.DualLandscape(wham_obj=energy_wham,iwt_obj=iwt_obj,
-                                       other_helices=iwt_EF)
+                                       other_helices=[])
     return to_ret
 
 def run():

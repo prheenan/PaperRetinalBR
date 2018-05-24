@@ -18,7 +18,7 @@ from Lib.UtilForce.UtilGeneral import PlotUtilities
 from Processing import ProcessingUtil
 from Lib.AppWLC.Code import WLC
 from Processing.Util import WLC as WLCHao
-import RetinalUtil
+import RetinalUtil, PlotUtil
 
 import warnings
 from Lib.AppFEATHER.Code import Detector, Analysis
@@ -26,50 +26,9 @@ from Lib.AppFEATHER.Code import Detector, Analysis
 from multiprocessing import Pool
 import multiprocessing
 
-def _is_PEG600(d):
-    PEG600_keys = ["BR+Retinal/300nms/170511FEC/"]
-    src = d.Meta.SourceFile
-    for key in PEG600_keys:
-        if key in src:
-            return True
-    return False
-
-
-def align_single(d,**kw):
-    """
-    :param d: FEC to get FJC+WLC fit of
-    :param min_F_N: minimum force, in Newtons, for fitting event. helps avoid
-     occasional small force events
-    :param kw: keywords to use for fitting...
-    :return:
-    """
-    force_N = d.Force
-    where_above_surface = np.where(force_N >= 0)[0]
-    assert where_above_surface.size > 0, "Force never above surface "
-    # use FEATHER; fit to the first event, don't look for adhesion
-    d_pred_only = d._slice(slice(0,None,1))
-    # first, try removing surface adhesions
-    is_600 = _is_PEG600(d)
-    f_refs_initial = [Detector.delta_mask_function] if is_600 else None
-    feather_kw =  dict(d=d_pred_only,**kw)
-    pred_info,tau_n = RetinalUtil._detect_retract_FEATHER(f_refs=f_refs_initial,
-                                                          **feather_kw)
-    # if we removed more than 20nm or we didnt find any events, then
-    # FEATHER got confused by a near-surface BR. Tell it not to look for
-    # surface adhesions
-    expected_surface_m = d.Separation[pred_info.slice_fit.start]
-    expected_gf_m = 20e-9
-    if ((len(pred_info.event_idx) == 0) or (expected_surface_m > expected_gf_m)):
-        f_refs = [Detector.delta_mask_function]
-        pred_info,tau_n = RetinalUtil._detect_retract_FEATHER(f_refs=f_refs,
-                                                              **feather_kw)
-    pred_info.tau_n = tau_n
-    assert len(pred_info.event_idx) > 0 , "FEATHER can't find an event..."
-    to_ret = ProcessingUtil.AlignedFEC(d,info_fit=None,feather_info=pred_info)
-    return to_ret
-
 def _align_and_cache(d,out_dir,force=False,**kw):
-    return ProcessingUtil._cache_individual(d, out_dir, align_single,
+    return ProcessingUtil._cache_individual(d, out_dir,
+                                            RetinalUtil.feather_single,
                                             force,d, **kw)
 
 def func(args):
@@ -84,6 +43,7 @@ def align_data(base_dir,out_dir,n_pool,**kw):
     to_ret = ProcessingUtil._multiproc(func, input_v, n_pool)
     to_ret = [r for r in to_ret if r is not None]
     return to_ret
+
 
 def run():
     """
@@ -103,22 +63,12 @@ def run():
     force = True
     max_n_pool = multiprocessing.cpu_count() - 1
     n_pool = max_n_pool
-    kw_feather = dict(pct_approach=0.3, tau_f=0.01, threshold=1e-3)
+    kw_feather = RetinalUtil._def_kw_FEATHER()
     data = align_data(in_dir,out_dir,force=force,n_pool=n_pool,
                       **kw_feather)
     # plot all of the FEATHER information
-    f_x = lambda x: x.Separation
-    _, ylim = ProcessingUtil.nm_and_pN_limits(data, f_x=f_x)
-    xlim = [-20,150]
     plot_subdir = Pipeline._plot_subdir(base_dir, step)
-    for d in data:
-        fig = PlotUtilities.figure()
-        ProcessingUtil.plot_single_fec(d, f_x, xlim, ylim, markevery=1)
-        x = f_x(d) * 1e9
-        for i in d.info_feather.event_idx:
-            plt.axvline(x[i])
-        name = FEC_Util.fec_name_func(0,d)
-        PlotUtilities.savefig(fig,plot_subdir + name + ".png")
+    PlotUtil._feather_plot(data,plot_subdir)
 
 
 
