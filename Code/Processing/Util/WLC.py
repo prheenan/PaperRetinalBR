@@ -194,7 +194,7 @@ def grid_both(x,x_a,a,x_b,b):
     grid_b = grid_interp(points=x_b,values=b,grid=x)
     return grid_a, grid_b
 
-def Hao_PEGModel(F,N_s=25.318,K=906.86,L_K=0.63235e-9,
+def Hao_PEGModel(F,N_s=25.318,K=906.86,L_K=0.63235e-9,K0_protein=10000e-12,
                  L0_protein=9.12e-9,Lp_protein=0.4e-9):
     """
     see: communication with Hao, 
@@ -204,10 +204,10 @@ def Hao_PEGModel(F,N_s=25.318,K=906.86,L_K=0.63235e-9,
     ext_FJC = HaoModel(F=F, **common)
     # get the WLC model of the unfolded polypeptide
     L0 = L0_protein
-    polypeptide_args = dict(kbT=kbT,Lp=Lp_protein,L0=L0,K0=10000e-12)
+    polypeptide_args = dict(kbT=kbT,Lp=Lp_protein,L0=L0,K0=K0_protein)
     ext_wlc, F_wlc = WLC._inverted_wlc_helper(F=F,odjik_as_guess=True,
                                               **polypeptide_args)
-    valid_idx = np.where(ext_wlc > 0)
+    valid_idx = np.where(ext_wlc >= 0)
     ext_wlc = ext_wlc[valid_idx]
     F_wlc = F_wlc[valid_idx]
     # create the interpolator of total extension vs force. First, interpolate
@@ -274,6 +274,8 @@ def hao_fit(x,f,N_fit_pts=5):
     range_K = (50,2500)
     range_L_K = (0.1e-9,4e-9)
     range_x_shift = (0,50e-9)
+    # protein is just in newtons, like 1K to 100K newtons
+    range_K_protein = (1e3 * 1e-12,100e3 * 1e-12)
     Lp = 0.4e-9
     # see Online methods, 74 nm / 198 AA
     L0_per_aa = 0.38e-9

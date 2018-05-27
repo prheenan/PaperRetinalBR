@@ -163,7 +163,7 @@ def plot_data(base_dir,step,data,markevery=1,f_x = lambda x: x.Separation,
         plot_single_fec(d, f_x, xlim, ylim,markevery=markevery)
         PlotUtilities.savefig(f, plot_subdir + name_func(0, d) + ".png")
 
-def _aligned_plot(d,f_x,xlim,ylim,use_shift=False):
+def _aligned_plot(d,f_x,xlim,ylim):
     # get the fit
     # convert to reasonable units for plotting
     # get the fit
