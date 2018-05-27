@@ -62,7 +62,7 @@ def run():
     step = Pipeline.Step.ALIGNED
     in_dir = Pipeline._cache_dir(base=base_dir, enum=Pipeline.Step.SANITIZED)
     out_dir = Pipeline._cache_dir(base=base_dir,enum=step)
-    force = False
+    force = True
     max_n_pool = multiprocessing.cpu_count() - 1
     n_pool = 1
     min_F_N = 175e-12 if "+Retinal" in base_dir else 90e-12
