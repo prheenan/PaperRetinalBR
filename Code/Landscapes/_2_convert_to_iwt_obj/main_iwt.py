@@ -25,38 +25,8 @@ from collections import Counter
 def to_iwt(in_dir):
     data = CheckpointUtilities.lazy_multi_load(in_dir)
     # make sure they all have the same velocity
-    velocities = [d.Velocity for d in data]
-    # make sure the velocities match within X%
-    np.testing.assert_allclose(velocities,velocities[0],atol=0,rtol=1e-2)
-    # just set them all equal now
-    v_mean = np.mean(velocities)
-    for d in data:
-        d.Velocity = v_mean
-    # repeat for the spring constant
-    spring_constants = [d.SpringConstant for d in data]
-    K_key = spring_constants[0]
-    K_diff = np.max(np.abs(np.array(spring_constants)-K_key))/\
-             np.mean(spring_constants)
-    if (K_diff > 1e-2):
-        msg ="For {:s}, not all spring constants ({:s}) the same. Replace <K>".\
-            format(in_dir,spring_constants)
-        warnings.warn(msg)
-        # average all the time each K appears
-        weighted_mean = np.mean(spring_constants)
-        for d in data:
-            d.Meta.SpringConstant = weighted_mean
-    # get the minimum of the sizes
-    np.testing.assert_allclose(data[0].SpringConstant,
-                               [d.SpringConstant for d in data],
-                               rtol=1e-3)
-    max_sizes = [d.Force.size for d in data]
-    min_of_max_sizes = min(max_sizes)
-    # re-slice each data set so they are exactly the same size (as IWT needs)
-    data = [d._slice(slice(0,min_of_max_sizes,1)) for d in data]
-    for d in data:
-        # find where we should start
-        converted = RetinalUtil.MetaPulling(d)
-        yield converted
+    for i in RetinalUtil._convert_to_iwt(data, in_dir):
+        yield i
 
 
 def run():
