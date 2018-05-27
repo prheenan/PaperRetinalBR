@@ -312,6 +312,8 @@ def _polish_helper(d):
     ext_FJC_all_forces[np.isnan(ext_FJC_all_forces)] = 0
     # remove the extension associated with the PEG
     const_offset_x_m = 0
+    # XXX remove the extension changes.
+    ext_FJC_all_forces = 0
     to_ret.Separation -= ext_FJC_all_forces + const_offset_x_m
     to_ret.ZSnsr -= const_offset_x_m
     # make sure the fitting object knows about the change in extensions...
