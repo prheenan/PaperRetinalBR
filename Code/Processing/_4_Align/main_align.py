@@ -64,7 +64,7 @@ def run():
     out_dir = Pipeline._cache_dir(base=base_dir,enum=step)
     force = True
     max_n_pool = multiprocessing.cpu_count() - 1
-    n_pool = 1
+    n_pool = max_n_pool
     min_F_N = 175e-12 if "+Retinal" in base_dir else 90e-12
     data = RetinalUtil.align_data(in_dir,out_dir,force=force,n_pool=n_pool,
                                   min_F_N=min_F_N)

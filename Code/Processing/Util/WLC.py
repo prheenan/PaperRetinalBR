@@ -197,8 +197,9 @@ def grid_both(x,x_a,a,x_b,b):
     grid_b = grid_interp(points=x_b,values=b,grid=x)
     return grid_a, grid_b
 
-def Hao_PEGModel(F,N_s=25.318,K=906.86,L_K=0.63235e-9,K0_protein=10000e-12,
-                 L0_protein=9.12e-9,Lp_protein=0.4e-9):
+def Hao_PEGModel(F,N_s=25.318,K=906.86,L_K=0.63235e-9,
+                 Lp_protein=0.4e-9,K0_protein=10000e-12,
+                 L0_protein=9.12e-9):
     """
     see: communication with Hao, 
     """
@@ -272,7 +273,7 @@ def _constrained_L2(L2,bounds,*args):
     else:
         return raw_L2
 
-def hao_fit(x,f,N_fit_pts=2):
+def hao_fit(x,f,N_fit_pts=5):
     # write dfown the ranges for everything
     range_N = (0,250)
     range_K = (50,3000)
@@ -280,7 +281,7 @@ def hao_fit(x,f,N_fit_pts=2):
     range_x_shift = (0,100e-9)
     # protein is just in newtons, like 1K to 100K newtons
     range_K_protein = (0.1e3 * 1e-12,100e3 * 1e-12)
-    range_Lp_protein = range_L_K
+    range_Lp_protein = (0.1e-9,1e-9)
     Lp = 0.4e-9
     # see Online methods, 74 nm / 198 AA
     L0_per_aa = 0.38e-9

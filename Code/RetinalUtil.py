@@ -311,10 +311,10 @@ def _polish_helper(d):
                                                 bounds_error=False)
     ext_FJC_all_forces[np.isnan(ext_FJC_all_forces)] = 0
     # remove the extension associated with the PEG
-    offset = -WLCHao._offset_fec(info_fit)
+    offset = -inf._L_shift
     const_offset_x_m = offset
     # XXX remove the extension changes.
-    ext_FJC_all_forces = 0
+    sep_FJC_force = ext_FJC_all_forces
     to_ret.Separation -= ext_FJC_all_forces + const_offset_x_m
     to_ret.ZSnsr -= const_offset_x_m
     # make sure the fitting object knows about the change in extensions...
