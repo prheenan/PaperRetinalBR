@@ -147,6 +147,9 @@ def _L_planar():
     return  0.358e-9
 
 
+def _offset_fec(info_fit):
+    return (info_fit._L_shift - info_fit._Ns * _L_planar())
+
 def common_peg_params():
     to_ret = dict(L_planar =_L_planar(), L_helical = 0.28e-9,kbT = kbT,
                   DeltaG = 3 * kbT)
@@ -195,7 +198,8 @@ def grid_both(x,x_a,a,x_b,b):
     return grid_a, grid_b
 
 def Hao_PEGModel(F,N_s=25.318,K=906.86,L_K=0.63235e-9,
-                 L0_protein=9.12e-9,Lp_protein=0.4e-9):
+                 Lp_protein=0.4e-9,K0_protein=10000e-12,
+                 L0_protein=9.12e-9):
     """
     see: communication with Hao, 
     """
@@ -204,10 +208,10 @@ def Hao_PEGModel(F,N_s=25.318,K=906.86,L_K=0.63235e-9,
     ext_FJC = HaoModel(F=F, **common)
     # get the WLC model of the unfolded polypeptide
     L0 = L0_protein
-    polypeptide_args = dict(kbT=kbT,Lp=Lp_protein,L0=L0,K0=10000e-12)
+    polypeptide_args = dict(kbT=kbT,Lp=Lp_protein,L0=L0,K0=K0_protein)
     ext_wlc, F_wlc = WLC._inverted_wlc_helper(F=F,odjik_as_guess=True,
                                               **polypeptide_args)
-    valid_idx = np.where(ext_wlc > 0)
+    valid_idx = np.where(ext_wlc >= 0)
     ext_wlc = ext_wlc[valid_idx]
     F_wlc = F_wlc[valid_idx]
     # create the interpolator of total extension vs force. First, interpolate
@@ -248,8 +252,9 @@ def ext_FJC(f_grid,*args,**kwargs):
     return ext_FJC
 
 def _hao_fit_helper(x,f,force_grid,*args,**kwargs):
-    ext_grid = _hao_shift_total(force_grid, *(args[:-1]), **kwargs)
+    args_normal = args[:-1]
     shift =  args[-1]
+    ext_grid = _hao_shift_total(force_grid, *(args_normal),**kwargs)
     x_shift = x + shift
     l2 = fit_base._l2_grid_to_data(x_shift,f,ext_grid,force_grid)
     return l2
@@ -271,9 +276,12 @@ def _constrained_L2(L2,bounds,*args):
 def hao_fit(x,f,N_fit_pts=15):
     # write dfown the ranges for everything
     range_N = (0,250)
-    range_K = (50,2500)
+    range_K = (50,3000)
     range_L_K = (0.1e-9,4e-9)
-    range_x_shift = (0,50e-9)
+    range_x_shift = (0,100e-9)
+    # protein is just in newtons, like 1K to 100K newtons
+    range_K_protein = (0.1e3 * 1e-12,100e3 * 1e-12)
+    range_Lp_protein = (0.1e-9,1e-9)
     Lp = 0.4e-9
     # see Online methods, 74 nm / 198 AA
     L0_per_aa = 0.38e-9

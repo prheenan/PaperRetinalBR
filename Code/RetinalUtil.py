@@ -311,9 +311,10 @@ def _polish_helper(d):
                                                 bounds_error=False)
     ext_FJC_all_forces[np.isnan(ext_FJC_all_forces)] = 0
     # remove the extension associated with the PEG
-    const_offset_x_m = 0
+    offset = -inf._L_shift
+    const_offset_x_m = offset
     # XXX remove the extension changes.
-    ext_FJC_all_forces = 0
+    sep_FJC_force = ext_FJC_all_forces
     to_ret.Separation -= ext_FJC_all_forces + const_offset_x_m
     to_ret.ZSnsr -= const_offset_x_m
     # make sure the fitting object knows about the change in extensions...
@@ -418,9 +419,6 @@ def align_single(d,min_F_N,**kw):
     # fit wlc to the f vs x of that slice
     info_fit = WLCHao.hao_fit(obj_slice.Separation,obj_slice.Force,**kw)
     info_fit.fit_slice = fit_slice
-    offset = info_fit._L_shift - info_fit._Ns * WLCHao._L_planar()
-    d.Separation += offset
-    d.ZSnsr += offset
     to_ret = ProcessingUtil.AlignedFEC(d,info_fit,feather_info=pred_info)
     return to_ret
 
