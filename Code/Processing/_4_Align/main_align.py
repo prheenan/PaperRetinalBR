@@ -94,8 +94,9 @@ def align_single(d,min_F_N):
     # fit wlc to the f vs x of that slice
     info_fit = WLCHao.hao_fit(obj_slice.Separation,obj_slice.Force)
     info_fit.fit_slice = fit_slice
-    d.Separation += info_fit._L_shift
-    d.ZSnsr += info_fit._L_shift
+    offset = info_fit._L_shift - info_fit._Ns * WLCHao._L_planar()
+    d.Separation += offset
+    d.ZSnsr += offset
     to_ret = ProcessingUtil.AlignedFEC(d,info_fit,feather_info=pred_info)
     return to_ret
 

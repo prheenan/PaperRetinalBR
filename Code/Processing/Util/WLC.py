@@ -143,8 +143,12 @@ def HaoModel(N_s,L_planar,DeltaG,kbT,L_helical,F,L_K,K):
               N_s * F/K
     return to_ret
 
+def _L_planar():
+    return  0.358e-9
+
+
 def common_peg_params():
-    to_ret = dict(L_planar = 0.358e-9, L_helical = 0.28e-9,kbT = kbT,
+    to_ret = dict(L_planar =_L_planar(), L_helical = 0.28e-9,kbT = kbT,
                   DeltaG = 3 * kbT)
     return to_ret
 
