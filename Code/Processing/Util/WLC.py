@@ -268,7 +268,7 @@ def _constrained_L2(L2,bounds,*args):
     else:
         return raw_L2
 
-def hao_fit(x,f,N_fit_pts=5):
+def hao_fit(x,f,N_fit_pts=15):
     # write dfown the ranges for everything
     range_N = (0,250)
     range_K = (50,2500)
