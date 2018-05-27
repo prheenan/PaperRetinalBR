@@ -62,9 +62,9 @@ def run():
     step = Pipeline.Step.ALIGNED
     in_dir = Pipeline._cache_dir(base=base_dir, enum=Pipeline.Step.SANITIZED)
     out_dir = Pipeline._cache_dir(base=base_dir,enum=step)
-    force = True
+    force = False
     max_n_pool = multiprocessing.cpu_count() - 1
-    n_pool = max_n_pool
+    n_pool = 1
     min_F_N = 175e-12 if "+Retinal" in base_dir else 90e-12
     data = RetinalUtil.align_data(in_dir,out_dir,force=force,n_pool=n_pool,
                                   min_F_N=min_F_N)
@@ -81,7 +81,7 @@ def run():
                                          out_name=out_name)
     # make individual plots
     ProcessingUtil.make_aligned_plot(base_dir,step,data,
-                                     xlim=[-30,150])
+                                     xlim=[-30,150],use_shift=True)
 
 
 

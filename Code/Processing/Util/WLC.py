@@ -147,6 +147,9 @@ def _L_planar():
     return  0.358e-9
 
 
+def _offset_fec(info_fit):
+    return (info_fit._L_shift - info_fit._Ns * _L_planar())
+
 def common_peg_params():
     to_ret = dict(L_planar =_L_planar(), L_helical = 0.28e-9,kbT = kbT,
                   DeltaG = 3 * kbT)

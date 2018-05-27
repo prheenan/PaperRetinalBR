@@ -163,23 +163,23 @@ def plot_data(base_dir,step,data,markevery=1,f_x = lambda x: x.Separation,
         plot_single_fec(d, f_x, xlim, ylim,markevery=markevery)
         PlotUtilities.savefig(f, plot_subdir + name_func(0, d) + ".png")
 
-def _aligned_plot(d,f_x,xlim,ylim):
+def _aligned_plot(d,f_x,xlim,ylim,use_shift=False):
     # get the fit
     # convert to reasonable units for plotting
     # get the fit
     info = d.L0_info
     f_grid = info.f_grid
     # convert to reasonable units for plotting
-    offset = info.x_offset
-    ext_grid = info.ext_grid()
+    offset =  info._L_shift  if use_shift else 0
+    ext_grid = info.ext_grid() - offset
     f_plot_pred = f_grid * 1e12
-    x_plot_pred = (ext_grid - offset)* 1e9
+    x_plot_pred = (ext_grid)* 1e9
     # convert back to the grid to get rid of the offset
     plt.plot(x_plot_pred, f_plot_pred, color='r', linewidth=1.5,
              label="Total")
     # get the two components (FJC and WLC)
     components = info.component_grid()
-    component_offset = 0
+    component_offset = offset
     for ext,label in [ [components[1],"C-term"],[components[0],"PEG3400"] ]:
         ext_plot = (ext - component_offset) * 1e9
         plt.plot(ext_plot,f_plot_pred,label=label,linestyle='--')
