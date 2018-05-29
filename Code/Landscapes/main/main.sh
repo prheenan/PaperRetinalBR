@@ -14,7 +14,7 @@ dateStr=`date +%Y-%m-%d:%H:%M:%S`
 # Arguments:
 #### Arg 1: Description
 data_dir=${1:-../../../Data/BR+Retinal/170321FEC/}
-files=`find .. -name "main*.py"`
+files=`find .. -name "main*.py" | sort`
 for f in $files
     do
         file_base=`basename $f`
