@@ -22,6 +22,8 @@ from Lib.UtilForce.UtilGeneral.Plot import Scalebar
 from Processing import ProcessingUtil
 import RetinalUtil,PlotUtil
 from Figures import FigureUtil
+from Lib.AppIWT.Code import WeierstrassUtil
+
 
 class FakeMeta(object):
     def __init__(self,SourceFile):
@@ -103,6 +105,9 @@ def run():
     data = [d for d in data if id_fec(d) not in bl_extra]
     slices = RetinalUtil._get_slice(data,q_target_nm * 1e-9)
     data_sliced = [d._slice(s) for s,d in zip(slices,data)]
+    iwt_data = [i for i in RetinalUtil._sanitize_iwt(data_sliced, "")]
+    iwt_data = [ WeierstrassUtil.convert_to_iwt(d) for d in iwt_data]
+    """
     data_sliced = RetinalUtil.process_helical_slice(data_sliced)
     ef_aligned = _align_to_EF(data_sliced)
     # slice to the appropriate
@@ -123,7 +128,7 @@ def run():
     actual_sizes = [e.Force.size for e in ext_sliced]
     np.testing.assert_allclose(size_exp,actual_sizes)
     # convert to IWT objects
-    iwt_data = [i for i in RetinalUtil._convert_to_iwt(ext_sliced, "")]
+    """
     # get the new IWT landscape
     f_iwt = InverseWeierstrass.free_energy_inverse_weierstrass
     iwt_obj = f_iwt(unfolding=iwt_data)
@@ -137,11 +142,7 @@ def run():
     FigureUtil._plot_fec_list(data, color='k',**fmt)
     FigureUtil._plot_fec_list(data_sliced,**fmt)
     FigureUtil._plot_fmt(is_bottom=False,ax=ax1,**fmt)
-    ax2 = plt.subplot(2,1,2)
-    FigureUtil._plot_fec_list(ext_sliced, **fmt)
-    FigureUtil._plot_fmt(is_bottom=True,ax=ax2,**fmt)
     PlotUtilities.savefig(fig,plot_dir + "debug.png")
-    PlotUtil._feather_plot(ef_aligned,plot_dir,xlim=[0,60])
     pass
 
 
