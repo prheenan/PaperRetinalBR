@@ -78,6 +78,35 @@ def id_fec(d):
     assert id_v is not None
     return id_v.group(0)
 
+def _heatmap(x,f,N):
+    unique_X = np.unique(x)
+    unique_F = np.unique(f)
+    digitized_N_x = np.digitize(x=x, bins=unique_X)
+    digitized_N_F = np.digitize(x=f, bins=unique_F)
+    n_x, n_F = unique_X.size, unique_F.size
+    digitized_N_x = np.minimum(digitized_N_x, n_x - 1)
+    digitized_N_F = np.minimum(digitized_N_F, n_F - 1)
+    arr = np.zeros((n_x, n_F))
+    for ii, (x_i, f_j) in enumerate(zip(digitized_N_x, digitized_N_F)):
+        arr[x_i, f_j] = N[ii]
+    return arr
+
+class HeatmapJCP:
+    def __init__(self,x,f,N):
+        self._x = x
+        self._f = f
+        self._N = N
+        self.heatmap = _heatmap(x,f,N).T
+    @property
+    def _extent_nm_and_pN(self):
+        return [min(self._x),max(self._x),min(self._f),max(self._f)]
+
+def _read_jcp_heatmap(in_file):
+    data_hist_jcp = np.loadtxt(in_file, delimiter=',')
+    x, f, N = data_hist_jcp.T
+    return HeatmapJCP(x,f,N)
+
+
 def run():
     """
     <Description>
@@ -90,6 +119,13 @@ def run():
     """
     input_dir = "../../../../Data/FECs180307/"
     out_dir = "./"
+    # read in the EC histogram...
+    in_file = "../../FigData/Fig2a_iwt_diagram.csv"
+    heatmap_jcp = _read_jcp_heatmap(in_file)
+    plt.close()
+    extent = heatmap_jcp._extent_nm_and_pN
+    plt.imshow(heatmap_jcp.heatmap, origin='lower', aspect='equal')
+    plt.show()
     q_offset_nm = RetinalUtil.min_sep_landscape() * 1e9
     min_fecs = 8
     q_interp, energy_list_arr = FigureUtil.\
