@@ -173,7 +173,8 @@ def _get_slices(data,exts):
                        for i in range(len(data))]
     return slices_by_data
 
-def _convert_to_iwt(data, in_dir):
+
+def _sanitize_iwt(data,in_dir):
     velocities = [d.Velocity for d in data]
     # make sure the velocities match within X%
     np.testing.assert_allclose(velocities, velocities[0], atol=0, rtol=1e-2)
@@ -198,6 +199,10 @@ def _convert_to_iwt(data, in_dir):
     np.testing.assert_allclose(data[0].SpringConstant,
                                [d.SpringConstant for d in data],
                                rtol=1e-3)
+    return data
+
+def _convert_to_iwt(data,in_dir):
+    data = _sanitize_iwt(data,in_dir)
     max_sizes = [d.Force.size for d in data]
     min_of_max_sizes = min(max_sizes)
     # re-slice each data set so they are exactly the same size (as IWT needs)
@@ -315,7 +320,7 @@ def _polish_helper(d):
     const_offset_x_m = offset
     # XXX remove the extension changes.
     sep_FJC_force = ext_FJC_all_forces
-    to_ret.Separation -= ext_FJC_all_forces + const_offset_x_m
+    to_ret.Separation -= sep_FJC_force + const_offset_x_m
     to_ret.ZSnsr -= const_offset_x_m
     # make sure the fitting object knows about the change in extensions...
     ext_FJC_correct_info = info_fit.ext_FJC(info_fit.f_grid)

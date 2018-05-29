@@ -22,6 +22,8 @@ from Lib.UtilForce.UtilGeneral.Plot import Scalebar
 from Processing import ProcessingUtil
 import RetinalUtil,PlotUtil
 from Figures import FigureUtil
+from Lib.AppIWT.Code import WeierstrassUtil
+
 
 class FakeMeta(object):
     def __init__(self,SourceFile):
@@ -132,17 +134,17 @@ def run():
     q_interp, energy_list_arr = FigureUtil.\
         _read_energy_list_and_q_interp(input_dir, q_offset=q_offset_nm,
                                        min_fecs=min_fecs,remove_noisy=True)
-    ex = energy_list_arr[0][0]
+    ex = energy_list_arr[0][1]
     q_start_nm = RetinalUtil.min_ext_m() * 1e9
-    q_target_nm = 41.5
-    helix_idx = np.argmin(np.abs(q_start_nm - q_target_nm))
-    helix = ex._other_helices[helix_idx]
-    landscape = helix
+    q_target_nm = 45
     data = RetinalUtil.read_fecs(ex,enum=Pipeline.Step.MANUAL)
     bl_extra = ['716', '539']
     data = [d for d in data if id_fec(d) not in bl_extra]
     slices = RetinalUtil._get_slice(data,q_target_nm * 1e-9)
     data_sliced = [d._slice(s) for s,d in zip(slices,data)]
+    iwt_data = [i for i in RetinalUtil._sanitize_iwt(data_sliced, "")]
+    iwt_data = [ WeierstrassUtil.convert_to_iwt(d) for d in iwt_data]
+    """
     data_sliced = RetinalUtil.process_helical_slice(data_sliced)
     ef_aligned = _align_to_EF(data_sliced)
     # slice to the appropriate
@@ -153,7 +155,7 @@ def run():
         min_seps.append(min(sep_fit))
         max_N = min(max_N,sep_fit.size)
     ext_sliced = []
-    max_N = 10000
+    max_N = 7000
     for d in ef_aligned:
         sep_fit = RetinalUtil._fit_sep(d)
         first_idx = np.where(sep_fit >= max(min_seps))[0][0]
@@ -163,7 +165,7 @@ def run():
     actual_sizes = [e.Force.size for e in ext_sliced]
     np.testing.assert_allclose(size_exp,actual_sizes)
     # convert to IWT objects
-    iwt_data = [i for i in RetinalUtil._convert_to_iwt(ext_sliced, "")]
+    """
     # get the new IWT landscape
     f_iwt = InverseWeierstrass.free_energy_inverse_weierstrass
     iwt_obj = f_iwt(unfolding=iwt_data)
@@ -177,11 +179,7 @@ def run():
     FigureUtil._plot_fec_list(data, color='k',**fmt)
     FigureUtil._plot_fec_list(data_sliced,**fmt)
     FigureUtil._plot_fmt(is_bottom=False,ax=ax1,**fmt)
-    ax2 = plt.subplot(2,1,2)
-    FigureUtil._plot_fec_list(ext_sliced, **fmt)
-    FigureUtil._plot_fmt(is_bottom=True,ax=ax2,**fmt)
     PlotUtilities.savefig(fig,plot_dir + "debug.png")
-    PlotUtil._feather_plot(ef_aligned,plot_dir,xlim=[0,60])
     pass
 
 

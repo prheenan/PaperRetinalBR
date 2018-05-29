@@ -273,12 +273,12 @@ def _constrained_L2(L2,bounds,*args):
     else:
         return raw_L2
 
-def hao_fit(x,f,N_fit_pts=5):
+def hao_fit(x,f,N_fit_pts=15):
     # write dfown the ranges for everything
     range_N = (0,250)
-    range_K = (50,3000)
+    range_K = (50,2000)
     range_L_K = (0.1e-9,4e-9)
-    range_x_shift = (0,100e-9)
+    range_x_shift = (0,50e-9)
     # protein is just in newtons, like 1K to 100K newtons
     range_K_protein = (0.1e3 * 1e-12,100e3 * 1e-12)
     range_Lp_protein = (0.1e-9,1e-9)
