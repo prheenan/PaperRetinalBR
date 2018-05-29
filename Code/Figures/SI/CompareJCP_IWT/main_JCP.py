@@ -95,12 +95,9 @@ def run():
     q_interp, energy_list_arr = FigureUtil.\
         _read_energy_list_and_q_interp(input_dir, q_offset=q_offset_nm,
                                        min_fecs=min_fecs,remove_noisy=True)
-    ex = energy_list_arr[0][0]
+    ex = energy_list_arr[0][1]
     q_start_nm = RetinalUtil.min_ext_m() * 1e9
-    q_target_nm = 41.5
-    helix_idx = np.argmin(np.abs(q_start_nm - q_target_nm))
-    helix = ex._other_helices[helix_idx]
-    landscape = helix
+    q_target_nm = 45
     data = RetinalUtil.read_fecs(ex,enum=Pipeline.Step.MANUAL)
     bl_extra = ['716', '539']
     data = [d for d in data if id_fec(d) not in bl_extra]
@@ -116,7 +113,7 @@ def run():
         min_seps.append(min(sep_fit))
         max_N = min(max_N,sep_fit.size)
     ext_sliced = []
-    max_N = 10000
+    max_N = 7000
     for d in ef_aligned:
         sep_fit = RetinalUtil._fit_sep(d)
         first_idx = np.where(sep_fit >= max(min_seps))[0][0]

@@ -315,7 +315,7 @@ def _polish_helper(d):
     const_offset_x_m = offset
     # XXX remove the extension changes.
     sep_FJC_force = ext_FJC_all_forces
-    to_ret.Separation -= ext_FJC_all_forces + const_offset_x_m
+    to_ret.Separation -= sep_FJC_force + const_offset_x_m
     to_ret.ZSnsr -= const_offset_x_m
     # make sure the fitting object knows about the change in extensions...
     ext_FJC_correct_info = info_fit.ext_FJC(info_fit.f_grid)
