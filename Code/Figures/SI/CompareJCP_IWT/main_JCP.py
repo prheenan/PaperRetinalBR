@@ -124,7 +124,8 @@ def run():
     heatmap_jcp = _read_jcp_heatmap(in_file)
     plt.close()
     extent = heatmap_jcp._extent_nm_and_pN
-    plt.imshow(heatmap_jcp.heatmap, origin='lower', aspect='equal')
+    plt.imshow(heatmap_jcp.heatmap, origin='lower', aspect='equal',
+               extent=extent)
     plt.show()
     q_offset_nm = RetinalUtil.min_sep_landscape() * 1e9
     min_fecs = 8
