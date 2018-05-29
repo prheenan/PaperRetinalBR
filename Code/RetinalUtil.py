@@ -93,7 +93,7 @@ def _fit_sep(d):
 
 def _get_slice(data,min_ext_m):
     fits_d = [ _fit_sep(d) for d in data]
-    min_idx = [np.where(d > min_ext_m)[0][0] for d in fits_d]
+    min_idx = [np.where(d <= min_ext_m)[0][-1] for d in fits_d]
     max_sizes = [d.Separation.size - (i+1) for i,d  in zip(min_idx,data)]
     max_delta = int(min(max_sizes))
     slices = [slice(i,i+max_delta,1) for i in min_idx]
