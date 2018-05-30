@@ -133,9 +133,8 @@ def subdirs(base_dir_analysis):
     return filtered_dirs
 
 
-def read_fecs(e,enum=Pipeline.Step.REDUCED):
-    base_tmp = e.base_dir
-    in_dir = Pipeline._cache_dir(base=base_tmp,
+def read_dir(base_dir,enum):
+    in_dir = Pipeline._cache_dir(base=base_dir,
                                  enum=enum)
     dir_exists = os.path.exists(in_dir)
     if (dir_exists and \
@@ -144,6 +143,10 @@ def read_fecs(e,enum=Pipeline.Step.REDUCED):
     else:
         data = []
     return data
+
+def read_fecs(e,enum=Pipeline.Step.REDUCED):
+    base_tmp = e.base_dir
+    read_dir(base_tmp,enum)
 
 
 def read_in_energy(base_dir):

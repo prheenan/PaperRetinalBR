@@ -60,7 +60,7 @@ def _align_to_EF(data):
     to_ret = data_FEATHER
     return to_ret
 
-def _G0_plot(data_sliced,landscape):
+def _G0_plot(data_sliced,landscape,q_target_nm):
     # XXX why is this necessary?? screwing up absolute values
     previous_JCP = FigureUtil.read_non_peg_landscape(base="../../FigData/")
     offset_s = np.mean([d.Separation[0] for d in data_sliced])
@@ -69,8 +69,9 @@ def _G0_plot(data_sliced,landscape):
     G_hao = G_hao - landscape.G0_kcal_per_mol[0]
     G_JCP = previous_JCP.G0_kcal_per_mol - previous_JCP.G0_kcal_per_mol[0] + 35
     offset_jcp_nm = min(previous_JCP.q_nm)
-    q_JCP_nm = previous_JCP.q_nm - offset_jcp_nm + 2
     landscape_offset_nm = min(landscape.q_nm)
+    q_JCP_nm = previous_JCP.q_nm - offset_jcp_nm + 2 + q_target_nm
+    q_Hao_nm = landscape.q_nm - landscape_offset_nm+ q_target_nm
     fig = PlotUtilities.figure()
     xlim, ylim = FigureUtil._limits(data_sliced)
     fmt = dict(xlim=xlim, ylim=ylim)
@@ -79,10 +80,11 @@ def _G0_plot(data_sliced,landscape):
     FigureUtil._plot_fec_list(data_sliced, **fmt)
     FigureUtil._plot_fmt(ax1, **fmt)
     ax2 = plt.subplot(2, 1, 2)
-    plt.plot(landscape.q_nm - landscape_offset_nm,G_hao)
-    plt.plot(q_JCP_nm,G_JCP, 'r--')
+    plt.plot(q_Hao_nm,G_hao,label="Aligned landscape")
+    plt.plot(q_JCP_nm,G_JCP, 'r--',label="JCP landscape")
     FigureUtil._plot_fmt(ax2, ylabel="G (kcal/mol)", is_bottom=True,
                          xlim=xlim, ylim=[None, None])
+    PlotUtilities.legend(ax=ax2,handlelength=2)
     PlotUtilities.savefig(fig, "./out.png")
 
 def id_fec(d):
@@ -122,52 +124,22 @@ def run():
         This is a description of what is returned.
     """
     input_dir = "../../../../Data/FECs180307/"
-    out_dir = "./"
     # read in the EC histogram...
     in_file = "../../FigData/Fig2a_iwt_diagram.csv"
     heatmap_jcp = _read_jcp_heatmap(in_file)
-    q_offset_nm = RetinalUtil.min_sep_landscape() * 1e9
-    min_fecs = 8
-    q_interp, energy_list_arr = FigureUtil.\
-        _read_energy_list_and_q_interp(input_dir, q_offset=q_offset_nm,
-                                       min_fecs=min_fecs,remove_noisy=True)
-    ex = energy_list_arr[0][1]
-    q_start_nm = RetinalUtil.min_ext_m() * 1e9
     q_target_nm = 45
-    ex.base_dir = input_dir + "BR+Retinal/50nms/170503FEC/landscape_"
-    data = RetinalUtil.read_fecs(ex,enum=Pipeline.Step.MANUAL)
+    base_dir = input_dir + "BR+Retinal/50nms/170503FEC/landscape_"
+    data = RetinalUtil.read_dir(base_dir,enum=Pipeline.Step.MANUAL)
     bl_extra = ['716', '539']
     data = [d for d in data if id_fec(d) not in bl_extra]
     slices = RetinalUtil._get_slice(data,q_target_nm * 1e-9)
     data_sliced = [d._slice(s) for s,d in zip(slices,data)]
     iwt_data = [i for i in RetinalUtil._sanitize_iwt(data_sliced, "")]
     iwt_data = [ WeierstrassUtil.convert_to_iwt(d) for d in iwt_data]
-    """
-    data_sliced = RetinalUtil.process_helical_slice(data_sliced)
-    ef_aligned = _align_to_EF(data_sliced)
-    # slice to the appropriate
-    min_seps = []
-    max_N = np.inf
-    for d in ef_aligned:
-        sep_fit = RetinalUtil._fit_sep(d)
-        min_seps.append(min(sep_fit))
-        max_N = min(max_N,sep_fit.size)
-    ext_sliced = []
-    max_N = 7000
-    for d in ef_aligned:
-        sep_fit = RetinalUtil._fit_sep(d)
-        first_idx = np.where(sep_fit >= max(min_seps))[0][0]
-        sliced_tmp = d._slice(slice(first_idx,first_idx + max_N))
-        ext_sliced.append(sliced_tmp)
-    size_exp = ext_sliced[0].Force.size
-    actual_sizes = [e.Force.size for e in ext_sliced]
-    np.testing.assert_allclose(size_exp,actual_sizes)
-    # convert to IWT objects
-    """
     # get the new IWT landscape
     f_iwt = InverseWeierstrass.free_energy_inverse_weierstrass
     iwt_obj = f_iwt(unfolding=iwt_data)
-    _G0_plot(data_sliced, iwt_obj)
+    _G0_plot(data_sliced, iwt_obj,q_target_nm=q_target_nm)
     plot_dir = "./plot/"
     GenUtilities.ensureDirExists(plot_dir)
     data_plot = [d._slice(slice(0,None,1)) for d in data]
