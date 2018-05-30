@@ -280,7 +280,7 @@ def valid_landscape(e):
 
 
 def min_sep_landscape():
-    return 15e-9
+    return 45e-9
 
 def offset_L(info):
     # align by the contour length of the protein
