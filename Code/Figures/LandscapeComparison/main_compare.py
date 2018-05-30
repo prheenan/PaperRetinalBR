@@ -183,7 +183,7 @@ def run():
     """
     input_dir = "../../../Data/FECs180307/"
     out_dir = "./"
-    q_offset_nm = RetinalUtil.min_sep_landscape() * 1e9
+    q_offset_nm = RetinalUtil.q_GF_nm_plot()
     min_fecs = 7
     q_interp, energy_list_arr = FigureUtil.\
         _read_energy_list_and_q_interp(input_dir, q_offset=q_offset_nm,

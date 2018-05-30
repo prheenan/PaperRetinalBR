@@ -72,7 +72,7 @@ def _G0_plot(plot_dir,data_sliced,landscape,fmt):
     landscape_offset_nm = min(landscape.q_nm)
     q_JCP_nm = previous_JCP.q_nm - offset_jcp_nm + 2
     q_Hao_nm = landscape.q_nm - landscape_offset_nm
-    fig = PlotUtilities.figure()
+    fig = FigureUtil._fig_single(y=6)
     xlim, ylim = FigureUtil._limits(data_sliced)
     ax1 = plt.subplot(2, 1, 1)
     FigureUtil._plot_fec_list(data_sliced, **fmt)
@@ -150,7 +150,7 @@ def run():
         data_plot[i].Separation -= q_target_nm * 1e-9
         data_sliced_plot[i].Separation -= q_target_nm * 1e-9
     _G0_plot(plot_dir,data_sliced_plot, iwt_obj,fmt=fmt)
-    fig = PlotUtilities.figure(figsize=(3,6))
+    fig = FigureUtil._fig_single(y=6)
     ax1 = plt.subplot(2,1,1)
     extent = heatmap_jcp._extent_nm_and_pN(offset_x_nm=0)
     plt.imshow(heatmap_jcp.heatmap, origin='lower', aspect='auto',

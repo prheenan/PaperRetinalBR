@@ -102,8 +102,8 @@ def _get_slice(data,min_ext_m):
 def process_helical_slice(data_sliced):
     return data_sliced
 
-def q_GF_nm():
-    return 35
+def q_GF_nm_plot():
+    return 50
 
 def _processing_base(default_base="../../../Data/BR+Retinal/170321FEC/",**kw):
     return Pipeline._base_dir_from_cmd(default=default_base,**kw)
@@ -146,7 +146,7 @@ def read_dir(base_dir,enum):
 
 def read_fecs(e,enum=Pipeline.Step.REDUCED):
     base_tmp = e.base_dir
-    read_dir(base_tmp,enum)
+    return read_dir(base_tmp,enum)
 
 
 def read_in_energy(base_dir):

@@ -64,6 +64,12 @@ def read_non_peg_landscape(base="../FigData/"):
     return LandscapeWithError(q_nm=q,G_kcal=G,G_err_kcal=G_std,
                               beta=1/(4.1e-21))
 
+def _fig_single(y=3.3):
+    return PlotUtilities.figure((3.3,y))
+
+def _fig_double(y=3.3):
+    return PlotUtilities.figure((7,y))
+
 
 def _snapsnot(base_dir,step):
     corrected_dir = Pipeline._cache_dir(base=base_dir,
@@ -204,7 +210,7 @@ def _read_energy_list_and_q_interp(input_dir,q_offset,iwt_only=True,
                             for list_v in energy_list_arr]
     e_list_flat = [e for list_tmp in energy_list_arr for e in list_tmp ]
     q_interp = RetinalUtil.common_q_interp(energy_list=e_list_flat)
-    q_interp = q_interp[np.where(q_interp-q_interp[0]  <= q_offset)]
+    q_interp = q_interp[np.where(q_interp  <= q_offset)]
     return q_interp,energy_list_arr
 
 
@@ -268,6 +274,6 @@ def data_plot(fecs,energies,gs1=None,xlim=[None,None]):
                                                            splines,ax=ax)
     q_at_max_energy,_,_ =  \
         PlotUtil.plot_delta_GF(q_interp,mean_energy,std_energy,
-                               max_q_nm=RetinalUtil.q_GF_nm())
+                               max_q_nm=RetinalUtil.q_GF_nm_plot())
     plt.axvspan(q_at_max_energy,max(xlim),color='k',alpha=0.3)
     ax.set_xlim(xlim)
