@@ -39,7 +39,7 @@ def _energy_plot(energy_list,out_dir):
     fig = PlotUtilities.figure((7, 7))
     ax = plt.subplot(1, 1, 1)
     PlotUtil.plot_mean_landscape(q_interp, splines, ax=ax)
-    max_x_show_nm = RetinalUtil.q_GF_nm() + 20
+    max_x_show_nm = int(RetinalUtil.min_sep_landscape_nm() + 20)
     min_x_show_nm = int(np.floor(min(q_interp) - 2))
     plt.xlim([min_x_show_nm, max_x_show_nm])
     plt.xticks([i for i in range(min_x_show_nm, max_x_show_nm)])

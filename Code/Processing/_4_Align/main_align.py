@@ -65,9 +65,10 @@ def run():
     force = True
     max_n_pool = multiprocessing.cpu_count() - 1
     n_pool = max_n_pool
+    N_fit_pts = 5
     min_F_N = 175e-12 if "+Retinal" in base_dir else 90e-12
     data = RetinalUtil.align_data(in_dir,out_dir,force=force,n_pool=n_pool,
-                                  min_F_N=min_F_N,N_fit_pts=15)
+                                  min_F_N=min_F_N,N_fit_pts=N_fit_pts)
     plot_subdir = Pipeline._plot_subdir(base_dir, step)
     xlim_heatmap_nm = [0,100]
     ProcessingUtil.heatmap_ensemble_plot(data,xlim=xlim_heatmap_nm,

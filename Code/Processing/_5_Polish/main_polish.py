@@ -76,15 +76,15 @@ def run():
     plot_subdir = Pipeline._plot_subdir(base_dir, step)
     name_func = FEC_Util.fec_name_func
     xlim, ylim = ProcessingUtil.nm_and_pN_limits(data,f_x)
-    xlim = [-10,150]
+    xlim = [-20,100]
     for d_unpolish,d_polish in zip(data_unpolished,data):
         fig = PlotUtilities.figure()
         ax1 = plt.subplot(2,1,1)
-        ProcessingUtil._aligned_plot(d_unpolish,f_x,xlim,ylim)
+        ProcessingUtil._aligned_plot(d_unpolish,f_x,xlim,ylim,use_shift=True)
         PlotUtilities.xlabel("")
         PlotUtilities.no_x_label(ax1)
         plt.subplot(2,1,2)
-        ProcessingUtil._aligned_plot(d_polish,f_x,xlim,ylim)
+        ProcessingUtil._aligned_plot(d_polish,f_x,xlim,ylim,use_shift=True)
         name = plot_subdir + name_func(0, d_polish) + ".png"
         PlotUtilities.savefig(fig,name)
 

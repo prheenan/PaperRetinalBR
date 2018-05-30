@@ -273,7 +273,19 @@ def _constrained_L2(L2,bounds,*args):
     else:
         return raw_L2
 
-def hao_fit(x,f,N_fit_pts=15):
+def _L0_tail():
+    # see Online methods, 74 nm / 198 AA
+    L0_per_aa = 0.38e-9
+    N_aa_tail = 24
+    L0_tail = L0_per_aa * N_aa_tail
+    # we also need to take into account the total contour length of
+    # IG1 + IG2, including distance in down into the lipid. ibid...
+    n_aa = 8
+    delta_L_IG2 = n_aa * L0_per_aa
+    L0 = L0_tail + delta_L_IG2
+    return L0
+
+def hao_fit(x,f,N_fit_pts):
     # write dfown the ranges for everything
     range_N = (0,250)
     range_K = (50,2500)
@@ -283,15 +295,7 @@ def hao_fit(x,f,N_fit_pts=15):
     range_K_protein = (0.1e3 * 1e-12,100e3 * 1e-12)
     range_Lp_protein = (0.1e-9,1e-9)
     Lp = 0.4e-9
-    # see Online methods, 74 nm / 198 AA
-    L0_per_aa = 0.38e-9
-    N_aa_tail = 24
-    L0_tail = L0_per_aa * N_aa_tail
-    # we also need to take into account the total contour length of
-    # IG1 + IG2, including distance in down into the lipid. ibid...
-    n_aa = 64
-    delta_L_IG2 = n_aa * L0_per_aa
-    L0 = L0_tail + delta_L_IG2
+    L0 = _L0_tail()
     kw_fit = dict(Lp_protein=Lp,L0_protein=L0)
     f_grid = np.linspace(min(f),max(f),endpoint=True,num=f.size)
     functor_l2 = lambda *args: _hao_fit_helper(x,f,f_grid,*(args[0]),

@@ -283,14 +283,18 @@ def valid_landscape(e):
 
 
 def min_sep_landscape():
-    return 15e-9
+    return _offset_L_m() + 7e-9
 
-def offset_L(info):
-    # align by the contour length of the protein
-    offset_m = 20e-9
-    L0 = info.L0_c_terminal - offset_m
-    return L0
+def min_sep_landscape_nm():
+    return min_sep_landscape() * 1e9
 
+def _offset_L_m():
+    return -(WLCHao._L0_tail())
+
+def _const_offset(inf):
+    offset = -inf._L_shift
+    const_offset_x_m = offset - _offset_L_m()
+    return const_offset_x_m
 
 def _polish_helper(d):
     """
@@ -319,8 +323,7 @@ def _polish_helper(d):
                                                 bounds_error=False)
     ext_FJC_all_forces[np.isnan(ext_FJC_all_forces)] = 0
     # remove the extension associated with the PEG
-    offset = -inf._L_shift
-    const_offset_x_m = offset
+    const_offset_x_m = _const_offset(inf)
     # XXX remove the extension changes.
     sep_FJC_force = ext_FJC_all_forces
     to_ret.Separation -= sep_FJC_force + const_offset_x_m
