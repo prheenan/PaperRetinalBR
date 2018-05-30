@@ -29,6 +29,17 @@ class FakeMeta(object):
     def __init__(self,SourceFile):
         self.SourceFile = SourceFile
 
+
+class HeatmapJCP:
+    def __init__(self,x,f,N):
+        self._x = x
+        self._f = f
+        self._N = N
+        self.heatmap = _heatmap(x,f,N).T
+    def _extent_nm_and_pN(self,offset_x_nm=0):
+        return [min(self._x)+offset_x_nm,max(self._x)+offset_x_nm,
+                min(self._f),max(self._f)]
+
 def _align_to_EF(data):
     kw_FEATHER = RetinalUtil._def_kw_FEATHER()
     data_FEATHER =   [RetinalUtil.feather_single(d,force_no_adhesion=True,
@@ -93,15 +104,6 @@ def _heatmap(x,f,N):
         arr[x_i, f_j] = N[ii]
     return arr
 
-class HeatmapJCP:
-    def __init__(self,x,f,N):
-        self._x = x
-        self._f = f
-        self._N = N
-        self.heatmap = _heatmap(x,f,N).T
-    @property
-    def _extent_nm_and_pN(self):
-        return [min(self._x),max(self._x),min(self._f),max(self._f)]
 
 def _read_jcp_heatmap(in_file):
     data_hist_jcp = np.loadtxt(in_file, delimiter=',')
@@ -124,11 +126,6 @@ def run():
     # read in the EC histogram...
     in_file = "../../FigData/Fig2a_iwt_diagram.csv"
     heatmap_jcp = _read_jcp_heatmap(in_file)
-    plt.close()
-    extent = heatmap_jcp._extent_nm_and_pN
-    plt.imshow(heatmap_jcp.heatmap, origin='lower', aspect='equal',
-               extent=extent)
-    plt.show()
     q_offset_nm = RetinalUtil.min_sep_landscape() * 1e9
     min_fecs = 8
     q_interp, energy_list_arr = FigureUtil.\
@@ -173,13 +170,22 @@ def run():
     _G0_plot(data_sliced, iwt_obj)
     plot_dir = "./plot/"
     GenUtilities.ensureDirExists(plot_dir)
-    xlim, ylim = FigureUtil._limits(data)
-    fmt = dict(xlim=xlim,ylim=ylim)
-    fig = PlotUtilities.figure()
+    data_plot = [d._slice(slice(0,None,1)) for d in data]
+    data_sliced_plot = [d._slice(slice(0,None,1)) for d in data_sliced]
+    for i in range(len(data_plot)):
+        data_plot[i].Separation -= q_target_nm * 1e-9
+        data_sliced_plot[i].Separation -= q_target_nm * 1e-9
+    fmt = dict(xlim=[-5,55],ylim=[-20,150])
+    fig = PlotUtilities.figure(figsize=(4,8))
     ax1 = plt.subplot(2,1,1)
-    FigureUtil._plot_fec_list(data, color='k',**fmt)
-    FigureUtil._plot_fec_list(data_sliced,**fmt)
+    extent = heatmap_jcp._extent_nm_and_pN(offset_x_nm=0)
+    plt.imshow(heatmap_jcp.heatmap, origin='lower', aspect='auto',
+               extent=extent,cmap=plt.cm.afmhot)
     FigureUtil._plot_fmt(is_bottom=False,ax=ax1,**fmt)
+    PlotUtilities.title("Top: JCP. Bottom: Current aligned data ( - PEG3400)")
+    ax2 = plt.subplot(2,1,2)
+    FigureUtil._plot_fec_list(data_sliced_plot,**fmt)
+    FigureUtil._plot_fmt(is_bottom=True,ax=ax2,**fmt)
     PlotUtilities.savefig(fig,plot_dir + "debug.png")
     pass
 
