@@ -229,7 +229,7 @@ def fix_axes(ax_list):
                PlotUtilities.no_x_label(ax)
                PlotUtilities.xlabel("", ax=ax)
 
-def data_plot(fecs,energies,gs1=None):
+def data_plot(fecs,energies,gs1=None,xlim=[None,None]):
     n_cols = len(energies)
     n_rows = 3
     all_ax = []
@@ -255,16 +255,19 @@ def data_plot(fecs,energies,gs1=None):
         title_label = title.replace("FEC","")
         title = "{:s}, v={:s}\n {:s}".format(BR, vel_label, title_label)
         PlotUtilities.title(title,fontsize=5)
+        for a in axs_tmp:
+            a.set_xlim(xlim)
     fix_axes(all_ax)
     xlim = all_ax[0][0].get_xlim()
     # just get the IWT
     energies_plot = [e._iwt_obj for e in energies]
     q_interp, splines =  RetinalUtil.interpolating_G0(energies_plot)
     # get an average/stdev of energy
+    ax = plt.subplot(gs1[-1,0])
     mean_energy, std_energy = PlotUtil.plot_mean_landscape(q_interp,
-                                                           splines,ax=gs1[-1,0])
+                                                           splines,ax=ax)
     q_at_max_energy,_,_ =  \
         PlotUtil.plot_delta_GF(q_interp,mean_energy,std_energy,
                                max_q_nm=RetinalUtil.q_GF_nm())
     plt.axvspan(q_at_max_energy,max(xlim),color='k',alpha=0.3)
-    plt.xlim(xlim)
+    ax.set_xlim(xlim)
