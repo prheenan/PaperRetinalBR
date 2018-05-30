@@ -137,6 +137,7 @@ def run():
     ex = energy_list_arr[0][1]
     q_start_nm = RetinalUtil.min_ext_m() * 1e9
     q_target_nm = 45
+    ex.base_dir = input_dir + "BR+Retinal/50nms/170503FEC/landscape_"
     data = RetinalUtil.read_fecs(ex,enum=Pipeline.Step.MANUAL)
     bl_extra = ['716', '539']
     data = [d for d in data if id_fec(d) not in bl_extra]
