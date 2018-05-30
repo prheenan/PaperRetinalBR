@@ -13,19 +13,17 @@ dateStr=`date +%Y-%m-%d:%H:%M:%S`
 
 # Arguments:
 #### Arg 1: Description
-data_dir=${1:-../../../Data/BR+Retinal/170321FEC/}
-files=`find .. -name "main*.py" | sort`
-for f in $files
-    do
-        file_base=`basename $f`
-        dir_name=`dirname $f`
-        cd $dir_name
-        echo "Running $file_base on $data_dir"
-        python "$file_base" --base "$data_dir" || echo "Couldn't run $file_base"
-        cd -
-    done
 
 # Returns:
 
+# note: following line works in one directory above Data"
+#  rsync.exe -Rv ./Data/rationale/N2/cache_0_binding/binding.pkl ../../../Dropbox/scratch/
 
 
+input=${1:-"../../../Data/FECs180307/"}
+output=${2:-"~/Dropbox/scratch/"}
+cd "$input"
+for f in `find ./ -name "*energy.pkl"`
+    do 
+        rsync.exe -Rrv $f "${output}"
+    done

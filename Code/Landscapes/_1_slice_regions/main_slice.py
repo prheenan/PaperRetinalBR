@@ -22,19 +22,7 @@ import RetinalUtil
 def slice_data(in_dir,min_sep=40e-9,max_sep=140e-9):
     data = CheckpointUtilities.lazy_multi_load(in_dir)
     for d in data:
-        # find where we should start
-        sep = d.Separation
-        # filter the separation to get a better estimate
-        n_pts_filter = int(sep.size//100)
-        sep_filter = FEC_Util.SavitskyFilter(sep,n_pts_filter)
-        where_ge_0 = np.where(sep_filter > min_sep)[0]
-        assert where_ge_0.size > 0 , "Never above zero"
-        first_above_surface = where_ge_0[0]
-        # find where we should end
-        where_le_max =np.where(sep <= max_sep)[0]
-        assert where_le_max.size > 0 , "Never in size"
-        last_time_slice = where_le_max[-1]
-        to_ret = d._slice(slice(first_above_surface,last_time_slice,1))
+        _, _, to_ret = RetinalUtil._slice_single(d,min_sep)
         yield to_ret
 
 
@@ -55,7 +43,7 @@ def run():
     out_dir = Pipeline._cache_dir(base=base_dir,enum=step)
     force = True
     limit = None
-    min_sep = 25e-9
+    min_sep = RetinalUtil.min_sep_landscape()
     max_sep = min_sep + 100e-9
     functor = lambda : slice_data(in_dir,min_sep=min_sep,max_sep=max_sep)
     data =CheckpointUtilities.multi_load(cache_dir=out_dir,load_func=functor,

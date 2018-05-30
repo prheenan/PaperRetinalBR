@@ -14,7 +14,6 @@ from Lib.UtilForce.FEC import FEC_Util,  FEC_Plot
 from Lib.UtilForce.UtilIgor.TimeSepForceObj import TimeSepForceObj
 from Lib.UtilForce.UtilGeneral import PlotUtilities, CheckpointUtilities
 from Processing.Util import WLC as WLCHao
-import RetinalUtil
 
 import multiprocessing
 from multiprocessing import Pool
@@ -48,16 +47,16 @@ blacklist_tuples = [ \
     # all the blacklisted BR data
     [str_BR,f_v(50),f_date("170502"),[1245,2160]],
     [str_BR,f_v(50),f_date("170503"),[819,837,1161]],
-    [str_BR, f_v(300), f_date("170321"), [463,471,500,532,760,821,833]],
+    [str_BR, f_v(300), f_date("170321"), [463,471,500,532,760,786,821,833]],
     [str_BR, f_v(300), f_date("170501"), [203,870,1353]],
     [str_BR, f_v(300), f_date("170502"), []],# this one is OK
     [str_BR, f_v(300), f_date("170511"), [316,731]],
     [str_BR, f_v(3000), f_date("170502"), [717]],
     [str_BR, f_v(3000), f_date("170503"), [231,]],
     # all the blacklisted BO data
-    [str_BO, f_v(50), f_date("170523"), [117,176,204,223]],
-    [str_BO, f_v(300), f_date("170327"), [121,236,310,347,383,386,473,484,486]],
-    [str_BO, f_v(3000), f_date("170523"), [18,20,22,67,69,349,773]],
+    [str_BO, f_v(50), f_date("170523"), [117,176,203,204,223]],
+    [str_BO, f_v(300), f_date("170327"), [121,228,236,310,347,383,386,391,473,484,486]],
+    [str_BO, f_v(3000), f_date("170523"), [18,20,22,69,349,741,773]],
 ]
 
 blacklists = [Blacklist(*t) for t in blacklist_tuples]
@@ -171,17 +170,16 @@ def _aligned_plot(d,f_x,xlim,ylim,use_shift=False):
     info = d.L0_info
     f_grid = info.f_grid
     # convert to reasonable units for plotting
-    offset = info.x_offset
-    ext_grid = info.ext_grid()
+    offset =  info._L_shift  if use_shift else 0
+    ext_grid = info.ext_grid() - offset
     f_plot_pred = f_grid * 1e12
-    x_plot_pred = (ext_grid - offset)* 1e9
+    x_plot_pred = (ext_grid)* 1e9
     # convert back to the grid to get rid of the offset
     plt.plot(x_plot_pred, f_plot_pred, color='r', linewidth=1.5,
              label="Total")
     # get the two components (FJC and WLC)
     components = info.component_grid()
-    offset_L = RetinalUtil.offset_L(info)
-    component_offset = 0
+    component_offset = offset
     for ext,label in [ [components[1],"C-term"],[components[0],"PEG3400"] ]:
         ext_plot = (ext - component_offset) * 1e9
         plt.plot(ext_plot,f_plot_pred,label=label,linestyle='--')

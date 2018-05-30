@@ -26,8 +26,15 @@ def generate_landscape(in_dir):
     data = CheckpointUtilities.lazy_multi_load(in_dir)
     data_wham = UtilWHAM.to_wham_input(data)
     energy_wham = WeightedHistogram.wham(fwd_input=data_wham)
-    iwt_obj = InverseWeierstrass.free_energy_inverse_weierstrass(unfolding=data)
-    to_ret = RetinalUtil.DualLandscape(wham_obj=energy_wham,iwt_obj=iwt_obj)
+    f_iwt = InverseWeierstrass.free_energy_inverse_weierstrass
+    iwt_obj = f_iwt(unfolding=data)
+    # offset the IWT so that it matches the offset of WHAM...
+    iwt_obj.q -= iwt_obj.q[0]
+    offset_q = energy_wham.q[0]
+    iwt_obj.q += offset_q
+    iwt_obj._z += offset_q
+    to_ret = RetinalUtil.DualLandscape(wham_obj=energy_wham,iwt_obj=iwt_obj,
+                                       other_helices=[])
     return to_ret
 
 def run():

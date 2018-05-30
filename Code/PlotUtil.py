@@ -19,6 +19,19 @@ from Lib.AppIWT.Code.InverseWeierstrass import FEC_Pulling_Object
 from Lib.AppWHAM.Code.UtilLandscape import Conversions
 
 import RetinalUtil
+from Processing import ProcessingUtil
+
+def _feather_plot(data,plot_subdir,f_x = lambda x: x.Separation,
+                  xlim=[-20, 150]):
+    _, ylim = ProcessingUtil.nm_and_pN_limits(data, f_x=f_x)
+    for d in data:
+        fig = PlotUtilities.figure()
+        ProcessingUtil.plot_single_fec(d, f_x, xlim, ylim, markevery=1)
+        x = f_x(d) * 1e9
+        for i in d.info_feather.event_idx:
+            plt.axvline(x[i])
+        name = FEC_Util.fec_name_func(0,d)
+        PlotUtilities.savefig(fig,plot_subdir + name + ".png")
 
 def plot_landscapes(data,energy_obj,ax1=None,
                     ax2=None,ax3=None):

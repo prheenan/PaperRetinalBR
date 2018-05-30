@@ -8,16 +8,29 @@ from __future__ import unicode_literals
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
+import os
 
 sys.path.append("../")
 from Processing import ProcessingUtil
 
 from Lib.UtilPipeline import Pipeline
+from Lib.AppIWT.Code import InverseWeierstrass
+from Lib.AppIWT.Code.UtilLandscape import BidirectionalUtil, Conversions
 from Lib.UtilForce.FEC import FEC_Util
 from Lib.UtilForce.UtilGeneral import CheckpointUtilities, GenUtilities, \
     PlotUtilities
 import RetinalUtil
+import PlotUtil
 
+import matplotlib.gridspec as gridspec
+import re
+
+class LandscapeWithError(BidirectionalUtil._BaseLandscape):
+    def __init__(self,q_nm,G_kcal,G_err_kcal,beta):
+        convert_kcal_to_J = 1/Conversions.kcal_per_mol_per_J()
+        super(LandscapeWithError,self).\
+            __init__(q=q_nm*1e-9,G0=G_kcal*convert_kcal_to_J,beta=beta)
+        self.G_err_kcal = G_err_kcal
 
 class SnapshotFEC(object):
     def __init__(self,step,fec_list):
@@ -42,6 +55,22 @@ class LandscapeGallery(object):
         self.PEG3400 = PEG3400
         self.BO_PEG3400 = BO_PEG3400
 
+
+def read_non_peg_landscape(base="../FigData/"):
+    input_file = base + "Fig2c_iwt_diagram.csv"
+    arr =  np.loadtxt(input_file,delimiter=",").T
+    q, G, G_low, G_upper = arr
+    G_std = (G_upper - G_low) * 0.5
+    return LandscapeWithError(q_nm=q,G_kcal=G,G_err_kcal=G_std,
+                              beta=1/(4.1e-21))
+
+def _fig_single(y=3.3):
+    return PlotUtilities.figure((3.3,y))
+
+def _fig_double(y=3.3):
+    return PlotUtilities.figure((7,y))
+
+
 def _snapsnot(base_dir,step):
     corrected_dir = Pipeline._cache_dir(base=base_dir,
                                         enum=step)
@@ -51,17 +80,17 @@ def _snapsnot(base_dir,step):
 def _plot_fmt(ax,xlim,ylim,is_bottom=False,color=False,is_left=True,
               ylabel="$F$ (pN)",xlabel="Extension (nm)"):
     PlotUtilities.tickAxisFont(ax=ax)
-    plt.xlim(xlim)
-    plt.ylim(ylim)
-    PlotUtilities.title("")
-    PlotUtilities.ylabel(ylabel)
-    PlotUtilities.xlabel(xlabel)
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
+    PlotUtilities.title("",ax=ax)
+    PlotUtilities.ylabel(ylabel,ax=ax)
+    PlotUtilities.xlabel(xlabel,ax=ax)
     if (not is_bottom):
         PlotUtilities.no_x_label(ax=ax)
-        PlotUtilities.xlabel("")
+        PlotUtilities.xlabel("",ax=ax)
     if (not is_left):
         PlotUtilities.no_y_label(ax=ax)
-        PlotUtilities.ylabel("")
+        PlotUtilities.ylabel("",ax=ax)
     if color:
         color_kw = dict(ax=ax,color='w',label_color='k')
         PlotUtilities.color_x(**color_kw)
@@ -120,3 +149,131 @@ def read_sample_landscapes(base_dir):
                               PEG3400=PEG3400,
                               BO_PEG3400=BO_PEG3400)
     return to_ret
+
+def _get_error_landscapes(q_interp,energy_list_arr,**kw):
+    landscpes_with_error = []
+    for i, energy_list in enumerate(energy_list_arr):
+        _, splines = RetinalUtil.interpolating_G0(energy_list)
+        beta = energy_list[0].beta
+        mean, stdev = PlotUtil._mean_and_stdev_landcapes(splines, q_interp)
+        mean -= min(mean)
+        l = LandscapeWithError(q_nm=q_interp,G_kcal=mean,G_err_kcal=stdev,
+                               beta=beta)
+        landscpes_with_error.append(l)
+    return landscpes_with_error
+
+def read_energy_lists(subdirs):
+    """
+    :param subdirs: which directories to look in (e.g. BR+Retinal/)
+    :return: list, elements are all the landscapes in the subdirs
+    """
+    energy_list_arr =[]
+    # get all the energy objects
+    for base in subdirs:
+        in_dir = Pipeline._cache_dir(base=base,
+                                     enum=Pipeline.Step.CORRECTED)
+        in_file = in_dir + "energy.pkl"
+        e = CheckpointUtilities.lazy_load(in_file)
+        energy_list_arr.append(e)
+    return energy_list_arr
+
+def _iwt_meta_obj(e):
+    to_ret = RetinalUtil.EnergyWithMeta(e.file_name, e.base_dir, e)
+    # re-initialize the object so the IWT is the default (not WHAM)
+    iwt = e._iwt_obj
+    super(RetinalUtil.DualLandscape, to_ret).__init__(iwt._q, iwt._G0,
+                                                      iwt.beta)
+    return to_ret
+
+def _read_energy_list_and_q_interp(input_dir,q_offset,iwt_only=True,
+                                   min_fecs=None,remove_noisy=False):
+    """
+    :param input_dir: where all the data live, e.g.  Data/FECs180307/"
+    :param q_offset: how much of the landscape to use...
+    :param iwt_only: if true, only return the IWT, not WHAM
+    :return:  tuple of (q to interpolate to, list, each element is a list
+    of landcapes associated with one of the dirctories under input_dir)
+    """
+    subdirs_raw = [input_dir + d + "/" for d in os.listdir(input_dir)]
+    subdirs = [d for d in subdirs_raw if (os.path.isdir(d))
+               and "David" not in d]
+    energy_list_arr = read_energy_lists(subdirs)
+    if min_fecs is not None:
+        energy_list_arr = [ [e for e in list_v if e.n_fecs > min_fecs]
+                            for list_v in energy_list_arr]
+    if remove_noisy:
+        energy_list_arr = [[e for e in energy_list
+                            if "/3000nms/" not in e.base_dir]
+                            for energy_list in energy_list_arr]
+    if iwt_only:
+        energy_list_arr = [ [_iwt_meta_obj(e) for e in list_v]
+                            for list_v in energy_list_arr]
+    e_list_flat = [e for list_tmp in energy_list_arr for e in list_tmp ]
+    q_interp = RetinalUtil.common_q_interp(energy_list=e_list_flat)
+    q_interp = q_interp[np.where(q_interp  <= q_offset)]
+    return q_interp,energy_list_arr
+
+
+def get_ranges(ax_list,get_x=True):
+    f = lambda x: x.get_xlim() if get_x else x.get_ylim()
+    lims = [ [f(ax[i]) for ax in ax_list] for i in range(3)]
+    to_ret = [ [np.min(l),np.max(l)] for l in lims]
+    return to_ret
+
+def fix_axes(ax_list):
+   # loop through all the axes and toss them.
+   xlims = get_ranges(ax_list,get_x=True)
+   ylims = get_ranges(ax_list,get_x=False)
+   for i,axs in enumerate(ax_list):
+       for j, ax in enumerate(axs):
+           if (i > 0):
+               # columns after the first lose their labels
+               PlotUtilities.no_y_label(ax)
+               PlotUtilities.ylabel("", ax=ax)
+           ax.set_ylim(ylims[j])
+           if (j != 0):
+               PlotUtilities.no_x_label(ax)
+               PlotUtilities.xlabel("", ax=ax)
+
+def data_plot(fecs,energies,gs1=None,xlim=[None,None]):
+    n_cols = len(energies)
+    n_rows = 3
+    all_ax = []
+    if gs1 is None:
+        gs1 = gridspec.GridSpec(n_rows + 1, n_cols)
+    for i, (data, e) in enumerate(zip(fecs, energies)):
+        axs_tmp = [plt.subplot(gs1[j,i])
+                   for j in range(n_rows)]
+        ax1, ax2, ax3 = axs_tmp
+        PlotUtil.plot_landscapes(data, e, ax1=ax1, ax2=ax2, ax3=ax3)
+        # every axis after the first gets more of the decoaration chopped...
+        all_ax.append(axs_tmp)
+        # XXX should really put this into the meta class...
+        plt.sca(ax1)
+        tmp_str = e.file_name
+        match = re.search(r"""
+                          ([\w+-]+Retinal)/([\d\w]+)/([\d\w]+)/
+                          """, tmp_str, re.IGNORECASE | re.VERBOSE)
+        assert match is not None
+        groups = match.groups()
+        BR, velocity, title = groups
+        vel_label = velocity.replace("nms","")
+        title_label = title.replace("FEC","")
+        title = "{:s}, v={:s}\n {:s}".format(BR, vel_label, title_label)
+        PlotUtilities.title(title,fontsize=5)
+        for a in axs_tmp:
+            a.set_xlim(xlim)
+    fix_axes(all_ax)
+    xlim = all_ax[0][0].get_xlim()
+    # just get the IWT
+    energies_plot = [e._iwt_obj for e in energies]
+    q_interp, splines =  RetinalUtil.interpolating_G0(energies_plot)
+    # get an average/stdev of energy
+    ax = plt.subplot(gs1[-1,0])
+    mean_energy, std_energy = PlotUtil.plot_mean_landscape(q_interp,
+                                                           splines,ax=ax)
+    q_at_max_energy,_,_ =  \
+        PlotUtil.plot_delta_GF(q_interp,mean_energy,std_energy,
+                               max_q_nm=RetinalUtil.q_GF_nm_plot())
+    plt.axvspan(q_at_max_energy,max(xlim),color='k',alpha=0.3)
+    ax.set_xlim(xlim)

@@ -22,37 +22,12 @@ from Lib.AppWHAM.Code import WeightedHistogram, UtilWHAM
 import RetinalUtil,PlotUtil
 import matplotlib.gridspec as gridspec
 from Processing.Util import WLC
-
-class LandscapeWithError(object):
-    def __init__(self,q_nm,G_kcal,G_err_kcal):
-        self.q_nm = q_nm
-        self.G_kcal = G_kcal
-        self.G_err_kcal = G_err_kcal
-
-def read_non_peg_landscape():
-    input_file = "../FigData/Fig2c_iwt_diagram.csv"
-    arr =  np.loadtxt(input_file,delimiter=",").T
-    q, G, G_low, G_upper = arr
-    G_std = (G_upper - G_low) * 0.5
-    return LandscapeWithError(q_nm=q,G_kcal=G,G_err_kcal=G_std)
-
-def read_energy_lists(subdirs):
-    energy_list_arr =[]
-    # get all the energy objects
-    for base in subdirs:
-        in_dir = Pipeline._cache_dir(base=base,
-                                     enum=Pipeline.Step.CORRECTED)
-        in_file = in_dir + "energies.pkl"
-        e = CheckpointUtilities.lazy_load(in_file)
-        energy_list_arr.append(e)
-    energy_list_arr = [ [RetinalUtil.valid_landscape(e) for e in list_tmp]
-                        for list_tmp in energy_list_arr]
-    return energy_list_arr
+from Figures import FigureUtil
 
 
 def make_retinal_subplot(gs,energy_list_arr,shifts,skip_arrow=True):
     q_interp_nm = energy_list_arr[0].q_nm
-    means = [e.G_kcal for e in energy_list_arr]
+    means = [e.G0_kcal_per_mol for e in energy_list_arr]
     stdevs = [e.G_err_kcal for e in energy_list_arr]
     ax1 = plt.subplot(gs[0])
     common_error = dict(capsize=0)
@@ -123,14 +98,12 @@ def make_retinal_subplot(gs,energy_list_arr,shifts,skip_arrow=True):
                             legend_kwargs=dict(loc='lower right'))
     return ax1, means, stdevs
 
+
+
+
 def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
-    landscpes_with_error = []
-    for i, energy_list in enumerate(energy_list_arr):
-        _, splines = RetinalUtil.interpolating_G0(energy_list)
-        mean, stdev = PlotUtil._mean_and_stdev_landcapes(splines, q_interp)
-        mean -= min(mean)
-        l = LandscapeWithError(q_nm=q_interp,G_kcal=mean,G_err_kcal=stdev)
-        landscpes_with_error.append(l)
+    landscpes_with_error = \
+        FigureUtil._get_error_landscapes(q_interp, energy_list_arr)
     # get the extension grid we wnt...
     ext_grid = np.linspace(0,25,num=100)
     # read in Hao's energy landscape
@@ -141,9 +114,9 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
     # get the with-retinal max
     ax2 = plt.subplot(gs[0])
     # get the max of the last point (the retinal energy landscape is greater)
-    G_offset = np.max([l.G_kcal[-1] for l in landscpes_with_error])
-    q_nm = G_no_peg.q_nm + q_offset
-    G_kcal = G_no_peg.G_kcal + G_offset
+    G_offset = np.max([l.G0_kcal_per_mol[-1] for l in landscpes_with_error])
+    q_nm = G_no_peg.q_nm + max(q_interp)
+    G_kcal = G_no_peg.G0_kcal_per_mol + G_offset
     G_err_kcal = G_no_peg.G_err_kcal
     mean_err = np.mean(G_err_kcal)
     idx_errorbar = q_nm.size//2
@@ -172,14 +145,31 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
     common_kw = dict(add_minor=True)
     scalebar_kw = dict(offset_x=offset_x,offset_y=offset_y,ax=ax,
                        x_on_top=True,y_on_right=True,
-                       x_kwargs=dict(width=x_range_scalebar_nm,unit="nm",**common_kw),
+                       x_kwargs=dict(width=x_range_scalebar_nm,unit="nm",
+                                     **common_kw),
                        y_kwargs=dict(height=range_scale_kcal,unit="kcal/mol",
                                      **common_kw))
     PlotUtilities.no_x_label(ax=ax)
     PlotUtilities.no_y_label(ax=ax)
     Scalebar.crossed_x_and_y_relative(**scalebar_kw)
 
-
+def _giant_debugging_plot(out_dir,energy_list_arr):
+    fig = PlotUtilities.figure((8,12))
+    gs = gridspec.GridSpec(nrows=2,ncols=1,hspace=0.15)
+    n_cols = max([len(list_v) for list_v in energy_list_arr])
+    for i,energy_list in enumerate(energy_list_arr):
+        fecs = []
+        energies = []
+        for e in energy_list:
+            data = RetinalUtil.read_fecs(e)
+            fecs.append(data)
+            energies.append(e)
+        gs_tmp = gridspec.GridSpecFromSubplotSpec(nrows=4,
+                                                  ncols=n_cols,
+                                                  subplot_spec=gs[i])
+        FigureUtil.data_plot(fecs, energies,gs1=gs_tmp,xlim=[0,150])
+    PlotUtilities.savefig(fig, out_dir + "FigureS_Mega_Debug.png",
+                          subplots_adjust=dict(hspace=0.02, wspace=0.04))
 
 def run():
     """
@@ -192,17 +182,16 @@ def run():
         This is a description of what is returned.
     """
     input_dir = "../../../Data/FECs180307/"
-    subdirs_raw = [input_dir + d + "/" for d in os.listdir(input_dir)]
-    subdirs = [d for d in subdirs_raw if (os.path.isdir(d))]
     out_dir = "./"
-    energy_list_arr = read_energy_lists(subdirs)
-    e_list_flat = [e for list_tmp in energy_list_arr for e in list_tmp ]
-    q_offset = RetinalUtil.q_GF_nm()
-    q_interp = RetinalUtil.common_q_interp(energy_list=e_list_flat)
-    q_interp = q_interp[np.where(q_interp  <= q_offset)]
-    G_no_peg = read_non_peg_landscape()
+    q_offset_nm = RetinalUtil.q_GF_nm_plot()
+    min_fecs = 7
+    q_interp, energy_list_arr = FigureUtil.\
+        _read_energy_list_and_q_interp(input_dir, q_offset=q_offset_nm,
+                                       min_fecs=min_fecs,remove_noisy=True)
+    G_no_peg = FigureUtil.read_non_peg_landscape()
+    _giant_debugging_plot(out_dir, energy_list_arr)
     fig = PlotUtilities.figure(figsize=(3.5,3.25))
-    make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset)
+    make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset_nm)
     PlotUtilities.savefig(fig,out_dir + "FigureX_LandscapeComparison.png")
 
 

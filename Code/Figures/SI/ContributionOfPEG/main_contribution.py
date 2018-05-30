@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 
-sys.path.append("../../")
+sys.path.append("../../../")
 
 from Lib.UtilForce.UtilGeneral import PlotUtilities
 from Processing.Util import WLC
@@ -56,8 +56,10 @@ def make_model_plot(model_f,title):
 
 
 def hao_plot_inf(ext_grid):
-    fec_system = WLC._make_plot_inf(ext_grid,WLC.read_haos_data)
-    fec_polypeptide = WLC._make_plot_inf(ext_grid,WLC.read_hao_polypeptide)
+    fec_system = WLC._make_plot_inf(ext_grid,WLC.read_haos_data,
+                                    base="../../FigData/")
+    fec_polypeptide = WLC._make_plot_inf(ext_grid,WLC.read_hao_polypeptide,
+                                         base="../../FigData/")
     return fec_system, fec_polypeptide
 
 def make_comparison_plot():
@@ -70,7 +72,8 @@ def make_comparison_plot():
              label=label_hao_total)
     wlc_color = 'b'
     # plot Hao's polypeptide model
-    plt.plot(*WLC.read_hao_polypeptide(),color=wlc_color,marker='o',
+    plt.plot(*WLC.read_hao_polypeptide(base="../../FigData/"),color=wlc_color,
+             marker='o',
              linestyle='None',markersize=4,label="Hao's WLC")
     plt.plot(ext_grid,plot_inf.f,color='r',label="My model")
     labels = ["My FJC", "My WLC"]
