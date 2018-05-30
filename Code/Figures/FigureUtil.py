@@ -74,17 +74,17 @@ def _snapsnot(base_dir,step):
 def _plot_fmt(ax,xlim,ylim,is_bottom=False,color=False,is_left=True,
               ylabel="$F$ (pN)",xlabel="Extension (nm)"):
     PlotUtilities.tickAxisFont(ax=ax)
-    plt.xlim(xlim)
-    plt.ylim(ylim)
-    PlotUtilities.title("")
-    PlotUtilities.ylabel(ylabel)
-    PlotUtilities.xlabel(xlabel)
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
+    PlotUtilities.title("",ax=ax)
+    PlotUtilities.ylabel(ylabel,ax=ax)
+    PlotUtilities.xlabel(xlabel,ax=ax)
     if (not is_bottom):
         PlotUtilities.no_x_label(ax=ax)
-        PlotUtilities.xlabel("")
+        PlotUtilities.xlabel("",ax=ax)
     if (not is_left):
         PlotUtilities.no_y_label(ax=ax)
-        PlotUtilities.ylabel("")
+        PlotUtilities.ylabel("",ax=ax)
     if color:
         color_kw = dict(ax=ax,color='w',label_color='k')
         PlotUtilities.color_x(**color_kw)

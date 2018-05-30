@@ -14,7 +14,8 @@ sys.path.append("../../../")
 sys.path.append("../../../Processing")
 from Lib.UtilPipeline import Pipeline
 from Lib.AppWLC.Code import WLC
-from Lib.AppIWT.Code import InverseWeierstrass
+from Lib.AppIWT.Code import InverseWeierstrass,WeierstrassUtil
+from Lib.AppWHAM.Code import WeightedHistogram, UtilWHAM
 from Lib.UtilForce.UtilGeneral import CheckpointUtilities, GenUtilities
 from Lib.UtilForce.UtilGeneral import PlotUtilities
 from Lib.UtilForce.UtilGeneral.Plot import Scalebar
@@ -23,7 +24,6 @@ from Lib.UtilForce.FEC import FEC_Plot
 from Processing import ProcessingUtil
 import RetinalUtil,PlotUtil
 from Figures import FigureUtil
-from Lib.AppIWT.Code import WeierstrassUtil
 
 
 class FakeMeta(object):
@@ -60,7 +60,7 @@ def _align_to_EF(data):
     to_ret = data_FEATHER
     return to_ret
 
-def _G0_plot(data_sliced,landscape,q_target_nm):
+def _G0_plot(plot_dir,data_sliced,landscape,fmt):
     # XXX why is this necessary?? screwing up absolute values
     previous_JCP = FigureUtil.read_non_peg_landscape(base="../../FigData/")
     offset_s = np.mean([d.Separation[0] for d in data_sliced])
@@ -70,22 +70,21 @@ def _G0_plot(data_sliced,landscape,q_target_nm):
     G_JCP = previous_JCP.G0_kcal_per_mol - previous_JCP.G0_kcal_per_mol[0] + 35
     offset_jcp_nm = min(previous_JCP.q_nm)
     landscape_offset_nm = min(landscape.q_nm)
-    q_JCP_nm = previous_JCP.q_nm - offset_jcp_nm + 2 + q_target_nm
-    q_Hao_nm = landscape.q_nm - landscape_offset_nm+ q_target_nm
+    q_JCP_nm = previous_JCP.q_nm - offset_jcp_nm + 2
+    q_Hao_nm = landscape.q_nm - landscape_offset_nm
     fig = PlotUtilities.figure()
     xlim, ylim = FigureUtil._limits(data_sliced)
-    fmt = dict(xlim=xlim, ylim=ylim)
     ax1 = plt.subplot(2, 1, 1)
-    # FigureUtil._plot_fec_list(data,color='k',**fmt)
     FigureUtil._plot_fec_list(data_sliced, **fmt)
     FigureUtil._plot_fmt(ax1, **fmt)
     ax2 = plt.subplot(2, 1, 2)
-    plt.plot(q_Hao_nm,G_hao,label="Aligned landscape")
+    plt.plot(q_Hao_nm,G_hao,label="Aligned, IWT")
     plt.plot(q_JCP_nm,G_JCP, 'r--',label="JCP landscape")
     FigureUtil._plot_fmt(ax2, ylabel="G (kcal/mol)", is_bottom=True,
                          xlim=xlim, ylim=[None, None])
     PlotUtilities.legend(ax=ax2,handlelength=2)
-    PlotUtilities.savefig(fig, "./out.png")
+    ax2.set_xlim(fmt['xlim'])
+    PlotUtilities.savefig(fig, plot_dir + "FigureSX_LandscapeComparison.png")
 
 def id_fec(d):
     name = d.Meta.Name
@@ -139,15 +138,18 @@ def run():
     # get the new IWT landscape
     f_iwt = InverseWeierstrass.free_energy_inverse_weierstrass
     iwt_obj = f_iwt(unfolding=iwt_data)
-    _G0_plot(data_sliced, iwt_obj,q_target_nm=q_target_nm)
+    # XXX wham doesnt work
+    wham_data = UtilWHAM.to_wham_input(iwt_data,n_ext_bins=40)
+    wham_obj = WeightedHistogram.wham(wham_data)
     plot_dir = "./plot/"
     GenUtilities.ensureDirExists(plot_dir)
     data_plot = [d._slice(slice(0,None,1)) for d in data]
     data_sliced_plot = [d._slice(slice(0,None,1)) for d in data_sliced]
+    fmt = dict(xlim=[-5,55],ylim=[-20,150])
     for i in range(len(data_plot)):
         data_plot[i].Separation -= q_target_nm * 1e-9
         data_sliced_plot[i].Separation -= q_target_nm * 1e-9
-    fmt = dict(xlim=[-5,55],ylim=[-20,150])
+    _G0_plot(plot_dir,data_sliced_plot, iwt_obj,fmt=fmt)
     fig = PlotUtilities.figure(figsize=(3,6))
     ax1 = plt.subplot(2,1,1)
     extent = heatmap_jcp._extent_nm_and_pN(offset_x_nm=0)
@@ -157,9 +159,10 @@ def run():
     PlotUtilities.title("Top: JCP.\n Bottom: New data, - PEG3400")
     ax2 = plt.subplot(2,1,2)
     FEC_Plot.heat_map_fec(data_sliced_plot,use_colorbar=False,
-                          num_bins=(150, 75))
+                          num_bins=(150, 75),separation_max=fmt['xlim'][1])
     FigureUtil._plot_fmt(is_bottom=True,ax=ax2,**fmt)
-    PlotUtilities.savefig(fig,plot_dir + "debug.png")
+    PlotUtilities.savefig(fig,plot_dir + "FigureSX_jcp_fec_comparison.png",
+                          tight=True)
     pass
 
 
