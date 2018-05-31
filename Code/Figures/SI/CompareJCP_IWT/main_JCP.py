@@ -126,7 +126,7 @@ def run():
     # read in the EC histogram...
     in_file = "../../FigData/Fig2a_iwt_diagram.csv"
     heatmap_jcp = _read_jcp_heatmap(in_file)
-    q_target_nm = RetinalUtil._offset_L_m() * 1e9 + 25
+    q_target_nm = RetinalUtil._offset_L_m() * 1e9
     base_dir = input_dir + "BR+Retinal/50nms/170503FEC/landscape_"
     data = RetinalUtil.read_dir(base_dir,enum=Pipeline.Step.MANUAL)
     bl_extra = ['716', '539']
