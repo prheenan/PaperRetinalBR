@@ -167,7 +167,7 @@ def _giant_debugging_plot(out_dir,energy_list_arr):
         gs_tmp = gridspec.GridSpecFromSubplotSpec(nrows=4,
                                                   ncols=n_cols,
                                                   subplot_spec=gs[i])
-        FigureUtil.data_plot(fecs, energies,gs1=gs_tmp,xlim=[0,150])
+        FigureUtil.data_plot(fecs, energies,gs1=gs_tmp,xlim=[-20,100])
     PlotUtilities.savefig(fig, out_dir + "FigureS_Mega_Debug.png",
                           subplots_adjust=dict(hspace=0.02, wspace=0.04))
 
