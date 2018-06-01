@@ -39,7 +39,7 @@ def _mean_f(f,energy_list_arr,q_interp):
     return means
 
 def mean_A_jarzynski(energy_list_arr,q_interp):
-    f = lambda x_tmp : x_tmp.A_z
+    f = lambda x_tmp : x_tmp._iwt_obj.A_z
     return _mean_f(f,energy_list_arr, q_interp)
 
 
@@ -48,7 +48,7 @@ def mean_G_iwt(energy_list_arr, q_interp):
     return _mean_f(f, energy_list_arr, q_interp)
 
 def mean_A_dot_iwt(energy_list_arr, q_interp):
-    f = lambda x_tmp : x_tmp.A_z_dot
+    f = lambda x_tmp : x_tmp._iwt_obj.A_z_dot
     return _mean_f(f, energy_list_arr, q_interp)
 
 def Exp(arg,tol=700):

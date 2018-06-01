@@ -60,8 +60,8 @@ def _mean_work(x_arr,works_kcal):
     return x_interp, mean_W, std_W
 
 def xlim_ylim():
-    ylim_work = [-20,750]
-    xlim = [20,60]
+    ylim_work = [-20,1200]
+    xlim = [-20,100]
     ylim_force = [-20,300]
     return xlim, ylim_force,ylim_work
 
@@ -79,23 +79,22 @@ def _make_work_plot(fec_list,x_arr,works_kcal,gs,col,color,title):
     # get the interpolated work
     x_interp, mean_W, std_W = _mean_work(x_arr, works_kcal)
     # use Davids function
-    shift = 23e-9
-    max_david = 31e-9
+    shift_david_nm_plot = 10
+    L0_david = 11e-9
+    max_david = L0_david * 0.95
     x_david = np.linspace(0,max_david,num=100)
     style_david = dict(color='b',linestyle='--',label="David")
     legend_kw = dict(handlelength=1.5,handletextpad=0.3,fontsize=6)
-    david_F = _f_david(kbT=4.1e-21, L0=11e-9+shift, Lp=0.4e-9, x=x_david)
+    david_F = _f_david(kbT=4.1e-21, L0=L0_david, Lp=0.4e-9, x=x_david)
     david_W = _single_work(x=x_david,f=david_F)
-    xlim, ylim_force, ylim_work = xlim_ylim()
-    x_david_plot = x_david * 1e9
+    x_david_plot = x_david * 1e9 - shift_david_nm_plot
     W_david_plot = david_W * kcal_per_mol_per_J()
     f_david_plot = david_F * 1e12
     is_left = (col == 0)
     fmt_kw = dict(is_left=is_left)
     label_work = "$W$ (kcal/mol)"
     # interpolate each work onto a grid
-    _,ylim = FigureUtil._limits(fec_list)
-    xlim = [20,60]
+    xlim, ylim, ylim_work = xlim_ylim()
     fudge_work = max(std_W)
     ax1 = plt.subplot(gs[0,col])
     FigureUtil._plot_fec_list(fec_list,xlim,ylim)
