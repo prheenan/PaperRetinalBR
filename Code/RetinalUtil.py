@@ -103,7 +103,7 @@ def process_helical_slice(data_sliced):
     return data_sliced
 
 def q_GF_nm_plot():
-    return -_offset_L_m() * 1e9 + 20
+    return min_sep_landscape() + 20
 
 def _processing_base(default_base="../../../Data/BR+Retinal/170321FEC/",**kw):
     return Pipeline._base_dir_from_cmd(default=default_base,**kw)
@@ -286,7 +286,7 @@ def min_sep_landscape():
     """
     :return: the minimum separation, in meters, to start landscape reconstrution
     """
-    return _offset_L_m() + 7e-9
+    return _offset_L_m() + 25e-9
 
 def min_sep_landscape_nm():
     return min_sep_landscape() * 1e9
