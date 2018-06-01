@@ -33,14 +33,11 @@ def _feather_plot(data,plot_subdir,f_x = lambda x: x.Separation,
         name = FEC_Util.fec_name_func(0,d)
         PlotUtilities.savefig(fig,plot_subdir + name + ".png")
 
-def plot_landscapes(data,energy_obj,ax1=None,
-                    ax2=None,ax3=None):
+def plot_landscapes(data,energy_obj,ax1=None,ax2=None):
     if ax1 is None:
         ax1 = plt.subplot(3,1,1)
     if ax2 is None:
         ax2 = plt.subplot(3,1,2)
-    if ax3 is None:
-        ax3 = plt.subplot(3,1,3)
     energy_obj = RetinalUtil.valid_landscape(energy_obj)
     q = energy_obj.q
     q_nm = q * 1e9
@@ -60,15 +57,7 @@ def plot_landscapes(data,energy_obj,ax1=None,
     PlotUtilities.lazyLabel("", "$\Delta G_\mathrm{0}$\n(kcal/mol)", "")
     PlotUtilities.no_x_label(ax=ax2)
     plt.xlim(xlim_nm)
-    plt.sca(ax3)
-    k_N_per_m = spline_G0.derivative(2)(q)
-    k_pN_per_nm = k_N_per_m * 1e3
-    plt.plot(q_nm, k_pN_per_nm,linewidth=0.5)
-    plt.plot(q_nm, k_pN_per_nm,linewidth=0.5)
-    plt.xlim(xlim_nm)
-    PlotUtilities.lazyLabel("q (nm)", "k (pN/nm)", "")
-    lim = 75
-    plt.ylim(-lim, lim)
+
 
 def _mean_and_stdev_landcapes(splines,q_interp):
     values = [s(q_interp) for s in splines]

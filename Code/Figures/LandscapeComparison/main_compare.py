@@ -164,7 +164,7 @@ def _giant_debugging_plot(out_dir,energy_list_arr):
             data = RetinalUtil.read_fecs(e)
             fecs.append(data)
             energies.append(e)
-        gs_tmp = gridspec.GridSpecFromSubplotSpec(nrows=4,
+        gs_tmp = gridspec.GridSpecFromSubplotSpec(nrows=3,
                                                   ncols=n_cols,
                                                   subplot_spec=gs[i])
         FigureUtil.data_plot(fecs, energies,gs1=gs_tmp,xlim=[-20,100])
@@ -184,7 +184,7 @@ def run():
     input_dir = "../../../Data/FECs180307/"
     out_dir = "./"
     q_offset_nm = RetinalUtil.q_GF_nm_plot()
-    min_fecs = 7
+    min_fecs = 2
     q_interp, energy_list_arr = FigureUtil.\
         _read_energy_list_and_q_interp(input_dir, q_offset=q_offset_nm,
                                        min_fecs=min_fecs,remove_noisy=True)
