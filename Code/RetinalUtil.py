@@ -87,12 +87,12 @@ def _slice_single(d,min_ext_m):
     data_iwt_EF = d._slice(slice(N_GF, N_final, 1))
     return N_GF, N_final, data_iwt_EF
 
-def _fit_sep(d):
+def _fit_sep(d,**kw):
     idx = np.arange(d.Separation.size)
-    return spline_fit(q=idx, G0=d.Separation)(idx)
+    return spline_fit(q=idx, G0=d.Separation,**kw)(idx)
 
 def _get_slice(data,min_ext_m):
-    fits_d = [ _fit_sep(d) for d in data]
+    fits_d = [ _fit_sep(d,k=1,num = d.Separation.size//10) for d in data]
     min_idx = [np.where(d <= min_ext_m)[0][-1] for d in fits_d]
     max_sizes = [d.Separation.size - (i+1) for i,d  in zip(min_idx,data)]
     max_delta = int(min(max_sizes))
