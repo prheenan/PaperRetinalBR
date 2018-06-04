@@ -111,6 +111,11 @@ def _read_jcp_heatmap(in_file):
     x, f, N = data_hist_jcp.T
     return HeatmapJCP(x,f,N)
 
+def _slice_to_target(data_sliced,q_target_nm):
+    data_sliced_plot = [d._slice(slice(0,None,1)) for d in data_sliced]
+    for i in range(len(data_sliced_plot)):
+        data_sliced_plot[i].Separation -= q_target_nm * 1e-9
+    return data_sliced_plot
 
 def run():
     """
@@ -141,14 +146,14 @@ def run():
     # XXX wham doesnt work
     wham_data = UtilWHAM.to_wham_input(iwt_data,n_ext_bins=40)
     wham_obj = WeightedHistogram.wham(wham_data)
+    data_sliced = _slice_to_target(iwt_data,q_target_nm)
+    _plot_comparison(base_dir, heatmap_jcp, iwt_obj, data_sliced)
+    pass
+
+def _plot_comparison(base_dir,heatmap_jcp,iwt_obj,data_sliced_plot):
     plot_dir = "./plot/"
     GenUtilities.ensureDirExists(plot_dir)
-    data_plot = [d._slice(slice(0,None,1)) for d in data]
-    data_sliced_plot = [d._slice(slice(0,None,1)) for d in data_sliced]
     fmt = dict(xlim=[-5,55],ylim=[-20,150])
-    for i in range(len(data_plot)):
-        data_plot[i].Separation -= q_target_nm * 1e-9
-        data_sliced_plot[i].Separation -= q_target_nm * 1e-9
     _G0_plot(plot_dir,data_sliced_plot, iwt_obj,fmt=fmt)
     fig = FigureUtil._fig_single(y=6)
     ax1 = plt.subplot(2,1,1)
@@ -164,7 +169,6 @@ def run():
     out_name = plot_dir + "FigureSX_jcp_fec_comparison_{:s}.png".\
         format(base_dir.replace("/","__"))
     PlotUtilities.savefig(fig,out_name,tight=True)
-    pass
 
 
 
