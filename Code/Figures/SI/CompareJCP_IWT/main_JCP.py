@@ -67,10 +67,10 @@ def _G0_plot(plot_dir,data_sliced,landscape,fmt):
     G_hao = landscape.G0_kcal_per_mol
     idx_zero = np.where(landscape.q_nm <= 100)
     G_hao = G_hao - landscape.G0_kcal_per_mol[0]
-    G_JCP = previous_JCP.G0_kcal_per_mol - previous_JCP.G0_kcal_per_mol[0] + 35
+    G_JCP = previous_JCP.G0_kcal_per_mol - previous_JCP.G0_kcal_per_mol[0] + 50
     offset_jcp_nm = min(previous_JCP.q_nm)
     landscape_offset_nm = min(landscape.q_nm)
-    q_JCP_nm = previous_JCP.q_nm - offset_jcp_nm + 2
+    q_JCP_nm = previous_JCP.q_nm - offset_jcp_nm + 5
     q_Hao_nm = landscape.q_nm - landscape_offset_nm
     fig = FigureUtil._fig_single(y=6)
     xlim, ylim = FigureUtil._limits(data_sliced)
@@ -131,10 +131,10 @@ def run():
     # read in the EC histogram...
     in_file = "../../FigData/Fig2a_iwt_diagram.csv"
     heatmap_jcp = _read_jcp_heatmap(in_file)
-    q_target_nm = RetinalUtil.min_sep_landscape_nm() + 18
+    q_target_nm = RetinalUtil.q_GF_nm_plot() - 7.5
     base_dir = input_dir + "BR+Retinal/50nms/170503FEC/landscape_"
     data = RetinalUtil.read_dir(base_dir,enum=Pipeline.Step.MANUAL)
-    bl_extra = ['716', '539']
+    bl_extra = []
     data = [d for d in data if id_fec(d) not in bl_extra]
     slices = RetinalUtil._get_slice(data,q_target_nm * 1e-9)
     data_sliced = [d._slice(s) for s,d in zip(slices,data)]

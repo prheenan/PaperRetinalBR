@@ -216,7 +216,8 @@ def _read_energy_list_and_q_interp(input_dir,q_offset,iwt_only=True,
 
 def get_ranges(ax_list,get_x=True):
     f = lambda x: x.get_xlim() if get_x else x.get_ylim()
-    lims = [ [f(ax[i]) for ax in ax_list] for i in range(3)]
+    n_rows = len(ax_list[0])
+    lims = [ [f(ax[i]) for ax in ax_list] for i in range(n_rows)]
     to_ret = [ [np.min(l),np.max(l)] for l in lims]
     return to_ret
 
@@ -237,15 +238,15 @@ def fix_axes(ax_list):
 
 def data_plot(fecs,energies,gs1=None,xlim=[None,None]):
     n_cols = len(energies)
-    n_rows = 3
+    n_rows = 2
     all_ax = []
     if gs1 is None:
         gs1 = gridspec.GridSpec(n_rows + 1, n_cols)
     for i, (data, e) in enumerate(zip(fecs, energies)):
         axs_tmp = [plt.subplot(gs1[j,i])
                    for j in range(n_rows)]
-        ax1, ax2, ax3 = axs_tmp
-        PlotUtil.plot_landscapes(data, e, ax1=ax1, ax2=ax2, ax3=ax3)
+        ax1, ax2 = axs_tmp
+        PlotUtil.plot_landscapes(data, e, ax1=ax1, ax2=ax2)
         # every axis after the first gets more of the decoaration chopped...
         all_ax.append(axs_tmp)
         # XXX should really put this into the meta class...

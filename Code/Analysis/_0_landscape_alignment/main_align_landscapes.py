@@ -39,8 +39,9 @@ def _energy_plot(energy_list,out_dir):
     fig = PlotUtilities.figure((7, 7))
     ax = plt.subplot(1, 1, 1)
     PlotUtil.plot_mean_landscape(q_interp, splines, ax=ax)
-    max_x_show_nm = int(RetinalUtil.min_sep_landscape_nm() + 20)
     min_x_show_nm = int(np.floor(min(q_interp) - 2))
+    max_x_show_nm = min_x_show_nm + 20
+
     plt.xlim([min_x_show_nm, max_x_show_nm])
     plt.xticks([i for i in range(min_x_show_nm, max_x_show_nm)])
     ax.xaxis.set_ticks_position('both')
@@ -57,7 +58,7 @@ def _fec_demo_plot(energy_list,out_dir):
         energies.append(e)
     n_cols = N
     fig = PlotUtilities.figure((n_cols * 1,6))
-    FigureUtil.data_plot(fecs, energies)
+    FigureUtil.data_plot(fecs, energies,xlim=[-20,100])
     PlotUtilities.savefig(fig,out_dir + "energies.png",
                           subplots_adjust=dict(hspace=0.02,wspace=0.04))
 
@@ -80,7 +81,6 @@ def run():
                                                     "energy.pkl",
                                                     get_energy_list,force,
                                                     base_dir_analysis)
-    _energy_plot(energy_list, out_dir)
     _fec_demo_plot(energy_list,out_dir)
 
 
