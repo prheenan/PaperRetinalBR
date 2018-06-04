@@ -103,7 +103,7 @@ def process_helical_slice(data_sliced):
     return data_sliced
 
 def q_GF_nm_plot():
-    return 50
+    return _offset_L_m()
 
 def _processing_base(default_base="../../../Data/BR+Retinal/170321FEC/",**kw):
     return Pipeline._base_dir_from_cmd(default=default_base,**kw)

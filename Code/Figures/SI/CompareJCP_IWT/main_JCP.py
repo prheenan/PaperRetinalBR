@@ -161,8 +161,9 @@ def run():
     FEC_Plot.heat_map_fec(data_sliced_plot,use_colorbar=False,
                           num_bins=(150, 75),separation_max=fmt['xlim'][1])
     FigureUtil._plot_fmt(is_bottom=True,ax=ax2,**fmt)
-    PlotUtilities.savefig(fig,plot_dir + "FigureSX_jcp_fec_comparison.png",
-                          tight=True)
+    out_name = plot_dir + "FigureSX_jcp_fec_comparison_{:s}.png".\
+        format(base_dir.replace("/","__"))
+    PlotUtilities.savefig(fig,out_name,tight=True)
     pass
 
 
