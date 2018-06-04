@@ -121,8 +121,10 @@ def _slice_to_target(data_sliced,q_target_nm):
 
 
 def _plot_comparison(base_dir,heatmap_jcp,iwt_obj,data_sliced_plot):
-    plot_dir = "./plot/"
-    GenUtilities.ensureDirExists(plot_dir)
+    plot_base_dir = "./plot/"
+    plot_dir = plot_base_dir + "{:s}".format(base_dir.split("Data")[1].\
+                                             replace("/","__"))
+    GenUtilities.ensureDirExists(plot_base_dir)
     fmt = dict(xlim=[-5,55],ylim=[-20,150])
     _G0_plot(plot_dir,data_sliced_plot, iwt_obj,fmt=fmt)
     fig = FigureUtil._fig_single(y=6)
@@ -136,8 +138,7 @@ def _plot_comparison(base_dir,heatmap_jcp,iwt_obj,data_sliced_plot):
     FEC_Plot.heat_map_fec(data_sliced_plot,use_colorbar=False,
                           num_bins=(150, 75),separation_max=fmt['xlim'][1])
     FigureUtil._plot_fmt(is_bottom=True,ax=ax2,**fmt)
-    out_name = plot_dir + "FigureSX_jcp_fec_comparison_{:s}.png".\
-        format(base_dir.replace("/","__"))
+    out_name = plot_dir + "FigureSX_jcp_fec_comparison.png"
     PlotUtilities.savefig(fig,out_name,tight=True)
 
 def data_info(data,q_target_nm):
@@ -157,6 +158,13 @@ def data_info(data,q_target_nm):
     to_ret = DataInfo(data_sliced, iwt_obj, wham_obj)
     return to_ret
 
+def _read_all_data(energy_list):
+    fecs = []
+    for e in energy_list:
+        data = RetinalUtil.read_fecs(e)
+        fecs.append(data)
+    return fecs
+
 def run():
     """
     <Description>
@@ -168,14 +176,17 @@ def run():
         This is a description of what is returned.
     """
     input_dir = "../../../../Data/FECs180307/"
+    q_target_nm = RetinalUtil.q_GF_nm_plot() - 5
+    q_interp, energy_list_arr = FigureUtil.\
+        _read_energy_list_and_q_interp(input_dir, q_offset=q_target_nm,
+                                       min_fecs=4,remove_noisy=True)
+    data_BR, data_BO = [_read_all_data(e) for e in energy_list_arr]
+    data = data_BR[0]
     # read in the EC histogram...
     in_file = "../../FigData/Fig2a_iwt_diagram.csv"
     heatmap_jcp = _read_jcp_heatmap(in_file)
-    q_target_nm = RetinalUtil.q_GF_nm_plot() - 7.5
-    base_dir = input_dir + "BR+Retinal/50nms/170503FEC/landscape_"
-    data = RetinalUtil.read_dir(base_dir,enum=Pipeline.Step.MANUAL)
     data_info_tmp = data_info(data, q_target_nm)
-    _plot_comparison(base_dir, heatmap_jcp, data_info_tmp.iwt_obj,
+    _plot_comparison(input_dir, heatmap_jcp, data_info_tmp.iwt_obj,
                      data_info_tmp.data_sliced)
     pass
 
