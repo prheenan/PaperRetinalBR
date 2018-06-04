@@ -26,11 +26,6 @@ import RetinalUtil,PlotUtil
 from Figures import FigureUtil
 
 
-class FakeMeta(object):
-    def __init__(self,SourceFile):
-        self.SourceFile = SourceFile
-
-
 class HeatmapJCP:
     def __init__(self,x,f,N):
         self._x = x
@@ -40,6 +35,13 @@ class HeatmapJCP:
     def _extent_nm_and_pN(self,offset_x_nm=0):
         return [min(self._x)+offset_x_nm,max(self._x)+offset_x_nm,
                 min(self._f),max(self._f)]
+
+class DataInfo(object):
+    def __init__ (self,data_sliced,iwt_obj,wham_obj):
+        self.data_sliced = data_sliced
+        self.iwt_obj = iwt_obj
+        self.wham_obj = wham_obj
+
 
 def _align_to_EF(data):
     kw_FEATHER = RetinalUtil._def_kw_FEATHER()
@@ -117,38 +119,6 @@ def _slice_to_target(data_sliced,q_target_nm):
         data_sliced_plot[i].Separation -= q_target_nm * 1e-9
     return data_sliced_plot
 
-def run():
-    """
-    <Description>
-
-    Args:
-        param1: This is the first param.
-    
-    Returns:
-        This is a description of what is returned.
-    """
-    input_dir = "../../../../Data/FECs180307/"
-    # read in the EC histogram...
-    in_file = "../../FigData/Fig2a_iwt_diagram.csv"
-    heatmap_jcp = _read_jcp_heatmap(in_file)
-    q_target_nm = RetinalUtil.q_GF_nm_plot() - 7.5
-    base_dir = input_dir + "BR+Retinal/50nms/170503FEC/landscape_"
-    data = RetinalUtil.read_dir(base_dir,enum=Pipeline.Step.MANUAL)
-    bl_extra = []
-    data = [d for d in data if id_fec(d) not in bl_extra]
-    slices = RetinalUtil._get_slice(data,q_target_nm * 1e-9)
-    data_sliced = [d._slice(s) for s,d in zip(slices,data)]
-    iwt_data = [i for i in RetinalUtil._sanitize_iwt(data_sliced, "")]
-    iwt_data = [ WeierstrassUtil.convert_to_iwt(d) for d in iwt_data]
-    # get the new IWT landscape
-    f_iwt = InverseWeierstrass.free_energy_inverse_weierstrass
-    iwt_obj = f_iwt(unfolding=iwt_data)
-    # XXX wham doesnt work
-    wham_data = UtilWHAM.to_wham_input(iwt_data,n_ext_bins=40)
-    wham_obj = WeightedHistogram.wham(wham_data)
-    data_sliced = _slice_to_target(iwt_data,q_target_nm)
-    _plot_comparison(base_dir, heatmap_jcp, iwt_obj, data_sliced)
-    pass
 
 def _plot_comparison(base_dir,heatmap_jcp,iwt_obj,data_sliced_plot):
     plot_dir = "./plot/"
@@ -169,6 +139,45 @@ def _plot_comparison(base_dir,heatmap_jcp,iwt_obj,data_sliced_plot):
     out_name = plot_dir + "FigureSX_jcp_fec_comparison_{:s}.png".\
         format(base_dir.replace("/","__"))
     PlotUtilities.savefig(fig,out_name,tight=True)
+
+def data_info(data,q_target_nm):
+    bl_extra = []
+    data = [d for d in data if id_fec(d) not in bl_extra]
+    slices = RetinalUtil._get_slice(data,q_target_nm * 1e-9)
+    data_sliced = [d._slice(s) for s,d in zip(slices,data)]
+    iwt_data = [i for i in RetinalUtil._sanitize_iwt(data_sliced, "")]
+    iwt_data = [ WeierstrassUtil.convert_to_iwt(d) for d in iwt_data]
+    # get the new IWT landscape
+    f_iwt = InverseWeierstrass.free_energy_inverse_weierstrass
+    iwt_obj = f_iwt(unfolding=iwt_data)
+    # XXX wham doesnt work
+    wham_data = UtilWHAM.to_wham_input(iwt_data,n_ext_bins=40)
+    wham_obj = WeightedHistogram.wham(wham_data)
+    data_sliced = _slice_to_target(iwt_data,q_target_nm)
+    to_ret = DataInfo(data_sliced, iwt_obj, wham_obj)
+    return to_ret
+
+def run():
+    """
+    <Description>
+
+    Args:
+        param1: This is the first param.
+    
+    Returns:
+        This is a description of what is returned.
+    """
+    input_dir = "../../../../Data/FECs180307/"
+    # read in the EC histogram...
+    in_file = "../../FigData/Fig2a_iwt_diagram.csv"
+    heatmap_jcp = _read_jcp_heatmap(in_file)
+    q_target_nm = RetinalUtil.q_GF_nm_plot() - 7.5
+    base_dir = input_dir + "BR+Retinal/50nms/170503FEC/landscape_"
+    data = RetinalUtil.read_dir(base_dir,enum=Pipeline.Step.MANUAL)
+    data_info_tmp = data_info(data, q_target_nm)
+    _plot_comparison(base_dir, heatmap_jcp, data_info_tmp.iwt_obj,
+                     data_info_tmp.data_sliced)
+    pass
 
 
 
