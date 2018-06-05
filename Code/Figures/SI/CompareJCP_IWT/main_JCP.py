@@ -139,9 +139,11 @@ def _plot_comparison(plot_dir,heatmap_jcp,iwt_obj,data_sliced_plot):
     PlotUtilities.savefig(fig,out_name,tight=True)
 
 def data_info(data,q_target_nm):
-    bl_extra = []
-    data = [d for d in data if id_fec(d) not in bl_extra]
     slices = RetinalUtil._get_slice(data,q_target_nm * 1e-9)
+    bl_extra = ['716', '539']
+    data = [d for d in data if id_fec(d) not in bl_extra]
+    slices = RetinalUtil._get_slice(data, q_target_nm * 1e-9)
+
     data_sliced = [d._slice(s) for s,d in zip(slices,data)]
     iwt_data = [i for i in RetinalUtil._sanitize_iwt(data_sliced, "")]
     iwt_data = [ WeierstrassUtil.convert_to_iwt(d,Offset=d.Offset)
@@ -178,7 +180,7 @@ def run():
         This is a description of what is returned.
     """
     input_dir = "../../../../Data/FECs180307/"
-    q_target_nm = RetinalUtil.q_GF_nm_plot() - 5
+    q_target_nm = RetinalUtil.q_GF_nm_plot() - 2
     q_interp, energy_list_arr = FigureUtil.\
         _read_energy_list_and_q_interp(input_dir, q_offset=q_target_nm,
                                        min_fecs=4,remove_noisy=True)
