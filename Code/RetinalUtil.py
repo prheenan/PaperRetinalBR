@@ -31,6 +31,7 @@ class MetaPulling(FEC_Pulling_Object):
                               SpringConstant=time_sep_force.SpringConstant,
                               Velocity=time_sep_force.Velocity,
                               kT=kbT,
+                              Offset=time_sep_force.ZSnsr[0],
                               **kw)
         super(MetaPulling,self).__init__(**kw_time_sep_f)
         self.Meta = time_sep_force.Meta
@@ -205,6 +206,8 @@ def _sanitize_iwt(data,in_dir):
     return data
 
 def _convert_to_iwt(data,in_dir):
+    offsets = [d.ZSnsr[0] for d in data]
+    mean_o = np.mean(offsets)
     data = _sanitize_iwt(data,in_dir)
     max_sizes = [d.Force.size for d in data]
     min_of_max_sizes = min(max_sizes)
@@ -218,6 +221,7 @@ def _convert_to_iwt(data,in_dir):
         # find where we should start
         converted = MetaPulling(d)
         converted._set_iwt_slices(slices[i])
+        converted.SetOffsetAndVelocity(mean_o,converted.Velocity)
         yield converted
 
 
@@ -376,8 +380,7 @@ def feather_single(d,force_no_adhesion=False,**kw):
     expected_gf_m = 20e-9
     if ((len(pred_info.event_idx) == 0) or (expected_surface_m > expected_gf_m)):
         f_refs = [Detector.delta_mask_function]
-        pred_info,tau_n = _detect_retract_FEATHER(f_refs=f_refs,
-                                                              **feather_kw)
+        pred_info,tau_n = _detect_retract_FEATHER(f_refs=f_refs,**feather_kw)
     pred_info.tau_n = tau_n
     assert len(pred_info.event_idx) > 0 , "FEATHER can't find an event..."
     to_ret = ProcessingUtil.AlignedFEC(d,info_fit=None,feather_info=pred_info)

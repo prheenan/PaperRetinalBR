@@ -116,7 +116,9 @@ def _read_jcp_heatmap(in_file):
 def _slice_to_target(data_sliced,q_target_nm):
     data_sliced_plot = [d._slice(slice(0,None,1)) for d in data_sliced]
     for i in range(len(data_sliced_plot)):
-        data_sliced_plot[i].Separation -= q_target_nm * 1e-9
+        q_target_m = q_target_nm * 1e-9
+        data_sliced_plot[i].Separation -= q_target_m
+        data_sliced_plot[i].ZSnsr -= q_target_m
     return data_sliced_plot
 
 
@@ -143,7 +145,8 @@ def data_info(data,q_target_nm):
     slices = RetinalUtil._get_slice(data,q_target_nm * 1e-9)
     data_sliced = [d._slice(s) for s,d in zip(slices,data)]
     iwt_data = [i for i in RetinalUtil._sanitize_iwt(data_sliced, "")]
-    iwt_data = [ WeierstrassUtil.convert_to_iwt(d) for d in iwt_data]
+    iwt_data = [ WeierstrassUtil.convert_to_iwt(d,offset=d.ZSnsr[0])
+                 for d in iwt_data]
     # get the new IWT landscape
     f_iwt = InverseWeierstrass.free_energy_inverse_weierstrass
     iwt_obj = f_iwt(unfolding=iwt_data)
