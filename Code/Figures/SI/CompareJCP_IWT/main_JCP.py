@@ -113,12 +113,11 @@ def _read_jcp_heatmap(in_file):
     x, f, N = data_hist_jcp.T
     return HeatmapJCP(x,f,N)
 
-def _slice_to_target(data_sliced,q_target_nm):
+def _slice_to_plot_target(data_sliced,q_target_nm):
     data_sliced_plot = [d._slice(slice(0,None,1)) for d in data_sliced]
     for i in range(len(data_sliced_plot)):
         q_target_m = q_target_nm * 1e-9
         data_sliced_plot[i].Separation -= q_target_m
-        data_sliced_plot[i].ZSnsr -= q_target_m
     return data_sliced_plot
 
 
@@ -145,15 +144,19 @@ def data_info(data,q_target_nm):
     slices = RetinalUtil._get_slice(data,q_target_nm * 1e-9)
     data_sliced = [d._slice(s) for s,d in zip(slices,data)]
     iwt_data = [i for i in RetinalUtil._sanitize_iwt(data_sliced, "")]
-    iwt_data = [ WeierstrassUtil.convert_to_iwt(d,offset=d.ZSnsr[0])
+    iwt_data = [ WeierstrassUtil.convert_to_iwt(d,Offset=d.Offset)
                  for d in iwt_data]
     # get the new IWT landscape
     f_iwt = InverseWeierstrass.free_energy_inverse_weierstrass
+    offsets = [d.Offset for d in iwt_data]
+    mean_o = np.mean(offsets)
+    for d in iwt_data:
+        d.SetOffsetAndVelocity(d.Velocity,mean_o)
     iwt_obj = f_iwt(unfolding=iwt_data)
     # XXX wham doesnt work
     wham_data = UtilWHAM.to_wham_input(iwt_data,n_ext_bins=40)
     wham_obj = WeightedHistogram.wham(wham_data)
-    data_sliced = _slice_to_target(iwt_data,q_target_nm)
+    data_sliced = _slice_to_plot_target(iwt_data,q_target_nm)
     to_ret = DataInfo(data_sliced, iwt_obj, wham_obj)
     return to_ret
 
