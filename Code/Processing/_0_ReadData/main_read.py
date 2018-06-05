@@ -14,7 +14,7 @@ sys.path.append("../../")
 from Lib.UtilPipeline import Pipeline
 from Lib.UtilForce.FEC import FEC_Util, FEC_Plot
 from Lib.UtilForce.UtilGeneral import CheckpointUtilities
-from Lib.UtilForce.UtilGeneral import PlotUtilities
+from Lib.UtilForce.UtilIgor import TimeSepForceObj
 from Processing import ProcessingUtil
 
 def is_valid_file(f):
@@ -45,9 +45,13 @@ def read_all_data(base_dir,limit=None):
                                       grouping_function=hao_grouping_function)
     for d in data:
         # fix Hao's non SI units...
-        d.Force *= 1e-12
-        d.Separation *= 1e-9
-        yield d
+        f = d.Force * 1e-12
+        x = d.Separation * 1e-9
+        t = d.Time
+        meta_dict = meta_dict=d.Meta.__dict__
+        to_ret = TimeSepForceObj._cols_to_TimeSepForceObj(time=t,sep=x,force=f,
+                                                          meta_dict=meta_dict)
+        yield to_ret
 
 def run():
     """
