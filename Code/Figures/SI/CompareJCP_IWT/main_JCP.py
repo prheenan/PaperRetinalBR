@@ -151,7 +151,7 @@ def data_info(data,q_target_nm):
     offsets = [d.Offset for d in iwt_data]
     mean_o = np.mean(offsets)
     for d in iwt_data:
-        d.SetOffsetAndVelocity(d.Velocity,mean_o)
+        d.SetOffsetAndVelocity(mean_o,d.Velocity)
     iwt_obj = f_iwt(unfolding=iwt_data)
     # XXX wham doesnt work
     wham_data = UtilWHAM.to_wham_input(iwt_data,n_ext_bins=40)
