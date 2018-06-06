@@ -13,10 +13,12 @@ import re
 sys.path.append("../../../")
 from Lib.UtilPipeline import Pipeline
 from Lib.AppIWT.Code.UtilLandscape import BidirectionalUtil
+from Lib.AppWLC.UtilFit import fit_base
 
 from Processing import ProcessingUtil
 import RetinalUtil,PlotUtil
 from Figures import FigureUtil
+from scipy.optimize import minimize, LinearConstraint
 
 class BootstrapInfo(object):
     def __init__(self,F_J_hat,W_mean,n_samples_per_round):
@@ -69,6 +71,50 @@ def bias_difference(C,W_dis,beta):
     small_N_bias_kT = beta * W_dis / N_c**(alpha)
     return small_N_bias_kT - large_N_bias_kT
 
+def unnormalized_prob(W,Omega,alpha,W_c,delta):
+    to_ret = (Omega **(alpha-1) / np.abs(W-W_c)**alpha) * \
+        np.exp(-((np.abs(W-W_c)/Omega)**delta))
+    return to_ret
+
+def _ll_model(W,*params):
+    probabilities = unnormalized_prob(W,*params[0])
+    log_P = np.log(probabilities)
+    ll = -1 * sum(log_P)
+    if (not np.isfinite(ll)):
+        return np.inf
+    return ll
+
+
+def fit_W_dist(Ws,beta):
+    Ws_kT = Ws * beta
+    min_W_kT, max_W_kT = min(Ws_kT),max(Ws_kT)
+    objective = lambda *args: _ll_model(Ws_kT,*args)
+    range_Omega = [1,10*max_W_kT]
+    range_alpha = [1,10]
+    range_W_c = [min_W_kT,max_W_kT]
+    range_delta = [1,10]
+    ranges = [range_Omega,range_alpha,range_W_c,range_delta]
+    N_per_slice = 5
+    steps = [ (f-i)/N_per_slice for i,f in ranges]
+    slices  = [ slice(i,f, delta) for delta,(i,f) in zip(steps,ranges)]
+    res = fit_base._prh_brute(objective=objective, disp=False, full_output=True,
+                              ranges=slices,Ns=N_per_slice,finish=None)
+    new_bounds = [ [(r-s/2),(r+s/2)] for r,s in zip(res[0],steps)]
+    # # polish the results
+    upper_bound = [ s[0] for s in new_bounds]
+    lower_bound = [ s[1] for s in new_bounds]
+    n = len(upper_bound)
+    # get the constraints matrix
+    matrix = np.zeros((n,n))
+    np.fill_diagonal(matrix,val=1)
+    constr = LinearConstraint(A=matrix, lb=lower_bound, ub=upper_bound,
+                              keep_feasible=False)
+
+    res = minimize(fun=objective,method='COBYLA',constraints=[constr],
+                   x0=np.mean(new_bounds,axis=0))
+    pass
+
+
 def run():
     """
     <Description>
@@ -99,43 +145,17 @@ def run():
     sigma_w = np.std(work_all, axis=0)
     mean_w = np.mean(work_all, axis=0)
     n_sample_arr = np.array([i for i in range(1,11)])
-    n_rounds = 50
-    bootstrap = _bootstrap_W_dif(work_list, beta, n_sample_arr=n_sample_arr,
-                                 n_rounds=n_rounds)
     idx_of_interest = 1400
-    W_dis_of_n_sample = np.array([b.W_dis_bar[idx_of_interest]
-                                  for b in bootstrap])
-    W_dis = np.array(W_dis_of_n_sample)
-    C = np.logspace(10,130,base=10,num=500,endpoint=True)
-    diffs = np.sum([np.abs(bias_difference(C, W_tmp, beta))
-                    for W_tmp in W_dis],axis=0)
-    abs_diffs = np.abs(diffs)
-    C_best_idx = np.argmin(abs_diffs)
-    C_best = C[C_best_idx]
+    W_of_interest = np.array([w[idx_of_interest] for w in work_all])
+    fit_W_dist(W_of_interest,beta)
     plt.close()
-    plt.semilogx(C, np.log(diffs))
-    plt.axvline(C_best)
-    plt.show()
-    F_J_hat = _F_J_hat(work_all,beta)
-    # just before eq 18
-    W_bar_hat_dis = mean_w - F_J_hat
-    # just before eq 19
-    C = C_best
-    W_bar_dis = 0.5 * beta * sigma_w ** 2
-    alpha = np.log(2 * beta * C * W_bar_dis) /\
-            np.log(C * (np.exp(2 * beta * W_bar_dis) - 1))
-    alpha[0] = 0
-    W_bar_hat_dis_2 = mean_w - F_J_hat + W_bar_hat_dis / (N ** alpha)
-    B_J_2 = W_bar_hat_dis_2 / N**(alpha)
-    B_J_1 = W_bar_hat_dis / N**alpha
-    plt.close()
+    fig = plt.figure()
     for w in work_all:
         plt.plot(w * beta)
-    plt.plot(sigma_w * beta, 'r--')
-    plt.plot(mean_w * beta, 'b:')
-    plt.plot(F_J_hat * beta, 'g-', linewidth=3)
-    plt.plot((F_J_hat-B_J_2)*  beta,'m')
-    plt.show()
+    plt.axvline(idx_of_interest)
+    fig.savefig("./out.png",dpi=300)
+
+
 
 if __name__ == "__main__":
     run()
