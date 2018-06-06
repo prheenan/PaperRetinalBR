@@ -439,6 +439,13 @@ def align_single(d,min_F_N,**kw):
     to_ret = ProcessingUtil.AlignedFEC(d,info_fit,feather_info=pred_info)
     return to_ret
 
+def _read_all_data(energy_list,**kw):
+    fecs = []
+    for e in energy_list:
+        data = read_fecs(e,**kw)
+        fecs.append(data)
+    return fecs
+
 def _align_and_cache(d,out_dir,force=False,**kw):
     return ProcessingUtil._cache_individual(d, out_dir, align_single,
                                             force,d, **kw)

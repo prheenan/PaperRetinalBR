@@ -162,12 +162,6 @@ def data_info(data,q_target_nm):
     to_ret = DataInfo(data_sliced, iwt_obj, wham_obj)
     return to_ret
 
-def _read_all_data(energy_list):
-    fecs = []
-    for e in energy_list:
-        data = RetinalUtil.read_fecs(e)
-        fecs.append(data)
-    return fecs
 
 def run():
     """
@@ -184,7 +178,7 @@ def run():
     q_interp, energy_list_arr = FigureUtil.\
         _read_energy_list_and_q_interp(input_dir, q_offset=q_target_nm,
                                        min_fecs=4,remove_noisy=True)
-    data_BR, data_BO = [_read_all_data(e) for e in energy_list_arr]
+    data_BR, data_BO = [RetinalUtil._read_all_data(e) for e in energy_list_arr]
     # read in the EC histogram...
     in_file = "../../FigData/Fig2a_iwt_diagram.csv"
     heatmap_jcp = _read_jcp_heatmap(in_file)
