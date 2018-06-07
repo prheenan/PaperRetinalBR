@@ -19,6 +19,7 @@ from Processing import ProcessingUtil
 import RetinalUtil,PlotUtil
 from Figures import FigureUtil
 from scipy.optimize import minimize, LinearConstraint
+from scipy.integrate import trapz
 
 class BootstrapInfo(object):
     def __init__(self,F_J_hat,W_mean,n_samples_per_round):
@@ -76,9 +77,14 @@ def unnormalized_prob(W,Omega,alpha,W_c,delta):
         np.exp(-((np.abs(W-W_c)/Omega)**delta))
     return to_ret
 
-def _ll_model(W,*params):
-    probabilities = unnormalized_prob(W,*params[0])
-    log_P = np.log(probabilities)
+def _ll_model(W,W_int,*params):
+    args = params[0]
+    probabilities = unnormalized_prob(W,*args)
+    P_total = unnormalized_prob(W_int,*args)
+    integ_constant = trapz(x=W_int,y=P_total)
+    P = probabilities / integ_constant
+    P[np.where(P >= 1)] = 1
+    log_P = np.log(P)
     ll = -1 * sum(log_P)
     if (not np.isfinite(ll)):
         return np.inf
@@ -88,18 +94,21 @@ def _ll_model(W,*params):
 def fit_W_dist(Ws,beta):
     Ws_kT = Ws * beta
     min_W_kT, max_W_kT = min(Ws_kT),max(Ws_kT)
-    objective = lambda *args: _ll_model(Ws_kT,*args)
-    range_Omega = [1,10*max_W_kT]
-    range_alpha = [1,10]
+    range_W_kT = (max_W_kT - min_W_kT)
+    W_int = np.linspace(min_W_kT-range_W_kT,max_W_kT + range_W_kT)
+    objective = lambda *args: _ll_model(Ws_kT,W_int,*args)
+    range_Omega = [range_W_kT/2,2*range_W_kT]
+    range_alpha = [2,10]
     range_W_c = [min_W_kT,max_W_kT]
-    range_delta = [1,10]
+    range_delta = [2,10]
     ranges = [range_Omega,range_alpha,range_W_c,range_delta]
-    N_per_slice = 5
+    N_per_slice = 10
     steps = [ (f-i)/N_per_slice for i,f in ranges]
     slices  = [ slice(i,f, delta) for delta,(i,f) in zip(steps,ranges)]
-    res = fit_base._prh_brute(objective=objective, disp=False, full_output=True,
-                              ranges=slices,Ns=N_per_slice,finish=None)
-    new_bounds = [ [(r-s/2),(r+s/2)] for r,s in zip(res[0],steps)]
+    res_brute = fit_base._prh_brute(objective=objective, disp=False,
+                                    full_output=True,ranges=slices,
+                                    Ns=N_per_slice,finish=None)
+    new_bounds = [ [(r-s/2),(r+s/2)] for r,s in zip(res_brute[0],steps)]
     # # polish the results
     upper_bound = [ s[0] for s in new_bounds]
     lower_bound = [ s[1] for s in new_bounds]
@@ -107,11 +116,10 @@ def fit_W_dist(Ws,beta):
     # get the constraints matrix
     matrix = np.zeros((n,n))
     np.fill_diagonal(matrix,val=1)
-    constr = LinearConstraint(A=matrix, lb=lower_bound, ub=upper_bound,
-                              keep_feasible=False)
-
-    res = minimize(fun=objective,method='COBYLA',constraints=[constr],
-                   x0=np.mean(new_bounds,axis=0))
+    x0 = np.mean(new_bounds,axis=1)
+    res_polish = minimize(fun=objective,method='Nelder-Mead',x0=x0,
+                          options=dict(maxiter=int(10e3)))
+    x_final = res_polish.x
     pass
 
 
@@ -136,23 +144,21 @@ def run():
             pass
     data_BR, data_BO = [RetinalUtil._read_all_data(e) for e in energy_list_arr]
     # read in the EC histogram...
-    data_all = [e for e in data_BO[0]]
+    data_all = [e for list_tmp in data_BR for e in list_tmp]
     work_list = [e.Work for e in data_all]
-    from Code.Lib.AppIWT.Code.UtilLandscape import BidirectionalUtil
+    ext_list = [e.Extension for e in data_all]
     beta = 1 / 4.1e-21
     N = len(work_list)
     work_all = np.array(work_list)
-    sigma_w = np.std(work_all, axis=0)
-    mean_w = np.mean(work_all, axis=0)
-    n_sample_arr = np.array([i for i in range(1,11)])
-    idx_of_interest = 1400
-    W_of_interest = np.array([w[idx_of_interest] for w in work_all])
+    target_q_m = 15e-9
+    idx_of_interest = [ np.argmin(np.abs(e-target_q_m)) for e in ext_list]
+    W_of_interest = np.array([w[i]
+                              for i,w in zip(idx_of_interest,work_all)])
     fit_W_dist(W_of_interest,beta)
     plt.close()
     fig = plt.figure()
-    for w in work_all:
-        plt.plot(w * beta)
-    plt.axvline(idx_of_interest)
+    for e,w in zip(ext_list,work_all):
+        plt.plot(e,w * beta)
     fig.savefig("./out.png",dpi=300)
 
 
