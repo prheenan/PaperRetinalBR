@@ -77,10 +77,9 @@ def min_ext_m():
 def _to_pts(d,meters):
     t = d.Time
     v = d.Velocity
-    idx_gt = np.where(d.Separation >= meters)[0]
-    assert idx_gt.size > 0
-    N_GF = idx_gt[0]
-    return N_GF
+    dt = t[1] - t[0]
+    idx_gt = int(np.round(meters/(v * dt)))
+    return idx_gt
 
 def _slice_single(d,min_ext_m):
     N_GF = 0 if min_ext_m is None else _to_pts(d,min_ext_m)
@@ -93,8 +92,7 @@ def _fit_sep(d,**kw):
     return spline_fit(q=idx, G0=d.Separation,**kw)(idx)
 
 def _get_slice(data,min_ext_m):
-    fits_d = [ _fit_sep(d,k=1,num = d.Separation.size//10) for d in data]
-    min_idx = [np.where(d <= min_ext_m)[0][-1] for d in fits_d]
+    min_idx = [_to_pts(d,min_ext_m) for d in data]
     max_sizes = [d.Separation.size - (i+1) for i,d  in zip(min_idx,data)]
     max_delta = int(min(max_sizes))
     slices = [slice(i,i+max_delta,1) for i in min_idx]

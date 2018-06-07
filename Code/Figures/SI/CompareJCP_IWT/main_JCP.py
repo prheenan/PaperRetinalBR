@@ -113,8 +113,9 @@ def _read_jcp_heatmap(in_file):
     x, f, N = data_hist_jcp.T
     return HeatmapJCP(x,f,N)
 
-def _slice_to_plot_target(data_sliced,q_target_nm):
+def _slice_to_plot_target(data_sliced):
     data_sliced_plot = [d._slice(slice(0,None,1)) for d in data_sliced]
+    q_target_nm = np.mean([d.Separation[0] for d in data_sliced]) * 1e9
     for i in range(len(data_sliced_plot)):
         q_target_m = q_target_nm * 1e-9
         data_sliced_plot[i].Separation -= q_target_m
@@ -122,7 +123,7 @@ def _slice_to_plot_target(data_sliced,q_target_nm):
 
 
 def _plot_comparison(plot_dir,heatmap_jcp,iwt_obj,data_sliced_plot):
-    fmt = dict(xlim=[-5,55],ylim=[-20,150])
+    fmt = dict(xlim=[-20,55],ylim=[-20,150])
     _G0_plot(plot_dir,data_sliced_plot, iwt_obj,fmt=fmt)
     fig = FigureUtil._fig_single(y=6)
     ax1 = plt.subplot(2,1,1)
@@ -143,7 +144,6 @@ def data_info(data,q_target_nm):
     bl_extra = ['716', '539']
     data = [d for d in data if id_fec(d) not in bl_extra]
     slices = RetinalUtil._get_slice(data, q_target_nm * 1e-9)
-
     data_sliced = [d._slice(s) for s,d in zip(slices,data)]
     iwt_data = [i for i in RetinalUtil._sanitize_iwt(data_sliced, "")]
     iwt_data = [ WeierstrassUtil.convert_to_iwt(d,Offset=d.Offset)
@@ -158,7 +158,7 @@ def data_info(data,q_target_nm):
     # XXX wham doesnt work
     wham_data = UtilWHAM.to_wham_input(iwt_data,n_ext_bins=40)
     wham_obj = WeightedHistogram.wham(wham_data)
-    data_sliced = _slice_to_plot_target(iwt_data,q_target_nm)
+    data_sliced = _slice_to_plot_target(iwt_data)
     to_ret = DataInfo(data_sliced, iwt_obj, wham_obj)
     return to_ret
 
@@ -180,7 +180,7 @@ def run():
         This is a description of what is returned.
     """
     input_dir = "../../../../Data/FECs180307/"
-    q_target_nm = RetinalUtil.q_GF_nm_plot() - 2
+    q_target_nm = 35
     q_interp, energy_list_arr = FigureUtil.\
         _read_energy_list_and_q_interp(input_dir, q_offset=q_target_nm,
                                        min_fecs=4,remove_noisy=True)
