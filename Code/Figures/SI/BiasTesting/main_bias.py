@@ -212,7 +212,8 @@ def _make_plots(pre_str,W_of_interest,beta,fit_info,ext_list,work_list):
     fig = PlotUtilities.figure()
     plt.hist(Ws_kT, normed=True)
     plt.plot(model_W, model_P,label="Model")
-    PlotUtilities.lazyLabel("W (kT)","$N$","")
+    title = "Bias = {:.2f} kT".format(eq_5_B_REM)
+    PlotUtilities.lazyLabel("W (kT)","$N$",title)
     PlotUtilities.savefig(fig,pre_str + "outhist.png")
     fig = PlotUtilities.figure()
     for e,w in zip(ext_list,work_all):
