@@ -107,7 +107,7 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
     # get the extension grid we wnt...
     ext_grid = np.linspace(0,25,num=100)
     # read in Hao's energy landscape
-    fec_system = WLC._make_plot_inf(ext_grid,WLC.read_hao_polypeptide)
+    fec_system = WLC._make_plot_inf(ext_grid,WLC.read_haos_data)
     shifts = [fec_system.W_at_f(f) for f in [249, 149]]
     gs = gridspec.GridSpec(nrows=1,ncols=1,width_ratios=[1])
     ax1, means, stdevs = make_retinal_subplot(gs,landscpes_with_error,shifts)

@@ -92,7 +92,8 @@ def _fit_sep(d,**kw):
     return spline_fit(q=idx, G0=d.Separation,**kw)(idx)
 
 def _get_slice(data,min_ext_m):
-    min_idx = [_to_pts(d,min_ext_m) for d in data]
+    fits_d =  [ _fit_sep(d,k=1,num = d.Separation.size//50) for d in data]
+    min_idx = [np.where(d <= min_ext_m)[0][-1] for d in fits_d]
     max_sizes = [d.Separation.size - (i+1) for i,d  in zip(min_idx,data)]
     max_delta = int(min(max_sizes))
     slices = [slice(i,i+max_delta,1) for i in min_idx]
@@ -102,7 +103,7 @@ def process_helical_slice(data_sliced):
     return data_sliced
 
 def q_GF_nm_plot():
-    return min_sep_landscape() + 20
+    return min_sep_landscape() + 24
 
 def _processing_base(default_base="../../../Data/BR+Retinal/170321FEC/",**kw):
     return Pipeline._base_dir_from_cmd(default=default_base,**kw)

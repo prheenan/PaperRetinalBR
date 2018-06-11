@@ -141,7 +141,7 @@ def _plot_comparison(plot_dir,heatmap_jcp,iwt_obj,data_sliced_plot):
 
 def data_info(data,q_target_nm):
     slices = RetinalUtil._get_slice(data,q_target_nm * 1e-9)
-    bl_extra = ['716', '539']
+    bl_extra = ['716', '539','1268']
     data = [d for d in data if id_fec(d) not in bl_extra]
     slices = RetinalUtil._get_slice(data, q_target_nm * 1e-9)
     data_sliced = [d._slice(s) for s,d in zip(slices,data)]
@@ -180,7 +180,7 @@ def run():
         This is a description of what is returned.
     """
     input_dir = "../../../../Data/FECs180307/"
-    q_target_nm = 35
+    q_target_nm = RetinalUtil.q_GF_nm_plot() - 2
     q_interp, energy_list_arr = FigureUtil.\
         _read_energy_list_and_q_interp(input_dir, q_offset=q_target_nm,
                                        min_fecs=4,remove_noisy=True)
@@ -190,7 +190,7 @@ def run():
     heatmap_jcp = _read_jcp_heatmap(in_file)
     plot_base_dir = "./plot/"
     GenUtilities.ensureDirExists(plot_base_dir)
-    for i,data in enumerate(data_BR):
+    for i,data in enumerate(data_BO):
         data_info_tmp = data_info(data, q_target_nm)
         meta_src = data[0].Meta.SourceFile
         split_info = meta_src.split("Retinal")
