@@ -70,7 +70,11 @@ def run():
                                          limit=limit,
                                          name_func=FEC_Util.fec_name_func)
     data_unpolished = CheckpointUtilities.lazy_multi_load(in_dir)
+    f_x_zsnsr = lambda x: x.ZSnsr
     ProcessingUtil.heatmap_ensemble_plot(data,out_name=plot_dir + "heatmap.png")
+    ProcessingUtil.heatmap_ensemble_plot(data,f_x=f_x_zsnsr,
+                                         out_name=plot_dir + "heatmap_Z.png",
+                                         kw_map=dict(x_func=f_x_zsnsr))
     # plot each individual
     f_x = lambda x_tmp : x_tmp.Separation
     plot_subdir = Pipeline._plot_subdir(base_dir, step)
@@ -78,15 +82,31 @@ def run():
     xlim, ylim = ProcessingUtil.nm_and_pN_limits(data,f_x)
     xlim = [-20,100]
     for d_unpolish,d_polish in zip(data_unpolished,data):
-        fig = PlotUtilities.figure()
-        ax1 = plt.subplot(2,1,1)
-        ProcessingUtil._aligned_plot(d_unpolish,f_x,xlim,ylim,use_shift=True)
-        PlotUtilities.xlabel("")
-        PlotUtilities.no_x_label(ax1)
-        plt.subplot(2,1,2)
-        ProcessingUtil._aligned_plot(d_polish,f_x,xlim,ylim,use_shift=True)
+        fig = PlotUtilities.figure((6,6))
+        # make the Separation column
+        ax1,ax2 = plt.subplot(2,2,1), plt.subplot(2,2,3)
+        polish_plot(ax1, ax2, d_unpolish, d_polish, xlim, ylim,
+                    f_x = lambda x: x.Separation,plot_components_1=True)
+        # make the ZSnsr column
+        ax3,ax4 = plt.subplot(2,2,2), plt.subplot(2,2,4)
+        polish_plot(ax3, ax4, d_unpolish, d_polish, xlim, ylim,
+                    f_x = lambda x: x.ZSnsr,plot_components_1=False)
+        PlotUtilities.xlabel("Stage Position (nm)", ax=ax4)
+        for a in [ax3,ax4]:
+            PlotUtilities.no_y_label(ax=a)
+            PlotUtilities.ylabel("",ax=a)
         name = plot_subdir + name_func(0, d_polish) + ".png"
         PlotUtilities.savefig(fig,name)
+
+def polish_plot(ax1,ax2,d_unpolish,d_polish,xlim,ylim,f_x,plot_components_1):
+    plt.sca(ax1)
+    ProcessingUtil._aligned_plot(d_unpolish, f_x, xlim, ylim, use_shift=True,
+                                 plot_components=plot_components_1)
+    PlotUtilities.xlabel("")
+    PlotUtilities.no_x_label(ax1)
+    plt.sca(ax2)
+    ProcessingUtil._aligned_plot(d_polish, f_x, xlim, ylim, use_shift=True,
+                                 plot_components=False)
 
 
 if __name__ == "__main__":
