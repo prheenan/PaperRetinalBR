@@ -185,6 +185,41 @@ def palassini_2011_eq_5(fit_info):
     eq_5 = B_REM - (lambda_scaling ** ((1 - delta) / delta)) * eq_5_sq_bracket
     return eq_5
 
+def bias_fit_info(cache_file,W_of_interest,beta):
+    fit_info = CheckpointUtilities.getCheckpoint(cache_file,fit_W_dist,True,
+                                                 W_of_interest,beta)
+    return fit_info
+
+def _target_W(data_all,target_q_m):
+    work_list = [e.Work for e in data_all]
+    ext_list = [e.Extension for e in data_all]
+    work_all = np.array(work_list)
+    idx_of_interest = [ np.argmin(np.abs(e-target_q_m)) for e in ext_list]
+    W_of_interest = np.array([w[i] for i,w in zip(idx_of_interest,work_all)])
+    return W_of_interest, ext_list, work_list
+
+def _make_plots(pre_str,W_of_interest,beta,fit_info,ext_list,work_list):
+    work_all = np.array(work_list)
+    Ws_kT = W_of_interest * beta
+    min_W_kT, max_W_kT = min(Ws_kT), max(Ws_kT)
+    x_final = fit_info.x_final
+    kw_common = fit_info.kw_common
+    eq_5_B_REM = palassini_2011_eq_5(fit_info)
+    range_W_kT = (max_W_kT - min_W_kT)
+    model_W = np.linspace(min_W_kT - range_W_kT, max_W_kT + range_W_kT, num=50)
+    model_P_not_norm = unnormalized_prob(model_W, *x_final, **kw_common)
+    model_P = model_P_not_norm / trapz(x=model_W, y=model_P_not_norm)
+    fig = PlotUtilities.figure()
+    plt.hist(Ws_kT, normed=True)
+    plt.plot(model_W, model_P,label="Model")
+    PlotUtilities.lazyLabel("W (kT)","$N$","")
+    PlotUtilities.savefig(fig,pre_str + "outhist.png")
+    fig = PlotUtilities.figure()
+    for e,w in zip(ext_list,work_all):
+        plt.plot(e,w * beta)
+    PlotUtilities.lazyLabel("Ext (m)","W (kT)","")
+    PlotUtilities.savefig(fig,pre_str + "out.png")
+
 def run():
     """
     <Description>
@@ -207,36 +242,12 @@ def run():
     data_BR, data_BO = [RetinalUtil._read_all_data(e) for e in energy_list_arr]
     # read in the EC histogram...
     data_all = [e for list_tmp in data_BR for e in list_tmp]
-    work_list = [e.Work for e in data_all]
-    ext_list = [e.Extension for e in data_all]
     beta = 1 / 4.1e-21
-    N = len(work_list)
-    work_all = np.array(work_list)
     target_q_m = 15e-9
-    idx_of_interest = [ np.argmin(np.abs(e-target_q_m)) for e in ext_list]
-    W_of_interest = np.array([w[i]
-                              for i,w in zip(idx_of_interest,work_all)])
-    fit_info = CheckpointUtilities.getCheckpoint("./fit.pkl",fit_W_dist,True,
-                                                 W_of_interest,beta)
-    Ws_kT = W_of_interest * beta
-    min_W_kT, max_W_kT = min(Ws_kT), max(Ws_kT)
-    x_final = fit_info.x_final
-    kw_common = fit_info.kw_common
-    eq_5_B_REM = palassini_2011_eq_5(fit_info)
-    range_W_kT = (max_W_kT - min_W_kT)
-    model_W = np.linspace(min_W_kT - range_W_kT, max_W_kT + range_W_kT, num=50)
-    model_P_not_norm = unnormalized_prob(model_W, *x_final, **kw_common)
-    model_P = model_P_not_norm / trapz(x=model_W, y=model_P_not_norm)
-    fig = PlotUtilities.figure()
-    plt.hist(Ws_kT, normed=True)
-    plt.plot(model_W, model_P,label="Model")
-    PlotUtilities.lazyLabel("W (kT)","$N$","")
-    PlotUtilities.savefig(fig,"./outhist.png")
-    fig = PlotUtilities.figure()
-    for e,w in zip(ext_list,work_all):
-        plt.plot(e,w * beta)
-    PlotUtilities.lazyLabel("Ext (m)","W (kT)","")
-    PlotUtilities.savefig(fig,"./out.png")
+    W_of_interest, ext_list, work_list = _target_W(data_all,
+                                                   target_q_m=target_q_m)
+    fit_info = bias_fit_info("./cache.pkl", W_of_interest,beta)
+    _make_plots("./",W_of_interest,beta,fit_info,ext_list,work_list)
 
 
 
