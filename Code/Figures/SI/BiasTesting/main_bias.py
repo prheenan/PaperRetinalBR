@@ -18,8 +18,11 @@ from Lib.AppWLC.UtilFit import fit_base
 from Processing import ProcessingUtil
 import RetinalUtil,PlotUtil
 from Figures import FigureUtil
+from Lib.UtilForce.UtilGeneral import PlotUtilities, CheckpointUtilities
 from scipy.optimize import minimize, LinearConstraint
 from scipy.integrate import trapz
+from scipy.integrate import trapz
+
 
 class BootstrapInfo(object):
     def __init__(self,F_J_hat,W_mean,n_samples_per_round):
@@ -37,6 +40,31 @@ class BootstrapSeries(object):
     def W_dis_bar(self):
         return np.mean([e.W_dis for e in self.list_of_info],axis=0)
 
+class PalassiniFit(object):
+    def __init__(self,brute_dict,kw_common,res_polish,Ws_kT,res_brute):
+        self.brute_dict = brute_dict
+        self.kw_common = kw_common
+        self.res_polish = res_polish
+        self.Ws_kT = Ws_kT
+        self.res_brute = res_brute
+    @property
+    def x_final(self):
+        return self.res_polish.x
+    @property
+    def W_c(self):
+        return self.x_final[0]
+    @property
+    def Omega(self):
+        return self.x_final[1]
+    @property
+    def delta(self):
+        return self.kw_common['delta']
+    @property
+    def alpha(self):
+        return self.kw_common['alpha']
+    @property
+    def N(self):
+        return self.Ws_kT.size
 
 def _F_J_hat(W_choice,beta):
     exp_arg = BidirectionalUtil.Exp(-W_choice * beta, tol_v=0)
@@ -72,15 +100,15 @@ def bias_difference(C,W_dis,beta):
     small_N_bias_kT = beta * W_dis / N_c**(alpha)
     return small_N_bias_kT - large_N_bias_kT
 
-def unnormalized_prob(W,Omega,alpha,W_c,delta):
+def unnormalized_prob(W,W_c,Omega,alpha,delta):
     to_ret = (Omega **(alpha-1) / np.abs(W-W_c)**alpha) * \
         np.exp(-((np.abs(W-W_c)/Omega)**delta))
     return to_ret
 
-def _ll_model(W,W_int,*params):
+def _ll_model(W,W_int,*params,**kwargs):
     args = params[0]
-    probabilities = unnormalized_prob(W,*args)
-    P_total = unnormalized_prob(W_int,*args)
+    probabilities = unnormalized_prob(W,*args,**kwargs)
+    P_total = unnormalized_prob(W_int,*args,**kwargs)
     integ_constant = trapz(x=W_int,y=P_total)
     P = probabilities / integ_constant
     P[np.where(P >= 1)] = 1
@@ -90,24 +118,37 @@ def _ll_model(W,W_int,*params):
         return np.inf
     return ll
 
+class CallableFitLL(object):
+    def __init__(self,Ws_kT,W_int,kw_common):
+        self.Ws_kT = Ws_kT
+        self.W_int = W_int
+        self.kw_common = kw_common
+    def __call__(self,*args):
+        return _ll_model(self.Ws_kT,self.W_int,*args,**self.kw_common)
+
 
 def fit_W_dist(Ws,beta):
     Ws_kT = Ws * beta
     min_W_kT, max_W_kT = min(Ws_kT),max(Ws_kT)
     range_W_kT = (max_W_kT - min_W_kT)
+    W_mean = np.mean(Ws_kT)
+    W_std = np.std(Ws_kT)
     W_int = np.linspace(min_W_kT-range_W_kT,max_W_kT + range_W_kT)
-    objective = lambda *args: _ll_model(Ws_kT,W_int,*args)
-    range_Omega = [range_W_kT/2,2*range_W_kT]
+    kw_common = dict(delta=2,alpha=0)
+    objective = CallableFitLL(Ws_kT,W_int,kw_common)
+    f_Omega = 4
+    range_Omega = [W_std / f_Omega, W_std * f_Omega]
     range_alpha = [2,10]
     range_W_c = [min_W_kT,max_W_kT]
     range_delta = [2,10]
-    ranges = [range_Omega,range_alpha,range_W_c,range_delta]
-    N_per_slice = 10
+    ranges = [range_W_c,range_Omega]
+    N_per_slice = 50
     steps = [ (f-i)/N_per_slice for i,f in ranges]
     slices  = [ slice(i,f, delta) for delta,(i,f) in zip(steps,ranges)]
-    res_brute = fit_base._prh_brute(objective=objective, disp=False,
-                                    full_output=True,ranges=slices,
-                                    Ns=N_per_slice,finish=None)
+    brute_dict = dict(objective=objective, disp=False,
+                      full_output=True,ranges=slices,
+                      Ns=N_per_slice,finish=None)
+    res_brute = fit_base._prh_brute(**brute_dict)
     new_bounds = [ [(r-s/2),(r+s/2)] for r,s in zip(res_brute[0],steps)]
     # # polish the results
     upper_bound = [ s[0] for s in new_bounds]
@@ -117,11 +158,32 @@ def fit_W_dist(Ws,beta):
     matrix = np.zeros((n,n))
     np.fill_diagonal(matrix,val=1)
     x0 = np.mean(new_bounds,axis=1)
-    res_polish = minimize(fun=objective,method='Nelder-Mead',x0=x0,
-                          options=dict(maxiter=int(10e3)))
-    x_final = res_polish.x
-    pass
+    min_dict = dict(fun=objective,method='Nelder-Mead',x0=x0,
+                    options=dict(maxiter=int(10e3)))
+    res_polish = minimize(**min_dict)
+    to_ret = PalassiniFit(brute_dict=brute_dict,kw_common=kw_common,
+                          res_polish=res_polish,Ws_kT=Ws_kT,
+                          res_brute=res_brute)
+    return to_ret
 
+def palassini_2011_eq_5(fit_info):
+    Omega = fit_info.Omega
+    delta = fit_info.delta
+    alpha = fit_info.alpha
+    N = fit_info.N
+    # calculate all the terms needed..
+    gamma_E = np.euler_gamma
+    mu = (delta - 1) * ((Omega / delta) ** (delta / (delta - 1)))
+    lambda_scaling = (delta - 1) * np.log(N) / mu
+    # XXX calculate these
+    D_c = mu
+    q = np.sqrt(np.pi)
+    B_REM = D_c + np.log(N) - Omega * (np.log(N)) ** (1 / delta)
+    eq_5_sq_bracket = gamma_E + \
+                      ((1 - alpha - delta) / delta) * np.log(np.log(N)) + \
+                      np.log(q / delta)
+    eq_5 = B_REM - (lambda_scaling ** ((1 - delta) / delta)) * eq_5_sq_bracket
+    return eq_5
 
 def run():
     """
@@ -154,12 +216,27 @@ def run():
     idx_of_interest = [ np.argmin(np.abs(e-target_q_m)) for e in ext_list]
     W_of_interest = np.array([w[i]
                               for i,w in zip(idx_of_interest,work_all)])
-    fit_W_dist(W_of_interest,beta)
-    plt.close()
-    fig = plt.figure()
+    fit_info = CheckpointUtilities.getCheckpoint("./fit.pkl",fit_W_dist,True,
+                                                 W_of_interest,beta)
+    Ws_kT = W_of_interest * beta
+    min_W_kT, max_W_kT = min(Ws_kT), max(Ws_kT)
+    x_final = fit_info.x_final
+    kw_common = fit_info.kw_common
+    eq_5_B_REM = palassini_2011_eq_5(fit_info)
+    range_W_kT = (max_W_kT - min_W_kT)
+    model_W = np.linspace(min_W_kT - range_W_kT, max_W_kT + range_W_kT, num=50)
+    model_P_not_norm = unnormalized_prob(model_W, *x_final, **kw_common)
+    model_P = model_P_not_norm / trapz(x=model_W, y=model_P_not_norm)
+    fig = PlotUtilities.figure()
+    plt.hist(Ws_kT, normed=True)
+    plt.plot(model_W, model_P,label="Model")
+    PlotUtilities.lazyLabel("W (kT)","$N$","")
+    PlotUtilities.savefig(fig,"./outhist.png")
+    fig = PlotUtilities.figure()
     for e,w in zip(ext_list,work_all):
         plt.plot(e,w * beta)
-    fig.savefig("./out.png",dpi=300)
+    PlotUtilities.lazyLabel("Ext (m)","W (kT)","")
+    PlotUtilities.savefig(fig,"./out.png")
 
 
 
