@@ -302,8 +302,9 @@ def _const_offset(inf):
     const_offset_x_m = offset - _offset_L_m()
     return const_offset_x_m
 
-def _get_extension_offsets(to_ret):
+def _get_extension_offsets(d):
     # get the slice we are fitting
+    to_ret = d._slice(slice(0, None, 1))
     inf = to_ret.L0_info
     min_idx = inf.fit_slice.start
     slice_fit = slice(min_idx, None, 1)
@@ -327,16 +328,15 @@ def _get_extension_offsets(to_ret):
     const_offset_x_m = _const_offset(inf)
     # XXX remove the extension changes.
     sep_FJC_force_m = ext_FJC_all_forces
-    return const_offset_x_m, sep_FJC_force_m
+    return const_offset_x_m, sep_FJC_force_m, to_ret
 
 def _polish_helper(d):
     """
     :param d: AlignedFEC to use
     :return: new FEC, with separation adjusted appropriately
     """
-    to_ret = d._slice(slice(0, None, 1))
     info_fit = d.info_fit
-    const_offset_x_m, sep_FJC_force_m = _get_extension_offsets(to_ret)
+    const_offset_x_m, sep_FJC_force_m, to_ret = _get_extension_offsets(d)
     to_ret.Separation -= sep_FJC_force_m + const_offset_x_m
     to_ret.ZSnsr -= const_offset_x_m
     # make sure the fitting object knows about the change in extensions...
