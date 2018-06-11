@@ -302,22 +302,17 @@ def _const_offset(inf):
     const_offset_x_m = offset - _offset_L_m()
     return const_offset_x_m
 
-def _polish_helper(d):
-    """
-    :param d: AlignedFEC to use
-    :return: new FEC, with separation adjusted appropriately
-    """
-    to_ret = d._slice(slice(0, None, 1))
+def _get_extension_offsets(to_ret):
     # get the slice we are fitting
     inf = to_ret.L0_info
     min_idx = inf.fit_slice.start
-    slice_fit = slice(min_idx,None,1)
+    slice_fit = slice(min_idx, None, 1)
     to_ret.Separation = to_ret.Separation[slice_fit]
     to_ret.Force = to_ret.Force[slice_fit]
-    x,f = to_ret.Separation, to_ret.Force
+    x, f = to_ret.Separation, to_ret.Force
     # get a grid over all possible forces
     f_grid = np.linspace(min(f), max(f), num=f.size, endpoint=True)
-    info_fit = d.info_fit
+    info_fit = to_ret.info_fit
     ext_FJC = info_fit.ext_FJC(f_grid)
     # we now have X_FJC as a function of force. Therefore, we can subtract
     # off the extension of the PEG3400 to determining the force-extension
@@ -331,8 +326,18 @@ def _polish_helper(d):
     # remove the extension associated with the PEG
     const_offset_x_m = _const_offset(inf)
     # XXX remove the extension changes.
-    sep_FJC_force = ext_FJC_all_forces
-    to_ret.Separation -= sep_FJC_force + const_offset_x_m
+    sep_FJC_force_m = ext_FJC_all_forces
+    return const_offset_x_m, sep_FJC_force_m
+
+def _polish_helper(d):
+    """
+    :param d: AlignedFEC to use
+    :return: new FEC, with separation adjusted appropriately
+    """
+    to_ret = d._slice(slice(0, None, 1))
+    info_fit = d.info_fit
+    const_offset_x_m, sep_FJC_force_m = _get_extension_offsets(to_ret)
+    to_ret.Separation -= sep_FJC_force_m + const_offset_x_m
     to_ret.ZSnsr -= const_offset_x_m
     # make sure the fitting object knows about the change in extensions...
     ext_FJC_correct_info = info_fit.ext_FJC(info_fit.f_grid)
