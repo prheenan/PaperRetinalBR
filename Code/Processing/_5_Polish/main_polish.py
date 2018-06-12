@@ -17,6 +17,7 @@ from Lib.UtilForce.UtilGeneral import CheckpointUtilities
 from Lib.UtilForce.UtilGeneral import PlotUtilities
 from Processing import ProcessingUtil
 import RetinalUtil
+from Lib.AppWHAM.Code import UtilWHAM, WeightedHistogram
 
 
 def _debug_plot(to_ret,d,ext_total,f_grid):
@@ -69,7 +70,6 @@ def run():
                                          force=force,
                                          limit=limit,
                                          name_func=FEC_Util.fec_name_func)
-    from Lib.AppWHAM.Code import UtilWHAM, WeightedHistogram
     sizes = [d.Force.size for d in data]
     min_s = min(sizes)
     sliced_data = [d._slice(slice(0,min_s,1)) for d in data]
@@ -77,7 +77,8 @@ def run():
         d.Offset = d.ZSnsr[0]
         d.Extension = d.Separation
         d.kT = 4.1e-21
-    data_wham = UtilWHAM.to_wham_input(objs=sliced_data, n_ext_bins=200)
+    data_wham = UtilWHAM.to_wham_input(objs=sliced_data, n_ext_bins=75)
+    data_wham.z = np.array([d.ZSnsr for d in sliced_data])
     obj_wham = WeightedHistogram.wham(data_wham)
     data_unpolished = CheckpointUtilities.lazy_multi_load(in_dir)
     f_x_zsnsr = lambda x: x.ZSnsr
