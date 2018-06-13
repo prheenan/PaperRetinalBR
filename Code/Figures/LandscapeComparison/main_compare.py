@@ -82,7 +82,7 @@ def make_retinal_subplot(gs,energy_list_arr,shifts,skip_arrow=True):
     plt.xlim(xlim)
     plt.ylim(ylim)
     PlotUtilities.lazyLabel("Extension (nm)", "$\mathbf{\Delta}G$ (kcal/mol)",
-                            title,legend_kwargs=dict(loc='lower right'))
+                            "",legend_kwargs=dict(loc='lower right'))
     return ax1, means, stdevs
 
 
@@ -103,18 +103,19 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
     ax1 = plt.subplot(gs[0])
     # get the max of the last point (the retinal energy landscape is greater)
     offsets = [l.G0_kcal_per_mol[-1] for l in landscpes_with_error]
-    G_offset = np.max(offsets)
-    q_nm = G_no_peg.q_nm + max(q_interp)
-    G_kcal = G_no_peg.G0_kcal_per_mol + G_offset
-    G_err_kcal = G_no_peg.G_err_kcal
-    mean_err = np.mean(G_err_kcal)
-    idx_errorbar = q_nm.size//2
-    common_style = dict(color='grey',linewidth=1.5)
-    ax1.plot(q_nm,G_kcal,linestyle='--',**common_style)
-    ax1.errorbar(q_nm[idx_errorbar],G_kcal[idx_errorbar],yerr=mean_err,
-                 marker=None,markersize=0,capsize=3,**common_style)
+    for G_offset in offsets:
+        q_nm = G_no_peg.q_nm + max(q_interp)
+        G_kcal = G_no_peg.G0_kcal_per_mol + G_offset
+        G_err_kcal = G_no_peg.G_err_kcal
+        mean_err = np.mean(G_err_kcal)
+        idx_errorbar = q_nm.size//2
+        common_style = dict(color='grey',linewidth=1.5)
+        ax1.plot(q_nm,G_kcal,linestyle='--',**common_style)
+        ax1.errorbar(q_nm[idx_errorbar],G_kcal[idx_errorbar],yerr=mean_err,
+                     marker=None,markersize=0,capsize=3,**common_style)
     axes = [ax1]
-    ylim = [None,np.max(G_kcal) + mean_err*3]
+    ylim = [None,
+            np.max(offsets) + max(G_no_peg.G0_kcal_per_mol) + G_err_kcal[-1]*4]
     for a in axes:
         a.set_ylim(ylim)
         a.set_xlim([None,max(q_nm)])
