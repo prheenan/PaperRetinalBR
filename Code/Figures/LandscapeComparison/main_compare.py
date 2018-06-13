@@ -86,8 +86,6 @@ def make_retinal_subplot(gs,energy_list_arr,shifts,skip_arrow=True):
     return ax1, means, stdevs
 
 
-
-
 def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
     landscpes_with_error = \
         FigureUtil._get_error_landscapes(q_interp, energy_list_arr)
@@ -130,8 +128,8 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
         offsets_zero_tick(limits=ylim,range_scalebar=range_scale_kcal)
     min_offset_x, _, rel_delta_x= Scalebar. \
         offsets_zero_tick(limits=xlim,range_scalebar=x_range_scalebar_nm)
-    offset_x = 0.2
-    offset_y = min_offset + 0.5 * rel_delta
+    offset_x = 0.25
+    offset_y = min_offset + 1 * rel_delta
     common_kw = dict(add_minor=True)
     scalebar_kw = dict(offset_x=offset_x,offset_y=offset_y,ax=ax,
                        x_on_top=True,y_on_right=False,
@@ -142,6 +140,11 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
     PlotUtilities.no_x_label(ax=ax)
     PlotUtilities.no_y_label(ax=ax)
     Scalebar.crossed_x_and_y_relative(**scalebar_kw)
+    # add the helical boxes
+    offset_boxes = -5
+    FigureUtil.add_helical_boxes(ax=ax1,ymax_box=0.97,box_height=0.07,
+                                 constant_offset=offset_boxes)
+
 
 def _giant_debugging_plot(out_dir,energy_list_arr):
     fig = PlotUtilities.figure((8,12))
