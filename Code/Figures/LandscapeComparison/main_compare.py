@@ -15,7 +15,7 @@ from Lib.UtilPipeline import Pipeline
 from Lib.UtilForce.FEC import FEC_Util, FEC_Plot
 from Lib.UtilForce.UtilGeneral import CheckpointUtilities, GenUtilities
 from Lib.UtilForce.UtilGeneral import PlotUtilities
-from Lib.UtilForce.UtilGeneral.Plot import Scalebar
+from Lib.UtilForce.UtilGeneral.Plot import Scalebar, Annotations
 
 from Processing import ProcessingUtil
 from Lib.AppWHAM.Code import WeightedHistogram, UtilWHAM
@@ -101,14 +101,17 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
     ax1 = plt.subplot(gs[0])
     # get the max of the last point (the retinal energy landscape is greater)
     offsets = [l.G0_kcal_per_mol[-1] for l in landscpes_with_error]
-    for G_offset in offsets:
-        q_nm = G_no_peg.q_nm + max(q_interp)
+    q_no_PEG_start =  max(q_interp)
+    for i,G_offset in enumerate(offsets):
+        q_nm = G_no_peg.q_nm + q_no_PEG_start
         G_kcal = G_no_peg.G0_kcal_per_mol + G_offset
         G_err_kcal = G_no_peg.G_err_kcal
         mean_err = np.mean(G_err_kcal)
         idx_errorbar = q_nm.size//2
         common_style = dict(color='grey',linewidth=1.5)
         ax1.plot(q_nm,G_kcal,linestyle='--',**common_style)
+        if (i != 0):
+            continue
         ax1.errorbar(q_nm[idx_errorbar],G_kcal[idx_errorbar],yerr=mean_err,
                      marker=None,markersize=0,capsize=3,**common_style)
     axes = [ax1]
@@ -144,6 +147,20 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
     offset_boxes = -5
     FigureUtil.add_helical_boxes(ax=ax1,ymax_box=0.97,box_height=0.07,
                                  constant_offset=offset_boxes)
+    # draw an arrow depicting the DeltaDeltaG Total
+    ax1.annotate(s="",xycoords='data',textcoords='data',
+                 xy=(q_no_PEG_start,offsets[0]),
+                 arrowprops=dict(arrowstyle="|-|",color='k',mutation_scale=2,
+                                 shrinkA=0,shrinkB=0),
+                 xytext=(q_no_PEG_start, offsets[1]),annotation_clip=False)
+    str_text = "$\mathbf{\Delta\Delta}G_{\mathbf{total}}$"
+    x_text = q_no_PEG_start * 1.05
+    y_range = np.abs(np.diff(offsets)[0])
+    y_text = np.mean(offsets) + y_range * 0.2
+    Annotations.relative_annotate(ax=ax1,s=str_text,xy=(x_text,y_text),
+                                  xycoords='data',horizontalalignment='left',
+                                  verticalalignment='center')
+
 
 
 def _giant_debugging_plot(out_dir,energy_list_arr):
