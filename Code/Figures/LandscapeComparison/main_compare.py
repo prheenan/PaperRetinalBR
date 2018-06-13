@@ -42,15 +42,15 @@ def make_retinal_subplot(gs,energy_list_arr,shifts,skip_arrow=True):
     stdevs = [e.G_err_kcal for e in energy_list_arr]
     ax1 = plt.subplot(gs[0])
     common_error = dict(capsize=0)
-    style_dicts = [dict(color='c', label=r"$\mathbf{\oplus}$ Retinal"),
-                   dict(color='r', label=r"$\mathbf{\ominus}$ Retinal")]
+    style_dicts = [dict(color='c', label=r"with Retinal"),
+                   dict(color='r', label=r"w/o  Retinal")]
     markers = ['v', 'x']
     deltas, deltas_std = [], []
     delta_styles = [dict(color=style_dicts[i]['color'], markersize=5,
                          linestyle='None', marker=markers[i], **common_error)
                     for i in range(len(energy_list_arr))]
     xlim = [None, 27]
-    ylim = [-25, 400]
+    ylim = [-25, 450]
     q_arr = []
     round_energy = -1
     max_q_nm = max(q_interp_nm)
@@ -62,7 +62,6 @@ def make_retinal_subplot(gs,energy_list_arr,shifts,skip_arrow=True):
         style_fit['label'] = None
         corrected = mean - fit_pred_arr[i]
         plt.plot(q_interp_nm,mean,**tmp_style)
-        plt.plot(q_interp_nm,fit_pred_arr[i],**style_fit)
         plt.fill_between(x=q_interp_nm,y1=mean-stdev,y2=mean+stdev,
                          color=tmp_style['color'],linewidth=0,alpha=0.3)
         energy_error = np.mean(stdev)
@@ -82,19 +81,9 @@ def make_retinal_subplot(gs,energy_list_arr,shifts,skip_arrow=True):
         format(delta_delta_fmt, delta_delta_std_fmt)
     plt.xlim(xlim)
     plt.ylim(ylim)
-    PlotUtilities.lazyLabel("", "$\mathbf{\Delta}G$ (kcal/mol)",
-                            title,
-                            legend_kwargs=dict(loc='lower right'))
-    ax2 = plt.subplot(gs[1])
-    for i,(mean,stdev) in enumerate(zip(means,stdevs)):
-        corrected = mean-fit_pred_arr[i]
-        tmp_style = style_dicts[i]
-        plt.plot(q_interp_nm,corrected,**style_dicts[i])
-        plt.fill_between(x=q_interp_nm,y1=corrected-stdev,y2=corrected+stdev,
-                         color=tmp_style['color'],linewidth=0,alpha=0.3)
     PlotUtilities.lazyLabel("Extension (nm)", "$\mathbf{\Delta}G$ (kcal/mol)",
-                            "",useLegend=False)
-    return ax1,ax2, means, stdevs
+                            title,legend_kwargs=dict(loc='lower right'))
+    return ax1, means, stdevs
 
 
 
@@ -107,27 +96,28 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
     # read in Hao's energy landscape
     fec_system = WLC._make_plot_inf(ext_grid,WLC.read_haos_data)
     shifts = [fec_system.W_at_f(f) for f in [249, 149]]
-    gs = gridspec.GridSpec(nrows=2,ncols=1)
-    ax1,ax2_real, means, stdevs = make_retinal_subplot(gs,landscpes_with_error,shifts)
+    gs = gridspec.GridSpec(nrows=1,ncols=1)
+    ax1, means, stdevs = \
+        make_retinal_subplot(gs,landscpes_with_error,shifts)
     # get the with-retinal max
     ax1 = plt.subplot(gs[0])
     # get the max of the last point (the retinal energy landscape is greater)
-    G_offset = np.max([l.G0_kcal_per_mol[-1] for l in landscpes_with_error])
+    offsets = [l.G0_kcal_per_mol[-1] for l in landscpes_with_error]
+    G_offset = np.max(offsets)
     q_nm = G_no_peg.q_nm + max(q_interp)
     G_kcal = G_no_peg.G0_kcal_per_mol + G_offset
     G_err_kcal = G_no_peg.G_err_kcal
     mean_err = np.mean(G_err_kcal)
     idx_errorbar = q_nm.size//2
-    common_style = dict(color='k',linewidth=1.5)
-    ax1.plot(q_nm,G_kcal,**common_style)
+    common_style = dict(color='grey',linewidth=1.5)
+    ax1.plot(q_nm,G_kcal,linestyle='--',**common_style)
     ax1.errorbar(q_nm[idx_errorbar],G_kcal[idx_errorbar],yerr=mean_err,
                  marker=None,markersize=0,capsize=3,**common_style)
     axes = [ax1]
-    ylim = [None,np.max(G_kcal) + mean_err]
+    ylim = [None,np.max(G_kcal) + mean_err*3]
     for a in axes:
         a.set_ylim(ylim)
         a.set_xlim([None,max(q_nm)])
-    ax2_real.set_xlim([None,max(q_nm)])
     # add in the scale bar
     ax = axes[0]
     xlim = ax.get_xlim()
@@ -139,11 +129,11 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
         offsets_zero_tick(limits=ylim,range_scalebar=range_scale_kcal)
     min_offset_x, _, rel_delta_x= Scalebar. \
         offsets_zero_tick(limits=xlim,range_scalebar=x_range_scalebar_nm)
-    offset_x = 0.70
+    offset_x = 0.2
     offset_y = min_offset + 0.5 * rel_delta
     common_kw = dict(add_minor=True)
     scalebar_kw = dict(offset_x=offset_x,offset_y=offset_y,ax=ax,
-                       x_on_top=True,y_on_right=True,
+                       x_on_top=True,y_on_right=False,
                        x_kwargs=dict(width=x_range_scalebar_nm,unit="nm",
                                      **common_kw),
                        y_kwargs=dict(height=range_scale_kcal,unit="kcal/mol",
@@ -151,20 +141,6 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
     PlotUtilities.no_x_label(ax=ax)
     PlotUtilities.no_y_label(ax=ax)
     Scalebar.crossed_x_and_y_relative(**scalebar_kw)
-    # # make the second scalebar for the lower axis
-    scalebar_kw_lower = dict(**scalebar_kw)
-    ylim_2 = ax2_real.get_ylim()
-    yrange_2 = np.round(np.abs(np.diff(ylim_2)[0])/4,-1)
-    min_offset, _, rel_delta = Scalebar. \
-        offsets_zero_tick(limits=ylim_2,range_scalebar=yrange_2)
-    scalebar_kw_lower['offset_y'] = min_offset - rel_delta
-    scalebar_kw_lower['y_kwargs']['height'] = yrange_2
-    scalebar_kw_lower['ax'] = ax2_real
-    PlotUtilities.no_x_label(ax=ax2_real)
-    PlotUtilities.no_y_label(ax=ax2_real)
-    Scalebar.crossed_x_and_y_relative(**scalebar_kw_lower)
-    title = PlotUtilities.down_arrow() + " Subtract low-extension fit"
-    PlotUtilities.title(title,color='b',ax=ax2_real)
 
 def _giant_debugging_plot(out_dir,energy_list_arr):
     fig = PlotUtilities.figure((8,12))
@@ -202,8 +178,8 @@ def run():
         _read_energy_list_and_q_interp(input_dir, q_offset=q_offset_nm,
                                        min_fecs=min_fecs,remove_noisy=True)
     G_no_peg = FigureUtil.read_non_peg_landscape()
-    _giant_debugging_plot(out_dir, energy_list_arr)
-    fig = PlotUtilities.figure(figsize=(3.5,6.5))
+    #_giant_debugging_plot(out_dir, energy_list_arr)
+    fig = PlotUtilities.figure(figsize=(3,3))
     make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset_nm)
     PlotUtilities.savefig(fig,out_dir + "FigureX_LandscapeComparison.png")
 
