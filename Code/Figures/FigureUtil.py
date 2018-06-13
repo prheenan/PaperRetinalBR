@@ -71,6 +71,13 @@ def _fig_single(y=3.3):
 def _fig_double(y=3.3):
     return PlotUtilities.figure((7,y))
 
+def color_BR():
+    return 'rebeccapurple'
+
+def color_BO():
+    return 'darkgoldenrod'
+
+
 
 def _snapsnot(base_dir,step):
     corrected_dir = Pipeline._cache_dir(base=base_dir,
@@ -295,7 +302,7 @@ def regions_and_colors(subtract_min=False, first_element_is_all=False):
         offset = adhesion_min
     else:
         offset = 0
-    regions_colors = [[[-10,adhesion_min],'grey'],
+    regions_colors = [[[-10,adhesion_min],color_BR()],
                       [[adhesion_min - offset, ed_max - offset], 'royalblue'],
                       [[ed_max - offset, cd_max - offset], 'orangered'],
                       [[cd_max - offset, a_max - offset], 'g']]
@@ -304,9 +311,10 @@ def regions_and_colors(subtract_min=False, first_element_is_all=False):
                            'k']] + regions_colors
     return regions_colors
 
-def _labelled_box(ax,ymin_box,ymax_box,x,s,color='r',font_color=None,alpha=0.3):
+def _labelled_box(ax,ymin_box,ymax_box,x,s,color='r',font_color=None,alpha=0.3,
+                  clip_on=False):
     ax.axvspan(*x, ymin=ymin_box, ymax=ymax_box, color=color, alpha=alpha,
-               linewidth=0, clip_on=False)
+               linewidth=0, clip_on=clip_on)
     ymin, ymax = plt.ylim()
     f_abs = lambda tmp: tmp * (ymax - ymin) + ymin
     yi, yf = f_abs(ymin_box), f_abs(ymax_box)
@@ -316,13 +324,13 @@ def _labelled_box(ax,ymin_box,ymax_box,x,s,color='r',font_color=None,alpha=0.3):
     Annotations._annotate(ax=ax, s=s, xy=(x_text, y),
                           horizontalalignment='center',
                           verticalalignment='center', color=font_color_tmp,
-                          bbox=dict(alpha=0, pad=0), clip_on=False,
+                          bbox=dict(alpha=0, pad=0), clip_on=clip_on,
                           annotation_clip=False)
 
 
 def add_helical_boxes(ax, alpha=0.3, ymax_box=0.15, box_height=0.1,
                       font_color=None,constant_offset=0,
-                      offset_bool=False, max_x=None):
+                      offset_bool=False, max_x=None,clip_on=False,**kw):
     labels_helical_region = ["GF","ED", "CB", "A"]
     ymin_box = ymax_box - box_height
     regions_colors = regions_and_colors()
@@ -336,4 +344,4 @@ def add_helical_boxes(ax, alpha=0.3, ymax_box=0.15, box_height=0.1,
         if (max_x is not None):
             x = np.minimum(max_x, x)
         _labelled_box(ax,ymin_box,ymax_box,x,s,color=color,
-                      font_color=font_color,alpha=alpha)
+                      font_color=font_color,alpha=alpha,clip_on=clip_on,**kw)

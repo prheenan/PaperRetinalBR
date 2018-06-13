@@ -42,8 +42,8 @@ def make_retinal_subplot(gs,energy_list_arr,shifts,skip_arrow=True):
     stdevs = [e.G_err_kcal for e in energy_list_arr]
     ax1 = plt.subplot(gs[0])
     common_error = dict(capsize=0)
-    style_dicts = [dict(color='c', label=r"with Retinal"),
-                   dict(color='r', label=r"w/o  Retinal")]
+    style_dicts = [dict(color=FigureUtil.color_BR(), label=r"with Retinal"),
+                   dict(color=FigureUtil.color_BO(), label=r"w/o  Retinal")]
     markers = ['v', 'x']
     deltas, deltas_std = [], []
     delta_styles = [dict(color=style_dicts[i]['color'], markersize=5,
@@ -82,7 +82,10 @@ def make_retinal_subplot(gs,energy_list_arr,shifts,skip_arrow=True):
     plt.xlim(xlim)
     plt.ylim(ylim)
     PlotUtilities.lazyLabel("Extension (nm)", "$\mathbf{\Delta}G$ (kcal/mol)",
-                            "",legend_kwargs=dict(loc='lower right'))
+                            "")
+    leg = PlotUtilities.legend(loc='lower right')
+    colors_leg = [s['color'] for s in style_dicts]
+    PlotUtilities.color_legend_items(leg,colors=colors_leg)
     return ax1, means, stdevs
 
 
@@ -144,16 +147,16 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
     PlotUtilities.no_y_label(ax=ax)
     Scalebar.crossed_x_and_y_relative(**scalebar_kw)
     # add the helical boxes
-    offset_boxes = -5
+    offset_boxes = 0
     FigureUtil.add_helical_boxes(ax=ax1,ymax_box=0.97,box_height=0.07,
-                                 constant_offset=offset_boxes)
+                                 constant_offset=offset_boxes,clip_on=True)
     # draw an arrow depicting the DeltaDeltaG Total
     ax1.annotate(s="",xycoords='data',textcoords='data',
                  xy=(q_no_PEG_start,offsets[0]),
                  arrowprops=dict(arrowstyle="|-|",color='k',mutation_scale=2,
                                  shrinkA=0,shrinkB=0),
                  xytext=(q_no_PEG_start, offsets[1]),annotation_clip=False)
-    str_text = "$\mathbf{\Delta\Delta}G_{\mathbf{total}}$"
+    str_text = "$\mathbf{\Delta\Delta}G_{\mathbf{Total}}$"
     x_text = q_no_PEG_start * 1.05
     y_range = np.abs(np.diff(offsets)[0])
     y_text = np.mean(offsets) + y_range * 0.2
