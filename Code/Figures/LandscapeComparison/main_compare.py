@@ -202,7 +202,7 @@ def run():
         _read_energy_list_and_q_interp(input_dir, q_offset=q_offset_nm,
                                        min_fecs=min_fecs,remove_noisy=True)
     G_no_peg = FigureUtil.read_non_peg_landscape()
-    #_giant_debugging_plot(out_dir, energy_list_arr)
+    _giant_debugging_plot(out_dir, energy_list_arr)
     fig = PlotUtilities.figure(figsize=(3,3))
     make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset_nm)
     PlotUtilities.savefig(fig,out_dir + "FigureX_LandscapeComparison.png")
