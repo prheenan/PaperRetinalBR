@@ -28,6 +28,17 @@ from Figures import FigureUtil
 def make_retinal_subplot(gs,energy_list_arr,shifts,skip_arrow=True):
     q_interp_nm = energy_list_arr[0].q_nm
     means = [e.G0_kcal_per_mol for e in energy_list_arr]
+    # fit a second order polynomial and subtract from each point
+    q_fit_nm_relative = 7
+    max_fit_idx = \
+        np.argmin(np.abs((q_interp_nm - q_interp_nm[0]) - q_fit_nm_relative))
+    fits = []
+    fit_pred_arr = []
+    for m in means:
+        fit = np.polyfit(x=q_interp_nm[:max_fit_idx],y=m[:max_fit_idx],deg=2)
+        fits.append(fit)
+        fit_pred = np.polyval(fit,x=q_interp_nm)
+        fit_pred_arr.append(fit_pred)
     stdevs = [e.G_err_kcal for e in energy_list_arr]
     ax1 = plt.subplot(gs[0])
     common_error = dict(capsize=0)
@@ -41,21 +52,23 @@ def make_retinal_subplot(gs,energy_list_arr,shifts,skip_arrow=True):
     xlim = [None, 27]
     ylim = [-25, 400]
     q_arr = []
-    round_energy = 2
+    round_energy = -1
     max_q_nm = max(q_interp_nm)
     # add the 'shifted' energies
     for i,(mean,stdev) in enumerate(zip(means,stdevs)):
-        delta_style = dict(**delta_styles[i])
-        plt.plot(q_interp_nm,mean,**style_dicts[i])
+        tmp_style = style_dicts[i]
+        style_fit = dict(**tmp_style)
+        style_fit['linestyle'] = '--'
+        style_fit['label'] = None
+        corrected = mean - fit_pred_arr[i]
+        plt.plot(q_interp_nm,mean,**tmp_style)
+        plt.plot(q_interp_nm,fit_pred_arr[i],**style_fit)
+        plt.fill_between(x=q_interp_nm,y1=mean-stdev,y2=mean+stdev,
+                         color=tmp_style['color'],linewidth=0,alpha=0.3)
         energy_error = np.mean(stdev)
-        energy_label = (r"$\mathbf{\Delta G}_{GF,\overline{\mathbf{PEG3400}}}$")
-        q_at_max_energy, max_energy_mean, _ = \
-            PlotUtil.plot_delta_GF(q_interp_nm, mean, stdev,
-                                   max_q_idx=-1,energy_error=energy_error,
-                                   max_q_nm=max_q_nm,round_std=-1,
-                                   round_energy=-1,linewidth=0,
-                                   energy_label=energy_label,
-                                   label_offset=shifts[i],**delta_style)
+        max_idx = -1
+        q_at_max_energy = q_interp_nm[max_idx]
+        max_energy_mean = corrected[max_idx]
         # for the error, use the mean error over all interpolation
         max_energy_std = energy_error
         deltas.append(max_energy_mean)
@@ -65,38 +78,23 @@ def make_retinal_subplot(gs,energy_list_arr,shifts,skip_arrow=True):
     delta_delta_std = np.sqrt(np.sum(np.array(deltas_std) ** 2))
     delta_delta_fmt = np.round(delta_delta, round_energy)
     delta_delta_std_fmt = np.round(delta_delta_std, -1)
-    title = r"$\Delta\Delta G$" + " = {:.0f} $\pm$ {:.0f} kcal/mol". \
+    title = r"$\mathbf{\Delta\Delta}G$" + " = {:.0f} $\pm$ {:.0f} kcal/mol". \
         format(delta_delta_fmt, delta_delta_std_fmt)
-    PlotUtilities.lazyLabel("q (nm)", "$\Delta G$ (kcal/mol)", title)
-    plt.xlim([None, max_q_nm * 1.1])
-    PlotUtilities.legend()
-    # can I help-ya, help-ya, help-ya?
-    # get the change in the DeltaDeltaG (or, the delta delta delta G)
-    delta_delta_delta = np.abs(np.diff(shifts)[0])
-    shifted_delta_delta = delta_delta - delta_delta_delta
-    shifted_delta_delta_fmt = np.round(shifted_delta_delta, -1)
-    title_shift = r"$\mathbf{\Delta\Delta }G$" + \
-                  " = {:.0f} $\pm$ {:.0f} kcal/mol". \
-        format(shifted_delta_delta_fmt, delta_delta_std_fmt)
-    for i, (q, delta, err) in enumerate(zip(q_arr, deltas, deltas_std)):
-        style_uncorrected = dict(**delta_styles[i])
-        style_uncorrected['color'] = 'k'
-        style_uncorrected['alpha'] = 0.5
-        dy = -shifts[i]
-        arrow_fudge = dy / 3
-        plt.errorbar(x=q, y=delta + dy, yerr=err, **delta_styles[i])
-        if (skip_arrow):
-            continue
-        ax1.arrow(x=q, y=deltas[i] - abs(arrow_fudge), dx=0,
-                  dy=dy - 2 * arrow_fudge, color=delta_styles[i]['color'],
-                  length_includes_head=True, head_width=1.2, head_length=6)
     plt.xlim(xlim)
     plt.ylim(ylim)
-    title_shift = title_shift
-    PlotUtilities.lazyLabel("Extension (nm)", "$\mathbf{\Delta}G$ (kcal/mol)",
-                            title_shift,
+    PlotUtilities.lazyLabel("", "$\mathbf{\Delta}G$ (kcal/mol)",
+                            title,
                             legend_kwargs=dict(loc='lower right'))
-    return ax1, means, stdevs
+    ax2 = plt.subplot(gs[1])
+    for i,(mean,stdev) in enumerate(zip(means,stdevs)):
+        corrected = mean-fit_pred_arr[i]
+        tmp_style = style_dicts[i]
+        plt.plot(q_interp_nm,corrected,**style_dicts[i])
+        plt.fill_between(x=q_interp_nm,y1=corrected-stdev,y2=corrected+stdev,
+                         color=tmp_style['color'],linewidth=0,alpha=0.3)
+    PlotUtilities.lazyLabel("Extension (nm)", "$\mathbf{\Delta}G$ (kcal/mol)",
+                            "",useLegend=False)
+    return ax1,ax2, means, stdevs
 
 
 
@@ -109,10 +107,10 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
     # read in Hao's energy landscape
     fec_system = WLC._make_plot_inf(ext_grid,WLC.read_haos_data)
     shifts = [fec_system.W_at_f(f) for f in [249, 149]]
-    gs = gridspec.GridSpec(nrows=1,ncols=1,width_ratios=[1])
-    ax1, means, stdevs = make_retinal_subplot(gs,landscpes_with_error,shifts)
+    gs = gridspec.GridSpec(nrows=2,ncols=1)
+    ax1,ax2_real, means, stdevs = make_retinal_subplot(gs,landscpes_with_error,shifts)
     # get the with-retinal max
-    ax2 = plt.subplot(gs[0])
+    ax1 = plt.subplot(gs[0])
     # get the max of the last point (the retinal energy landscape is greater)
     G_offset = np.max([l.G0_kcal_per_mol[-1] for l in landscpes_with_error])
     q_nm = G_no_peg.q_nm + max(q_interp)
@@ -121,14 +119,15 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
     mean_err = np.mean(G_err_kcal)
     idx_errorbar = q_nm.size//2
     common_style = dict(color='k',linewidth=1.5)
-    ax2.plot(q_nm,G_kcal,**common_style)
-    ax2.errorbar(q_nm[idx_errorbar],G_kcal[idx_errorbar],yerr=mean_err,
+    ax1.plot(q_nm,G_kcal,**common_style)
+    ax1.errorbar(q_nm[idx_errorbar],G_kcal[idx_errorbar],yerr=mean_err,
                  marker=None,markersize=0,capsize=3,**common_style)
-    axes = [ax1,ax2]
+    axes = [ax1]
     ylim = [None,np.max(G_kcal) + mean_err]
     for a in axes:
         a.set_ylim(ylim)
         a.set_xlim([None,max(q_nm)])
+    ax2_real.set_xlim([None,max(q_nm)])
     # add in the scale bar
     ax = axes[0]
     xlim = ax.get_xlim()
@@ -152,6 +151,20 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
     PlotUtilities.no_x_label(ax=ax)
     PlotUtilities.no_y_label(ax=ax)
     Scalebar.crossed_x_and_y_relative(**scalebar_kw)
+    # # make the second scalebar for the lower axis
+    scalebar_kw_lower = dict(**scalebar_kw)
+    ylim_2 = ax2_real.get_ylim()
+    yrange_2 = np.round(np.abs(np.diff(ylim_2)[0])/4,-1)
+    min_offset, _, rel_delta = Scalebar. \
+        offsets_zero_tick(limits=ylim_2,range_scalebar=yrange_2)
+    scalebar_kw_lower['offset_y'] = min_offset - rel_delta
+    scalebar_kw_lower['y_kwargs']['height'] = yrange_2
+    scalebar_kw_lower['ax'] = ax2_real
+    PlotUtilities.no_x_label(ax=ax2_real)
+    PlotUtilities.no_y_label(ax=ax2_real)
+    Scalebar.crossed_x_and_y_relative(**scalebar_kw_lower)
+    title = PlotUtilities.down_arrow() + " Subtract low-extension fit"
+    PlotUtilities.title(title,color='b',ax=ax2_real)
 
 def _giant_debugging_plot(out_dir,energy_list_arr):
     fig = PlotUtilities.figure((8,12))
@@ -190,7 +203,7 @@ def run():
                                        min_fecs=min_fecs,remove_noisy=True)
     G_no_peg = FigureUtil.read_non_peg_landscape()
     _giant_debugging_plot(out_dir, energy_list_arr)
-    fig = PlotUtilities.figure(figsize=(3.5,3.25))
+    fig = PlotUtilities.figure(figsize=(3.5,6.5))
     make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset_nm)
     PlotUtilities.savefig(fig,out_dir + "FigureX_LandscapeComparison.png")
 
