@@ -151,22 +151,47 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
     FigureUtil.add_helical_boxes(ax=ax1,ymax_box=0.97,box_height=0.07,
                                  constant_offset=offset_boxes,clip_on=True)
 
-    str_text = "$\mathbf{\Delta\Delta}G_{\mathbf{Total}}$"
-    xy = q_no_PEG_start,offsets[0]
-    xy_text = q_no_PEG_start, offsets[1]
-    x_text = max((xy[0],xy_text[0]))
-    y_range = np.abs(np.diff([xy[1],xy_text[1]]))
-    y_text = np.mean(offsets) + y_range * 0.2
+    str_text = " $\mathbf{\Delta\Delta}G_{\mathbf{Total}}$"
+    delta_delta_G_total = np.abs(np.diff(offsets))
+    min_o = min(offsets)
+    xy = q_no_PEG_start, min_o
+    xy_end = q_no_PEG_start, min_o + delta_delta_G_total
+    labelled_arrow(ax1,str_text,xy,xy_end)
+    str_dd = " $\mathbf{\Delta\Delta}G_{\mathbf{Linker}}$"
+    x0 = np.mean(plt.xlim()) * 1.4
+    delta_delta_G_linker = np.abs(np.diff(shifts))
+    y0 = min_o
+    y1 = min_o + delta_delta_G_linker
+    xy2 = x0, y0
+    xy_end2 = x0, y1
+    labelled_arrow(ax1,str_dd,xy2,xy_end2,color_arrow='r')
+
+
+
+def labelled_arrow(ax1,str_text,xy,xy_end,x_text=None,y_text=None,
+                   arrow_props=None,color_arrow=None,color_text=None):
+    if color_arrow is None:
+        color_arrow = 'k'
+    if color_text is None:
+        color_text = color_arrow
+    if arrow_props is None:
+        arrow_props = dict(color=color_arrow,arrowstyle="<->",
+                           mutation_scale=7,shrinkA=0, shrinkB=0)
+    if y_text is None:
+        ys = [xy_end[1], xy[1]]
+        y_text = np.mean(ys) + (max(ys) - min(ys)) * 0.2
+    if x_text is None:
+        xs = [xy_end[0], xy[0]]
+        x_text = np.mean(xs)
     Annotations.relative_annotate(ax=ax1,s=str_text,xy=(x_text,y_text),
                                   xycoords='data',horizontalalignment='left',
-                                  verticalalignment='center')
+                                  verticalalignment='center',
+                                  color=color_text,
+                                  bbox=dict(color='None',linestyle='None',
+                                            linewidth=0))
     # draw an arrow depicting the DeltaDeltaG Total
-    ax1.annotate(s="",xycoords='data',textcoords='data',
-                 xy=xy,
-                 arrowprops=dict(arrowstyle="|-|",color='k',mutation_scale=2,
-                                 shrinkA=0,shrinkB=0),
-                 xytext=xy_text,annotation_clip=False)
-
+    ax1.annotate(s="",xycoords='data',textcoords='data',xy=xy_end,
+                 arrowprops=arrow_props,xytext=xy,annotation_clip=False)
 
 def _giant_debugging_plot(out_dir,energy_list_arr):
     fig = PlotUtilities.figure((8,12))
