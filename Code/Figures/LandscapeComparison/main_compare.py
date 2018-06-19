@@ -150,20 +150,22 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
     offset_boxes = 0
     FigureUtil.add_helical_boxes(ax=ax1,ymax_box=0.97,box_height=0.07,
                                  constant_offset=offset_boxes,clip_on=True)
-    # draw an arrow depicting the DeltaDeltaG Total
-    ax1.annotate(s="",xycoords='data',textcoords='data',
-                 xy=(q_no_PEG_start,offsets[0]),
-                 arrowprops=dict(arrowstyle="|-|",color='k',mutation_scale=2,
-                                 shrinkA=0,shrinkB=0),
-                 xytext=(q_no_PEG_start, offsets[1]),annotation_clip=False)
+
     str_text = "$\mathbf{\Delta\Delta}G_{\mathbf{Total}}$"
-    x_text = q_no_PEG_start * 1.05
-    y_range = np.abs(np.diff(offsets)[0])
+    xy = q_no_PEG_start,offsets[0]
+    xy_text = q_no_PEG_start, offsets[1]
+    x_text = max((xy[0],xy_text[0]))
+    y_range = np.abs(np.diff([xy[1],xy_text[1]]))
     y_text = np.mean(offsets) + y_range * 0.2
     Annotations.relative_annotate(ax=ax1,s=str_text,xy=(x_text,y_text),
                                   xycoords='data',horizontalalignment='left',
                                   verticalalignment='center')
-
+    # draw an arrow depicting the DeltaDeltaG Total
+    ax1.annotate(s="",xycoords='data',textcoords='data',
+                 xy=xy,
+                 arrowprops=dict(arrowstyle="|-|",color='k',mutation_scale=2,
+                                 shrinkA=0,shrinkB=0),
+                 xytext=xy_text,annotation_clip=False)
 
 
 def _giant_debugging_plot(out_dir,energy_list_arr):
