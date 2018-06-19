@@ -184,6 +184,14 @@ def _giant_debugging_plot(out_dir,energy_list_arr):
     PlotUtilities.savefig(fig, out_dir + "FigureS_Mega_Debug.png",
                           subplots_adjust=dict(hspace=0.02, wspace=0.04))
 
+def read_data(input_dir):
+    q_offset_nm = RetinalUtil.q_GF_nm_plot()
+    min_fecs = 2
+    q_interp, energy_list_arr = FigureUtil.\
+        _read_energy_list_and_q_interp(input_dir, q_offset=q_offset_nm,
+                                       min_fecs=min_fecs,remove_noisy=True)
+    return q_interp, energy_list_arr, q_offset_nm
+
 def run():
     """
     <Description>
@@ -196,11 +204,10 @@ def run():
     """
     input_dir = "../../../Data/FECs180307/"
     out_dir = "./"
-    q_offset_nm = RetinalUtil.q_GF_nm_plot()
-    min_fecs = 2
-    q_interp, energy_list_arr = FigureUtil.\
-        _read_energy_list_and_q_interp(input_dir, q_offset=q_offset_nm,
-                                       min_fecs=min_fecs,remove_noisy=True)
+    force = True
+    q_interp, energy_list_arr, q_offset_nm = \
+        CheckpointUtilities.getCheckpoint("./cache.pkl",read_data,
+                                          force,input_dir)
     G_no_peg = FigureUtil.read_non_peg_landscape()
     _giant_debugging_plot(out_dir, energy_list_arr)
     fig = PlotUtilities.figure(figsize=(3,3))
