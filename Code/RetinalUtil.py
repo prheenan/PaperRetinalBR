@@ -337,12 +337,11 @@ def _polish_helper(d):
     :return: new FEC, with separation adjusted appropriately
     """
     info_fit = d.info_fit
-    const_offset_x_m, sep_FJC_force_m, to_ret = _get_extension_offsets(d)
-    to_ret.Separation -= sep_FJC_force_m + const_offset_x_m
+    const_offset_x_m, _, to_ret = _get_extension_offsets(d)
+    to_ret.Separation -= const_offset_x_m
     to_ret.ZSnsr -= const_offset_x_m
     # make sure the fitting object knows about the change in extensions...
-    ext_FJC_correct_info = info_fit.ext_FJC(info_fit.f_grid)
-    to_ret.L0_info.set_x_offset(const_offset_x_m + ext_FJC_correct_info)
+    to_ret.L0_info.set_x_offset(const_offset_x_m )
     return to_ret
 
 
