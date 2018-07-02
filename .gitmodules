@@ -16,3 +16,6 @@
 [submodule "Code/Lib/AppFEATHER"]
 	path = Code/Lib/AppFEATHER
 	url = https://github.com/prheenan/AppFEATHER.git
+[submodule "Code/Lib/AppFJC"]
+	path = Code/Lib/AppFJC
+	url = https://github.com/prheenan/AppFJC.git

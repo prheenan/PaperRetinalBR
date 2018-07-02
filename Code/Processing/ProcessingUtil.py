@@ -21,6 +21,9 @@ import re
 max_n_pool = multiprocessing.cpu_count() - 1
 
 
+from Lib.UtilPipeline.FEC.Plotting import nm_and_pN_limits,plot_single_fec, \
+    plot_data, heatmap_ensemble_plot
+
 class AlignedFEC(TimeSepForceObj):
     def __init__(self,normal_fec,info_fit,feather_info):
         super(AlignedFEC,self).__init__()
@@ -127,42 +130,6 @@ def _cache_individual(d,out_dir,f,force,*args,**kw):
     return data
 
 
-def nm_and_pN_limits(data,f_x):
-    x_range = [[min(f_x(d)), max(f_x(d))] for d in data]
-    y_range = [[min(d.Force), max(d.Force)] for d in data]
-    xlim = 1e9 * np.array([np.min(x_range), np.max(x_range)])
-    ylim = 1e12 * np.array([np.min(y_range), np.max(y_range)])
-    return xlim,ylim
-
-def plot_single_fec(d,f_x,xlim,ylim,markevery=1,**kw):
-    FEC_Plot._fec_base_plot(f_x(d)[::markevery] * 1e9,
-                            d.Force[::markevery] * 1e12,**kw)
-    plt.xlim(xlim)
-    plt.ylim(ylim)
-    PlotUtilities.lazyLabel("Extension (nm)", "$F$ (pN)", "")
-
-def plot_data(base_dir,step,data,markevery=1,f_x = lambda x: x.Separation,
-              xlim=[-20,175]):
-    """
-    :param base_dir: where the data live
-    :param step:  what step we are on
-    :param data: the actual data; list of TimeSepForce
-    :param markevery: how often to mark the data (useful for lowering high
-    res to resonable size)
-    :return: nothing, plots the data..
-    """
-    plot_subdir = Pipeline._plot_subdir(base_dir, step)
-    name_func = FEC_Util.fec_name_func
-    xlim_tmp , ylim = nm_and_pN_limits(data,f_x)
-    if (xlim is not None):
-        xlim = xlim
-    else:
-        xlim = xlim_tmp
-    for d in data:
-        f = PlotUtilities.figure()
-        plot_single_fec(d, f_x, xlim, ylim,markevery=markevery)
-        PlotUtilities.savefig(f, plot_subdir + name_func(0, d) + ".png")
-
 def _aligned_plot(d,f_x,xlim,ylim,use_shift=False,plot_components=True):
     # get the fit
     # convert to reasonable units for plotting
@@ -197,34 +164,3 @@ def make_aligned_plot(base_dir,step,data,xlim=None,post="",**kw):
         f = PlotUtilities.figure()
         _aligned_plot(d, f_x, xlim, ylim,**kw)
         PlotUtilities.savefig(f, plot_subdir + name_func(0, d) + post + ".png")
-
-
-def heatmap_ensemble_plot(data,out_name,xlim=[-50, 150],kw_map=dict(),f_x=None):
-    """
-    makes a heatmap of the ensemble, with the actual data beneath
-
-    :param data: list of FECs
-    :param out_name: what to save this as
-    :return: na
-    """
-    if f_x is None:
-        f_x = lambda x: x.Separation
-    fig = PlotUtilities.figure(figsize=(3, 5))
-    ax = plt.subplot(2, 1, 1)
-    FEC_Plot.heat_map_fec(data, num_bins=(200, 100),
-                          use_colorbar=False,separation_max=xlim[1],**kw_map)
-    for spine_name in ["bottom", "top"]:
-        PlotUtilities.color_axis_ticks(color='w', spine_name=spine_name,
-                                       axis_name="x", ax=ax)
-    PlotUtilities.xlabel("")
-    PlotUtilities.title("")
-    PlotUtilities.no_x_label(ax)
-    plt.xlim(xlim)
-    plt.subplot(2, 1, 2)
-    for d in data:
-        x, f = f_x(d) * 1e9, d.Force * 1e12
-        FEC_Plot._fec_base_plot(x, f, style_data=dict(color=None, alpha=0.3,
-                                                      linewidth=0.5))
-    PlotUtilities.lazyLabel("Extension (nm)", "Force (pN)", "")
-    plt.xlim(xlim)
-    PlotUtilities.savefig(fig, out_name)
