@@ -81,9 +81,9 @@ def _to_pts(d,meters):
     idx_gt = int(np.round(meters/(v * dt)))
     return idx_gt
 
-def _slice_single(d,min_ext_m):
+def _slice_single(d,min_ext_m,max_ext_m=None):
     N_GF = 0 if min_ext_m is None else _to_pts(d,min_ext_m)
-    N_final = None
+    N_final = None if max_ext_m is None else _to_pts(d,max_ext_m)
     data_iwt_EF = d._slice(slice(N_GF, N_final, 1))
     return N_GF, N_final, data_iwt_EF
 
@@ -289,7 +289,7 @@ def min_sep_landscape():
     """
     :return: the minimum separation, in meters, to start landscape reconstrution
     """
-    return _offset_L_m() + 25e-9
+    return 0
 
 def min_sep_landscape_nm():
     return min_sep_landscape() * 1e9
