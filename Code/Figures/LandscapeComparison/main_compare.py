@@ -147,7 +147,7 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
     PlotUtilities.no_y_label(ax=ax)
     Scalebar.crossed_x_and_y_relative(**scalebar_kw)
     # add the helical boxes
-    offset_boxes = 0
+    offset_boxes = 25
     FigureUtil.add_helical_boxes(ax=ax1,ymax_box=0.97,box_height=0.07,
                                  constant_offset=offset_boxes,clip_on=True)
     str_text = " $\mathbf{\Delta\Delta}G_{\mathbf{Total}}$"
