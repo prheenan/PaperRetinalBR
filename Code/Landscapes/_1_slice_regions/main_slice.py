@@ -52,7 +52,7 @@ def run():
                                          name_func=FEC_Util.fec_name_func)
     plot_dir = Pipeline._plot_subdir(base=base_dir, enum=step)
     ProcessingUtil.heatmap_ensemble_plot(data,out_name=plot_dir + "heatmap.png",
-                                         xlim=[-5,max_sep*1e9])
+                                         xlim=[-20,max_sep*1e9])
     # plot each individual
     ProcessingUtil.plot_data(base_dir,step,data)
 

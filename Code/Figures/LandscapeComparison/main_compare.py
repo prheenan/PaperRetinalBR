@@ -150,7 +150,6 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
     offset_boxes = 0
     FigureUtil.add_helical_boxes(ax=ax1,ymax_box=0.97,box_height=0.07,
                                  constant_offset=offset_boxes,clip_on=True)
-
     str_text = " $\mathbf{\Delta\Delta}G_{\mathbf{Total}}$"
     delta_delta_G_total = np.abs(np.diff(offsets))[0]
     min_o = min(offsets)
@@ -158,7 +157,8 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
     xy_end = q_no_PEG_start, min_o + delta_delta_G_total
     labelled_arrow(ax1,str_text,xy,xy_end)
     str_dd = " $\mathbf{\Delta\Delta}G_{\mathbf{Linker}}$"
-    x0 = np.mean(plt.xlim()) * 1.4
+    xlim = plt.xlim()
+    x0 = np.mean(xlim) + (xlim[1] - xlim[0]) * 0.2
     delta_delta_G_linker = np.abs(np.diff(shifts))[0]
     y0 = min_o
     y1 = min_o + delta_delta_G_linker
@@ -166,8 +166,8 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
     xy_end2 = x0, y1
     labelled_arrow(ax1,str_dd,xy2,xy_end2,color_arrow='r')
     X = np.array([delta_delta_G_total,delta_delta_G_linker]).reshape((1,-1))
-    np.savetxt(fname="ddG.csv", X=X, delimiter = ",",
-               header = "ddG_total (kca/mol), ddG_linker (kcal/mol)")
+    np.savetxt(fname="ddG.csv", X=X, fmt=["%.1f","%.1f"],delimiter = ",",
+               header = "ddG_total (kcal/mol), ddG_linker (kcal/mol)")
 
 
 def labelled_arrow(ax1,str_text,xy,xy_end,x_text=None,y_text=None,
