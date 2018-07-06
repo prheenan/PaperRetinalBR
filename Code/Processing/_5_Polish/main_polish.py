@@ -82,16 +82,18 @@ def run():
     obj_wham = WeightedHistogram.wham(data_wham)
     data_unpolished = CheckpointUtilities.lazy_multi_load(in_dir)
     f_x_zsnsr = lambda x: x.ZSnsr
-    ProcessingUtil.heatmap_ensemble_plot(data,out_name=plot_dir + "heatmap.png")
+    xlim = [-40,150]
+    ProcessingUtil.heatmap_ensemble_plot(data,out_name=plot_dir + "heatmap.png",
+                                         xlim=xlim)
     ProcessingUtil.heatmap_ensemble_plot(data,f_x=f_x_zsnsr,
                                          out_name=plot_dir + "heatmap_Z.png",
-                                         kw_map=dict(x_func=f_x_zsnsr))
+                                         kw_map=dict(x_func=f_x_zsnsr),
+                                         xlim=xlim)
     # plot each individual
     f_x = lambda x_tmp : x_tmp.Separation
     plot_subdir = Pipeline._plot_subdir(base_dir, step)
     name_func = FEC_Util.fec_name_func
-    xlim, ylim = ProcessingUtil.nm_and_pN_limits(data,f_x)
-    xlim = [-20,100]
+    _, ylim = ProcessingUtil.nm_and_pN_limits(data,f_x)
     for d_unpolish,d_polish in zip(data_unpolished,data):
         fig = PlotUtilities.figure((6,6))
         # make the Separation column
