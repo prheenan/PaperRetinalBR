@@ -84,16 +84,24 @@ def _to_pts(d,meters):
 def _slice_single(d,min_ext_m,max_ext_m=None):
     N_GF = 0 if min_ext_m is None else _to_pts(d,min_ext_m)
     N_final = None if max_ext_m is None else _to_pts(d,max_ext_m)
-    data_iwt_EF = d._slice(slice(N_GF, N_final, 1))
+    n_start = _min_idx(d,min_ext_m)
+    n_diff = N_final - N_GF
+    n_end = n_start + n_diff
+    data_iwt_EF = d._slice(slice(n_start,n_end, 1))
     return N_GF, N_final, data_iwt_EF
 
 def _fit_sep(d,**kw):
     idx = np.arange(d.Separation.size)
     return spline_fit(q=idx, G0=d.Separation,**kw)(idx)
 
+def _min_idx(d,min_ext_m):
+    fit = _fit_sep(d,k=1,num = d.Separation.size//50)
+    idx_all = np.where(fit <= min_ext_m)[0]
+    assert idx_all.size > 0
+    return idx_all[-1]
+
 def _get_slice(data,min_ext_m):
-    fits_d =  [ _fit_sep(d,k=1,num = d.Separation.size//50) for d in data]
-    min_idx = [np.where(d <= min_ext_m)[0][-1] for d in fits_d]
+    min_idx = [_min_idx(d,min_ext_m) for d in data]
     max_sizes = [d.Separation.size - (i+1) for i,d  in zip(min_idx,data)]
     max_delta = int(min(max_sizes))
     slices = [slice(i,i+max_delta,1) for i in min_idx]
@@ -289,7 +297,7 @@ def min_sep_landscape():
     """
     :return: the minimum separation, in meters, to start landscape reconstrution
     """
-    return 0
+    return -10e-9
 
 def min_sep_landscape_nm():
     return min_sep_landscape() * 1e9
@@ -337,7 +345,7 @@ def _polish_helper(d):
     :return: new FEC, with separation adjusted appropriately
     """
     info_fit = d.info_fit
-    const_offset_x_m, _, to_ret = _get_extension_offsets(d)
+    const_offset_x_m, sep_FJC_force_m, to_ret = _get_extension_offsets(d)
     to_ret.Separation -= const_offset_x_m
     to_ret.ZSnsr -= const_offset_x_m
     # make sure the fitting object knows about the change in extensions...
