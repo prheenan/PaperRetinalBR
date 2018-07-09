@@ -48,8 +48,8 @@ class Blacklist(object):
 
 blacklist_tuples = [ \
     # all the blacklisted BR data
-    [str_BR,f_v(50),f_date("170502"),[1374,2160]],
-    [str_BR,f_v(50),f_date("170503"),[837,1268]],
+    [str_BR,f_v(50),f_date("170502"),[176,1372,1374,2160]],
+    [str_BR,f_v(50),f_date("170503"),[329,837,1268]],
     [str_BR, f_v(300), f_date("170321"), [463,500,760,786,821]],
     [str_BR, f_v(300), f_date("170501"), [203,870,1353]],
     [str_BR, f_v(300), f_date("170502"), []],# this one is OK
