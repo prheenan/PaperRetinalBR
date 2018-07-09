@@ -81,27 +81,19 @@ def _to_pts(d,meters):
     idx_gt = int(np.round(meters/(v * dt)))
     return idx_gt
 
-def _slice_single(d,min_ext_m,max_ext_m=None):
+def _slice_single(d,min_ext_m,**kw):
     N_GF = 0 if min_ext_m is None else _to_pts(d,min_ext_m)
-    N_final = None if max_ext_m is None else _to_pts(d,max_ext_m)
-    n_start = _min_idx(d,min_ext_m)
-    n_diff = N_final - N_GF
-    n_end = n_start + n_diff
-    data_iwt_EF = d._slice(slice(n_start,n_end, 1))
+    N_final = None
+    data_iwt_EF = d._slice(slice(N_GF, N_final, 1))
     return N_GF, N_final, data_iwt_EF
 
 def _fit_sep(d,**kw):
     idx = np.arange(d.Separation.size)
     return spline_fit(q=idx, G0=d.Separation,**kw)(idx)
 
-def _min_idx(d,min_ext_m):
-    fit = _fit_sep(d,k=1,num = d.Separation.size//50)
-    idx_all = np.where(fit <= min_ext_m)[0]
-    assert idx_all.size > 0
-    return idx_all[-1]
-
 def _get_slice(data,min_ext_m):
-    min_idx = [_min_idx(d,min_ext_m) for d in data]
+    fits_d =  [ _fit_sep(d,k=1,num = d.Separation.size//50) for d in data]
+    min_idx = [np.where(d <= min_ext_m)[0][-1] for d in fits_d]
     max_sizes = [d.Separation.size - (i+1) for i,d  in zip(min_idx,data)]
     max_delta = int(min(max_sizes))
     slices = [slice(i,i+max_delta,1) for i in min_idx]
@@ -111,7 +103,7 @@ def process_helical_slice(data_sliced):
     return data_sliced
 
 def q_GF_nm_plot():
-    return min_sep_landscape()
+    return min_sep_landscape() + 24
 
 def _processing_base(default_base="../../../Data/BR+Retinal/170321FEC/",**kw):
     return Pipeline._base_dir_from_cmd(default=default_base,**kw)
@@ -297,16 +289,16 @@ def min_sep_landscape():
     """
     :return: the minimum separation, in meters, to start landscape reconstrution
     """
-    return -10e-9
+    return _offset_L_m() + 25e-9
 
 def min_sep_landscape_nm():
     return min_sep_landscape() * 1e9
 
 def _offset_L_m():
-    return -(WLCHao._L0_tail())
+    return -(WLCHao._L0_tail()) + 5e-9
 
 def _const_offset(inf):
-    offset = -inf._L_shift + inf.L0_PEG3400
+    offset = -inf._L_shift
     const_offset_x_m = offset - _offset_L_m()
     return const_offset_x_m
 
@@ -346,10 +338,11 @@ def _polish_helper(d):
     """
     info_fit = d.info_fit
     const_offset_x_m, sep_FJC_force_m, to_ret = _get_extension_offsets(d)
-    to_ret.Separation -= const_offset_x_m
+    to_ret.Separation -= sep_FJC_force_m + const_offset_x_m
     to_ret.ZSnsr -= const_offset_x_m
     # make sure the fitting object knows about the change in extensions...
-    to_ret.L0_info.set_x_offset(const_offset_x_m )
+    ext_FJC_correct_info = info_fit.ext_FJC(info_fit.f_grid)
+    to_ret.L0_info.set_x_offset(const_offset_x_m + ext_FJC_correct_info)
     return to_ret
 
 
