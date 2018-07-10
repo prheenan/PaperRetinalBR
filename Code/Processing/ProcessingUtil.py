@@ -137,7 +137,7 @@ def _aligned_plot(d,f_x,xlim,ylim,use_shift=False,plot_components=True):
     info = d.L0_info
     f_grid = info.f_grid
     # convert to reasonable units for plotting
-    offset =  info._L_shift  if use_shift else 0
+    offset =  0 if use_shift else 0
     ext_grid = info.ext_grid() - offset
     f_plot_pred = f_grid * 1e12
     x_plot_pred = (ext_grid)* 1e9

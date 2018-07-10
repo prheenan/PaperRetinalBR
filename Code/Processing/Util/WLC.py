@@ -105,14 +105,14 @@ class FitFJCandWLC(object):
 
     @property
     def _L_shift(self):
-        return self.x0[3]
+        return 0
 
     @property
     def L0_c_terminal(self):
-        return self.kw_fit['L0_protein']
+        return 0
 
     @property
-    def L0_PEG3400(self):
+    def L0_total(self):
         """
         :return: contour length of the PEG3400
         """
@@ -120,7 +120,8 @@ class FitFJCandWLC(object):
         N_monomers = self._Ns
         L0_PEG3400_per_monomer = common_peg_params()['L_helical']
         L0_PEG3400 = L0_PEG3400_per_monomer * N_monomers
-        L0_correct = L0_PEG3400
+        L0_protein = self.x0[3]
+        L0_correct = L0_PEG3400 + L0_protein
         return L0_correct
 
 
@@ -198,8 +199,7 @@ def grid_both(x,x_a,a,x_b,b):
     return grid_a, grid_b
 
 def Hao_PEGModel(F,N_s=25.318,K=906.86,L_K=0.63235e-9,
-                 Lp_protein=0.4e-9,K0_protein=10000e-12,
-                 L0_protein=9.12e-9):
+                 L0_protein=9.12e-9,Lp_protein=0.4e-9,K0_protein=10000e-12):
     """
     see: communication with Hao, 
     """
@@ -249,8 +249,8 @@ def ext_FJC(f_grid,*args,**kwargs):
     return ext_FJC
 
 def _hao_fit_helper(x,f,force_grid,*args,**kwargs):
-    args_normal = args[:-1]
-    shift =  args[-1]
+    args_normal = args
+    shift =  0
     ext_grid = _hao_shift_total(force_grid, *(args_normal),**kwargs)
     x_shift = x + shift
     l2 = fit_base._l2_grid_to_data(x_shift,f,ext_grid,force_grid)
@@ -293,12 +293,13 @@ def hao_fit(x,f,N_fit_pts):
     range_Lp_protein = (0.1e-9,1e-9)
     Lp = 0.4e-9
     L0 = _L0_tail()
-    kw_fit = dict(Lp_protein=Lp,L0_protein=L0)
+    range_L0_protein = [1e-9,L0*2]
+    kw_fit = dict(Lp_protein=Lp)
     f_grid = np.linspace(min(f),max(f),endpoint=True,num=f.size)
     functor_l2 = lambda *args: _hao_fit_helper(x,f,f_grid,*(args[0]),
                                                **kw_fit)
     # how many brute points should we use?
-    ranges = (range_N,range_K,range_L_K,range_x_shift)
+    ranges = (range_N,range_K,range_L_K,range_L0_protein)
     n_pts = [N_fit_pts for _ in ranges]
     # determine the step sizes in each dimension
     steps = [ (r[1]-r[0])/n_pts[i] for i,r in enumerate(ranges)]
@@ -324,7 +325,8 @@ def hao_fit(x,f,N_fit_pts):
     res = minimize(fun=bounded_fun,**minimize_dict)
     x0 = res.x
     for b,x_tmp in zip(bounds,x0):
-        assert (x_tmp <= b[1]) and (x_tmp >= b[0])  , "Minimization didn't constrain"
+        assert (x_tmp <= b[1]) and (x_tmp >= b[0])  , \
+            "Minimization didn't constrain"
     # get the force and extension grid, interpolated back to the original data
     to_ret = FitFJCandWLC(brute_dict=brute_dict,x0=x0,f=f,
                           output_brute=output_brute,kw_fit=kw_fit,

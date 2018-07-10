@@ -295,11 +295,11 @@ def min_sep_landscape_nm():
     return min_sep_landscape() * 1e9
 
 def _offset_L_m():
-    return -(WLCHao._L0_tail())
+    return (WLCHao._L0_tail())
 
 def _const_offset(inf):
-    offset = -inf._L_shift + inf.L0_PEG3400
-    const_offset_x_m = offset - _offset_L_m()
+    offset = -inf.L0_total
+    const_offset_x_m = -(offset +_offset_L_m())
     return const_offset_x_m
 
 def _get_extension_offsets(d):
