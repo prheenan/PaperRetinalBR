@@ -234,12 +234,9 @@ def _hao_ext_grid(force_grid,*args,**kw):
 
 
 def _hao_shift(force_grid,*args,**kwargs):
-    # last argument is amount to shift...
     ext_grid, ext_components  =_hao_ext_grid(force_grid,*args,**kwargs)
-    offset = 0
-    to_ret = ext_grid + offset
-    ext_components = [ext_components[0] + offset/2,
-                      ext_components[1] + offset/2]
+    to_ret = ext_grid
+    ext_components = [ext_components[0],ext_components[1]]
     return to_ret, ext_components
 
 def _hao_shift_total(*args,**kwargs):
