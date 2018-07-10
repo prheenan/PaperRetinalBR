@@ -281,9 +281,10 @@ def data_plot(fecs,energies,gs1=None,xlim=[None,None]):
     ax = plt.subplot(gs1[-1,0])
     mean_energy, std_energy = PlotUtil.plot_mean_landscape(q_interp,
                                                            splines,ax=ax)
+    max_q_nm = RetinalUtil.q_GF_nm_plot()
     q_at_max_energy,_,_ =  \
         PlotUtil.plot_delta_GF(q_interp,mean_energy,std_energy,
-                               max_q_nm=RetinalUtil.q_GF_nm_plot())
+                               max_q_nm=max_q_nm)
     plt.axvspan(q_at_max_energy,max(xlim),color='k',alpha=0.3)
     ax.set_xlim(xlim)
 
