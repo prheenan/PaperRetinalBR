@@ -387,6 +387,7 @@ def feather_single(d,force_no_adhesion=False,**kw):
         pred_info,tau_n = _detect_retract_FEATHER(f_refs=f_refs,**feather_kw)
     pred_info.tau_n = tau_n
     assert len(pred_info.event_idx) > 0 , "FEATHER can't find an event..."
+    # POST: found at least one event.
     to_ret = ProcessingUtil.AlignedFEC(d,info_fit=None,feather_info=pred_info)
     return to_ret
 
@@ -428,12 +429,25 @@ def align_single(d,min_F_N,**kw):
     force_N = d.Force
     pred_info = d.info_feather
     max_fit_idx = GF2_event_idx(d,min_F_N)
+    # determine the minimum fit index by the maximum of...
+    # (1) the surface
     where_above_surface = np.where(force_N >= 0)[0]
+    assert where_above_surface.size > 0 , "Never above surface"
     first_time_above_surface = where_above_surface[0]
     assert first_time_above_surface < max_fit_idx , \
         "Couldn't find fitting region"
+    # (2) the last event *before* the current, if it exists
+    event_idx = pred_info.event_idx
+    idx_last_event_before = np.where(event_idx < max_fit_idx)[0]
+    start_idx = first_time_above_surface
+    if idx_last_event_before.size > 0:
+        # then we have an event *before* the final GC helix one.
+        # make that the start idx, if it is later (it should be!)
+        new_start = event_idx[idx_last_event_before[-1]]
+        assert new_start > start_idx , "First event is less than surface?!"
+        start_idx = new_start
     # start the fit after any potential adhesions
-    fit_start = max(first_time_above_surface,pred_info.slice_fit.start)
+    fit_start = max(start_idx,pred_info.slice_fit.start)
     fit_slice = slice(fit_start,max_fit_idx,1)
     # slice the object to just the region we want
     obj_slice = d._slice(fit_slice)
@@ -454,14 +468,14 @@ def _align_and_cache(d,out_dir,force=False,**kw):
     return ProcessingUtil._cache_individual(d, out_dir, align_single,
                                             force,d, **kw)
 
-def func(args):
+def func_align(args):
     x, out_dir, kw = args
     to_ret = _align_and_cache(x,out_dir,**kw)
     return to_ret
 
 def _multi_align(out_dir,kw,all_data,n_pool):
     input_v = [ [d,out_dir,kw] for d in all_data]
-    to_ret = ProcessingUtil._multiproc(func, input_v, n_pool)
+    to_ret = ProcessingUtil._multiproc(func_align, input_v, n_pool)
     to_ret = [r for r in to_ret if r is not None]
     return to_ret
 
