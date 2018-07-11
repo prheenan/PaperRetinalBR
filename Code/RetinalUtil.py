@@ -81,19 +81,27 @@ def _to_pts(d,meters):
     idx_gt = int(np.round(meters/(v * dt)))
     return idx_gt
 
-def _slice_single(d,min_ext_m,**kw):
+def _slice_single(d,min_ext_m,max_ext_m=None):
     N_GF = 0 if min_ext_m is None else _to_pts(d,min_ext_m)
-    N_final = None
-    data_iwt_EF = d._slice(slice(N_GF, N_final, 1))
+    N_final = None if max_ext_m is None else _to_pts(d,max_ext_m)
+    N_diff = N_final - N_GF
+    N_start = _min_idx(d,min_ext_m)
+    N_end = N_start + N_diff
+    data_iwt_EF = d._slice(slice(N_start, N_end, 1))
     return N_GF, N_final, data_iwt_EF
 
 def _fit_sep(d,**kw):
     idx = np.arange(d.Separation.size)
     return spline_fit(q=idx, G0=d.Separation,**kw)(idx)
 
+def _min_idx(d,min_ext_m):
+    fit = _fit_sep(d,k=1,num = d.Separation.size//50)
+    min_idx = np.where(fit <= min_ext_m)[0]
+    assert min_idx.size > 0
+    return min_idx[-1]
+
 def _get_slice(data,min_ext_m):
-    fits_d =  [ _fit_sep(d,k=1,num = d.Separation.size//50) for d in data]
-    min_idx = [np.where(d <= min_ext_m)[0][-1] for d in fits_d]
+    min_idx = [_min_idx(d,min_ext_m) for d in data]
     max_sizes = [d.Separation.size - (i+1) for i,d  in zip(min_idx,data)]
     max_delta = int(min(max_sizes))
     slices = [slice(i,i+max_delta,1) for i in min_idx]
@@ -103,7 +111,7 @@ def process_helical_slice(data_sliced):
     return data_sliced
 
 def q_GF_nm_plot():
-    return min_sep_landscape() + 24
+    return (min_sep_landscape() + 25e-9) * 1e9
 
 def _processing_base(default_base="../../../Data/BR+Retinal/170321FEC/",**kw):
     return Pipeline._base_dir_from_cmd(default=default_base,**kw)
@@ -289,32 +297,33 @@ def min_sep_landscape():
     """
     :return: the minimum separation, in meters, to start landscape reconstrution
     """
-    return _offset_L_m() + 25e-9
+    return 18e-9
 
 def min_sep_landscape_nm():
     return min_sep_landscape() * 1e9
 
 def _offset_L_m():
-    return -(WLCHao._L0_tail()) + 5e-9
+    return (WLCHao._L0_tail())
 
 def _const_offset(inf):
-    offset = -inf._L_shift
-    const_offset_x_m = offset - _offset_L_m()
+    offset = -inf.L0_total
+    const_offset_x_m = -(offset +_offset_L_m())
     return const_offset_x_m
 
 def _get_extension_offsets(d):
     # get the slice we are fitting
-    to_ret = d._slice(slice(0, None, 1))
-    inf = to_ret.L0_info
+    return_val = d._slice(slice(0, None, 1))
+    tmp = d._slice(slice(0,None,1))
+    inf = tmp.L0_info
     min_idx = inf.fit_slice.start
     slice_fit = slice(min_idx, None, 1)
-    to_ret.Separation = to_ret.Separation[slice_fit]
-    to_ret.Force = to_ret.Force[slice_fit]
-    to_ret.ZSnsr = to_ret.ZSnsr[slice_fit]
-    x, f = to_ret.Separation, to_ret.Force
+    tmp.Separation = tmp.Separation[slice_fit]
+    tmp.Force = tmp.Force[slice_fit]
+    tmp.ZSnsr = tmp.ZSnsr[slice_fit]
+    x, f = tmp.Separation, tmp.Force
     # get a grid over all possible forces
     f_grid = np.linspace(min(f), max(f), num=f.size, endpoint=True)
-    info_fit = to_ret.info_fit
+    info_fit = tmp.info_fit
     ext_FJC = info_fit.ext_FJC(f_grid)
     # we now have X_FJC as a function of force. Therefore, we can subtract
     # off the extension of the PEG3400 to determining the force-extension
@@ -329,7 +338,7 @@ def _get_extension_offsets(d):
     const_offset_x_m = _const_offset(inf)
     # XXX remove the extension changes.
     sep_FJC_force_m = ext_FJC_all_forces
-    return const_offset_x_m, sep_FJC_force_m, to_ret
+    return const_offset_x_m, sep_FJC_force_m, return_val
 
 def _polish_helper(d):
     """
@@ -337,12 +346,11 @@ def _polish_helper(d):
     :return: new FEC, with separation adjusted appropriately
     """
     info_fit = d.info_fit
-    const_offset_x_m, sep_FJC_force_m, to_ret = _get_extension_offsets(d)
-    to_ret.Separation -= sep_FJC_force_m + const_offset_x_m
+    const_offset_x_m, _, to_ret = _get_extension_offsets(d)
+    to_ret.Separation -= const_offset_x_m
     to_ret.ZSnsr -= const_offset_x_m
     # make sure the fitting object knows about the change in extensions...
-    ext_FJC_correct_info = info_fit.ext_FJC(info_fit.f_grid)
-    to_ret.L0_info.set_x_offset(const_offset_x_m + ext_FJC_correct_info)
+    to_ret.L0_info.set_x_offset(const_offset_x_m )
     return to_ret
 
 
@@ -388,6 +396,7 @@ def feather_single(d,force_no_adhesion=False,**kw):
         pred_info,tau_n = _detect_retract_FEATHER(f_refs=f_refs,**feather_kw)
     pred_info.tau_n = tau_n
     assert len(pred_info.event_idx) > 0 , "FEATHER can't find an event..."
+    # POST: found at least one event.
     to_ret = ProcessingUtil.AlignedFEC(d,info_fit=None,feather_info=pred_info)
     return to_ret
 
@@ -429,12 +438,25 @@ def align_single(d,min_F_N,**kw):
     force_N = d.Force
     pred_info = d.info_feather
     max_fit_idx = GF2_event_idx(d,min_F_N)
+    # determine the minimum fit index by the maximum of...
+    # (1) the surface
     where_above_surface = np.where(force_N >= 0)[0]
+    assert where_above_surface.size > 0 , "Never above surface"
     first_time_above_surface = where_above_surface[0]
     assert first_time_above_surface < max_fit_idx , \
         "Couldn't find fitting region"
+    # (2) the last event *before* the current, if it exists
+    event_idx = pred_info.event_idx
+    idx_last_event_before = np.where(event_idx < max_fit_idx)[0]
+    start_idx = first_time_above_surface
+    if idx_last_event_before.size > 0:
+        # then we have an event *before* the final GC helix one.
+        # make that the start idx, if it is later (it should be!)
+        new_start = event_idx[idx_last_event_before[-1]]
+        assert new_start > start_idx , "First event is less than surface?!"
+        start_idx = new_start
     # start the fit after any potential adhesions
-    fit_start = max(first_time_above_surface,pred_info.slice_fit.start)
+    fit_start = max(start_idx,pred_info.slice_fit.start)
     fit_slice = slice(fit_start,max_fit_idx,1)
     # slice the object to just the region we want
     obj_slice = d._slice(fit_slice)
@@ -455,14 +477,14 @@ def _align_and_cache(d,out_dir,force=False,**kw):
     return ProcessingUtil._cache_individual(d, out_dir, align_single,
                                             force,d, **kw)
 
-def func(args):
+def func_align(args):
     x, out_dir, kw = args
     to_ret = _align_and_cache(x,out_dir,**kw)
     return to_ret
 
 def _multi_align(out_dir,kw,all_data,n_pool):
     input_v = [ [d,out_dir,kw] for d in all_data]
-    to_ret = ProcessingUtil._multiproc(func, input_v, n_pool)
+    to_ret = ProcessingUtil._multiproc(func_align, input_v, n_pool)
     to_ret = [r for r in to_ret if r is not None]
     return to_ret
 

@@ -12,7 +12,7 @@ dateStr=`date +%Y-%m-%d:%H:%M:%S`
 # Description:
 
 # Arguments:
-#### Arg 1: Description
+#### Arg 1: e.g. ../../../Data/FECs180307/BR+Retinal/
 cd ../_0_landscape_alignment/
 ls
 echo $1

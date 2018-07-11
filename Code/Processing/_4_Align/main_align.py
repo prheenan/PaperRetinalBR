@@ -70,7 +70,7 @@ def run():
     data = RetinalUtil.align_data(in_dir,out_dir,force=force,n_pool=n_pool,
                                   min_F_N=min_F_N,N_fit_pts=N_fit_pts)
     plot_subdir = Pipeline._plot_subdir(base_dir, step)
-    xlim_heatmap_nm = [-20,100]
+    xlim_heatmap_nm = [-40,100]
     ProcessingUtil.heatmap_ensemble_plot(data,xlim=xlim_heatmap_nm,
                                          out_name=plot_subdir + "heatmap.png")
     # get the post-blacklist heapmap, too..

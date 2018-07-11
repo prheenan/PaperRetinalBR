@@ -147,9 +147,9 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
     PlotUtilities.no_y_label(ax=ax)
     Scalebar.crossed_x_and_y_relative(**scalebar_kw)
     # add the helical boxes
-    offset_boxes = 25
+    offset_boxes_nm = -25
     FigureUtil.add_helical_boxes(ax=ax1,ymax_box=0.97,box_height=0.07,
-                                 constant_offset=offset_boxes,clip_on=True)
+                                 constant_offset=offset_boxes_nm,clip_on=True)
     str_text = " $\mathbf{\Delta\Delta}G_{\mathbf{Total}}$"
     delta_delta_G_total = np.abs(np.diff(offsets))[0]
     min_o = min(offsets)
@@ -215,7 +215,7 @@ def _giant_debugging_plot(out_dir,energy_list_arr):
 
 def read_data(input_dir):
     q_offset_nm = RetinalUtil.q_GF_nm_plot()
-    min_fecs = 5
+    min_fecs = 3
     q_interp, energy_list_arr = FigureUtil.\
         _read_energy_list_and_q_interp(input_dir, q_offset=q_offset_nm,
                                        min_fecs=min_fecs,remove_noisy=True)
