@@ -15,7 +15,7 @@ from Lib.UtilPipeline import Pipeline
 from Lib.UtilForce.FEC import FEC_Util, FEC_Plot
 from Lib.UtilForce.UtilGeneral import CheckpointUtilities, GenUtilities
 from Lib.UtilForce.UtilGeneral import PlotUtilities
-from Lib.UtilForce.UtilGeneral.Plot import Scalebar, Annotations
+from Lib.UtilForce.UtilGeneral.Plot import Scalebar, Annotations, Record
 
 from Processing import ProcessingUtil
 from Lib.AppWHAM.Code import WeightedHistogram, UtilWHAM
@@ -105,24 +105,25 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
     # get the max of the last point (the retinal energy landscape is greater)
     offsets = [l.G0_kcal_per_mol[-1] for l in landscpes_with_error]
     q_no_PEG_start =  max(q_interp)
+    q_nm_no_PEG = G_no_peg.q_nm + q_no_PEG_start
+    G_err_kcal_no_PEG = G_no_peg.G_err_kcal
     for i,G_offset in enumerate(offsets):
-        q_nm = G_no_peg.q_nm + q_no_PEG_start
         G_kcal = G_no_peg.G0_kcal_per_mol + G_offset
-        G_err_kcal = G_no_peg.G_err_kcal
-        mean_err = np.mean(G_err_kcal)
-        idx_errorbar = q_nm.size//2
+        mean_err = np.mean(G_err_kcal_no_PEG)
+        idx_errorbar = q_nm_no_PEG.size//2
         common_style = dict(color='grey',linewidth=1.5)
-        ax1.plot(q_nm,G_kcal,linestyle='--',**common_style)
+        ax1.plot(q_nm_no_PEG,G_kcal,linestyle='--',**common_style)
         if (i != 0):
             continue
-        ax1.errorbar(q_nm[idx_errorbar],G_kcal[idx_errorbar],yerr=mean_err,
+        ax1.errorbar(q_nm_no_PEG[idx_errorbar],G_kcal[idx_errorbar],yerr=mean_err,
                      marker=None,markersize=0,capsize=3,**common_style)
     axes = [ax1]
     ylim = [None,
-            np.max(offsets) + max(G_no_peg.G0_kcal_per_mol) + G_err_kcal[-1]*4]
+            np.max(offsets) + max(G_no_peg.G0_kcal_per_mol) + \
+            G_err_kcal_no_PEG[-1]*4]
     for a in axes:
         a.set_ylim(ylim)
-        a.set_xlim([None,max(q_nm)])
+        a.set_xlim([None,max(q_nm_no_PEG)])
     # add in the scale bar
     ax = axes[0]
     xlim = ax.get_xlim()
@@ -168,6 +169,21 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
     X = np.array([delta_delta_G_total,delta_delta_G_linker]).reshape((1,-1))
     np.savetxt(fname="ddG.csv", X=X, fmt=["%.1f","%.1f"],delimiter = ",",
                header = "ddG_total (kcal/mol), ddG_linker (kcal/mol)")
+    # save out the landscapes
+    x_y_yerr_name = [ [q_interp,landscpes_with_error[0],"FigureSX_BR"],
+                      [q_interp, landscpes_with_error[1],"FigureSX_BO"]]
+    for x,l,name in x_y_yerr_name:
+        y = l.G0_kcal_per_mol
+        yerr = l.G_err_kcal
+        Record.save_csv(dict(x=x,y=[y,yerr],save_name=name,x_name="q",
+                             x_units="nm",y_name=["Energy","Energy Error"],
+                             y_units="kcal/mol"))
+    # save out the remainder of the BO
+    G_kcal_PEG_tmp = G_no_peg.G0_kcal_per_mol + max(offsets)
+    Record.save_csv(dict(x=q_nm_no_PEG, y=[G_kcal_PEG_tmp, G_err_kcal_no_PEG],
+                        save_name="./FigureSX_JCP_no_PEG", x_name="q",
+                         x_units="nm",y_name=["Energy", "Energy Error"],
+                         y_units="kcal/mol"))
 
 
 def labelled_arrow(ax1,str_text,xy,xy_end,x_text=None,y_text=None,
