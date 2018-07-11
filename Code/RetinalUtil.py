@@ -84,16 +84,24 @@ def _to_pts(d,meters):
 def _slice_single(d,min_ext_m,max_ext_m=None):
     N_GF = 0 if min_ext_m is None else _to_pts(d,min_ext_m)
     N_final = None if max_ext_m is None else _to_pts(d,max_ext_m)
-    data_iwt_EF = d._slice(slice(N_GF, N_final, 1))
+    N_diff = N_final - N_GF
+    N_start = _min_idx(d,min_ext_m)
+    N_end = N_start + N_diff
+    data_iwt_EF = d._slice(slice(N_start, N_end, 1))
     return N_GF, N_final, data_iwt_EF
 
 def _fit_sep(d,**kw):
     idx = np.arange(d.Separation.size)
     return spline_fit(q=idx, G0=d.Separation,**kw)(idx)
 
+def _min_idx(d,min_ext_m):
+    fit = _fit_sep(d,k=1,num = d.Separation.size//50)
+    min_idx = np.where(fit <= min_ext_m)[0]
+    assert min_idx.size > 0
+    return min_idx[-1]
+
 def _get_slice(data,min_ext_m):
-    fits_d =  [ _fit_sep(d,k=1,num = d.Separation.size//50) for d in data]
-    min_idx = [np.where(d <= min_ext_m)[0][-1] for d in fits_d]
+    min_idx = [_min_idx(d,min_ext_m) for d in data]
     max_sizes = [d.Separation.size - (i+1) for i,d  in zip(min_idx,data)]
     max_delta = int(min(max_sizes))
     slices = [slice(i,i+max_delta,1) for i in min_idx]
@@ -289,7 +297,7 @@ def min_sep_landscape():
     """
     :return: the minimum separation, in meters, to start landscape reconstrution
     """
-    return 20e-9
+    return 18e-9
 
 def min_sep_landscape_nm():
     return min_sep_landscape() * 1e9
@@ -304,17 +312,18 @@ def _const_offset(inf):
 
 def _get_extension_offsets(d):
     # get the slice we are fitting
-    to_ret = d._slice(slice(0, None, 1))
-    inf = to_ret.L0_info
+    return_val = d._slice(slice(0, None, 1))
+    tmp = d._slice(slice(0,None,1))
+    inf = tmp.L0_info
     min_idx = inf.fit_slice.start
     slice_fit = slice(min_idx, None, 1)
-    to_ret.Separation = to_ret.Separation[slice_fit]
-    to_ret.Force = to_ret.Force[slice_fit]
-    to_ret.ZSnsr = to_ret.ZSnsr[slice_fit]
-    x, f = to_ret.Separation, to_ret.Force
+    tmp.Separation = tmp.Separation[slice_fit]
+    tmp.Force = tmp.Force[slice_fit]
+    tmp.ZSnsr = tmp.ZSnsr[slice_fit]
+    x, f = tmp.Separation, tmp.Force
     # get a grid over all possible forces
     f_grid = np.linspace(min(f), max(f), num=f.size, endpoint=True)
-    info_fit = to_ret.info_fit
+    info_fit = tmp.info_fit
     ext_FJC = info_fit.ext_FJC(f_grid)
     # we now have X_FJC as a function of force. Therefore, we can subtract
     # off the extension of the PEG3400 to determining the force-extension
@@ -329,7 +338,7 @@ def _get_extension_offsets(d):
     const_offset_x_m = _const_offset(inf)
     # XXX remove the extension changes.
     sep_FJC_force_m = ext_FJC_all_forces
-    return const_offset_x_m, sep_FJC_force_m, to_ret
+    return const_offset_x_m, sep_FJC_force_m, return_val
 
 def _polish_helper(d):
     """
