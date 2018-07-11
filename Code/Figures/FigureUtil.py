@@ -295,15 +295,15 @@ def regions_and_colors(subtract_min=False, first_element_is_all=False):
     """
     returns: regions (in nm) and colords as a list of <region,color> tuples
     """
-    adhesion_min = 17
-    ed_max = 32
-    cd_max = 50
-    a_max = 65
+    adhesion_min = 12
+    ed_max = 27
+    cd_max = 42
+    a_max = 60
     if (subtract_min):
         offset = adhesion_min
     else:
         offset = 0
-    regions_colors = [[[-10,adhesion_min],color_BR()],
+    regions_colors = [[[-7,adhesion_min],color_BR()],
                       [[adhesion_min - offset, ed_max - offset], 'royalblue'],
                       [[ed_max - offset, cd_max - offset], 'orangered'],
                       [[cd_max - offset, a_max - offset], 'g']]

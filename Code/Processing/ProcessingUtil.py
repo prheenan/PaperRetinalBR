@@ -49,17 +49,17 @@ class Blacklist(object):
 blacklist_tuples = [ \
     # all the blacklisted BR data
     [str_BR,f_v(50),f_date("170502"),[176,1372,1374,2160]],
-    [str_BR,f_v(50),f_date("170503"),[329,837,1268]],
-    [str_BR, f_v(300), f_date("170321"), [463,500,760,786,821]],
-    [str_BR, f_v(300), f_date("170501"), [203,870,1353]],
+    [str_BR,f_v(50),f_date("170503"),[1268]],
+    [str_BR, f_v(300), f_date("170321"), [500,503,760,786]],
+    [str_BR, f_v(300), f_date("170501"), [203]],
     [str_BR, f_v(300), f_date("170502"), []],# this one is OK
-    [str_BR, f_v(300), f_date("170511"), [709,731,749]],
-    [str_BR, f_v(3000), f_date("170502"), [779]],
-    [str_BR, f_v(3000), f_date("170503"), [231,1514]],
+    [str_BR, f_v(300), f_date("170511"), []],
+    [str_BR, f_v(3000), f_date("170502"), []],
+    [str_BR, f_v(3000), f_date("170503"), [231,1655]],
     # all the blacklisted BO data
-    [str_BO, f_v(50), f_date("170523"), [117,176,203,204,223]],
-    [str_BO, f_v(300), f_date("170327"), [121,228,236,310,347,383,386,391,473,484,486]],
-    [str_BO, f_v(3000), f_date("170523"), [18,20,22,69,349,741,773]],
+    [str_BO, f_v(50), f_date("170523"), [95,143,204,233,235]],
+    [str_BO, f_v(300), f_date("170327"), [341,347,386,]],
+    [str_BO, f_v(3000), f_date("170523"), [18,69,349,773]],
 ]
 
 blacklists = [Blacklist(*t) for t in blacklist_tuples]

@@ -111,7 +111,7 @@ def process_helical_slice(data_sliced):
     return data_sliced
 
 def q_GF_nm_plot():
-    return (min_sep_landscape() + 18e-9) * 1e9
+    return (min_sep_landscape() + 25e-9) * 1e9
 
 def _processing_base(default_base="../../../Data/BR+Retinal/170321FEC/",**kw):
     return Pipeline._base_dir_from_cmd(default=default_base,**kw)
