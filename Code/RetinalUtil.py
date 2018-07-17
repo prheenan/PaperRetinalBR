@@ -169,8 +169,7 @@ def read_in_energy(base_dir):
                             enum=Pipeline.Step.POLISH)
     file_load = cache_tmp + "energy.pkl"
     energy_obj = CheckpointUtilities.lazy_load(file_load)
-    obj = EnergyWithMeta(file_load,
-                                     landscape_base, energy_obj)
+    obj = EnergyWithMeta(file_load,landscape_base, energy_obj)
     # read in the data, determine how many curves there are
     data_tmp = read_fecs(obj)
     n_data = len(data_tmp)

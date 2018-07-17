@@ -191,6 +191,7 @@ def _iwt_meta_obj(e):
     iwt = e._iwt_obj
     super(RetinalUtil.DualLandscape, to_ret).__init__(iwt._q, iwt._G0,
                                                       iwt.beta)
+    to_ret.set_n_fecs(e.n_fecs)
     return to_ret
 
 def _read_energy_list_and_q_interp(input_dir,q_offset,iwt_only=True,
@@ -216,10 +217,11 @@ def _read_energy_list_and_q_interp(input_dir,q_offset,iwt_only=True,
     if iwt_only:
         energy_list_arr = [ [_iwt_meta_obj(e) for e in list_v]
                             for list_v in energy_list_arr]
+    n_fecs = [ sum([e.n_fecs for e in list_v]) for list_v in energy_list_arr]
     e_list_flat = [e for list_tmp in energy_list_arr for e in list_tmp ]
     q_interp = RetinalUtil.common_q_interp(energy_list=e_list_flat)
     q_interp = q_interp[np.where(q_interp  <= q_offset)]
-    return q_interp,energy_list_arr
+    return q_interp,energy_list_arr, n_fecs
 
 
 def get_ranges(ax_list,get_x=True):
