@@ -296,13 +296,13 @@ def min_sep_landscape():
     """
     :return: the minimum separation, in meters, to start landscape reconstrution
     """
-    return 12e-9
+    return 18e-9
 
 def min_sep_landscape_nm():
     return min_sep_landscape() * 1e9
 
 def _offset_L_m():
-    return 28e-9
+    return (WLCHao._L0_tail())
 
 def _const_offset(inf):
     offset = -inf.L0_total
