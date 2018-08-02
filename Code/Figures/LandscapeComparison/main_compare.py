@@ -42,8 +42,8 @@ def make_retinal_subplot(gs,energy_list_arr,shifts,skip_arrow=True):
     stdevs = [e.G_err_kcal for e in energy_list_arr]
     ax1 = plt.subplot(gs[0])
     common_error = dict(capsize=0)
-    style_dicts = [dict(color=FigureUtil.color_BR(), label=r"with Retinal"),
-                   dict(color=FigureUtil.color_BO(), label=r"w/o  Retinal")]
+    style_dicts = [dict(color=FigureUtil.color_BR(), label=r"with retinal"),
+                   dict(color=FigureUtil.color_BO(), label=r"w/o  retinal")]
     markers = ['v', 'x']
     deltas, deltas_std = [], []
     delta_styles = [dict(color=style_dicts[i]['color'], markersize=5,
@@ -257,7 +257,7 @@ def run():
     _giant_debugging_plot(out_dir, energy_list_arr)
     fig = PlotUtilities.figure(figsize=(3,3))
     make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset_nm)
-    PlotUtilities.savefig(fig,out_dir + "FigureX_LandscapeComparison.png")
+    PlotUtilities.save_tom(fig,out_dir + "FigureX_LandscapeComparison")
 
 
 
