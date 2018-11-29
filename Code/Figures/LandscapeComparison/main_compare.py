@@ -25,7 +25,8 @@ from Processing.Util import WLC
 from Figures import FigureUtil
 
 
-def make_retinal_subplot(gs,energy_list_arr,shifts,skip_arrow=True):
+def make_retinal_subplot(gs,energy_list_arr,shifts,skip_arrow=True,
+                         limit_plot=None):
     q_interp_nm = energy_list_arr[0].q_nm
     means = [e.G0_kcal_per_mol for e in energy_list_arr]
     # fit a second order polynomial and subtract from each point
@@ -55,7 +56,7 @@ def make_retinal_subplot(gs,energy_list_arr,shifts,skip_arrow=True):
     round_energy = -1
     max_q_nm = max(q_interp_nm)
     # add the 'shifted' energies
-    for i,(mean,stdev) in enumerate(zip(means,stdevs)):
+    for i,(mean,stdev) in enumerate(zip(means[:limit_plot],stdevs[:limit_plot])):
         tmp_style = style_dicts[i]
         style_fit = dict(**tmp_style)
         style_fit['linestyle'] = '--'
@@ -73,23 +74,18 @@ def make_retinal_subplot(gs,energy_list_arr,shifts,skip_arrow=True):
         deltas.append(max_energy_mean)
         deltas_std.append(max_energy_std)
         q_arr.append(q_at_max_energy)
-    delta_delta = np.abs(np.diff(deltas))[0]
-    delta_delta_std = np.sqrt(np.sum(np.array(deltas_std) ** 2))
-    delta_delta_fmt = np.round(delta_delta, round_energy)
-    delta_delta_std_fmt = np.round(delta_delta_std, -1)
-    title = r"$\mathbf{\Delta\Delta}G$" + " = {:.0f} $\pm$ {:.0f} kcal/mol". \
-        format(delta_delta_fmt, delta_delta_std_fmt)
     plt.xlim(xlim)
     plt.ylim(ylim)
     PlotUtilities.lazyLabel("Extension (nm)", "$\mathbf{\Delta}G$ (kcal/mol)",
                             "")
     leg = PlotUtilities.legend(loc='lower right')
     colors_leg = [s['color'] for s in style_dicts]
-    PlotUtilities.color_legend_items(leg,colors=colors_leg)
+    PlotUtilities.color_legend_items(leg,colors=colors_leg[:limit_plot])
     return ax1, means, stdevs
 
 
-def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
+def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,
+                         add_annotations,limit_plot=None):
     landscpes_with_error = \
         FigureUtil._get_error_landscapes(q_interp, energy_list_arr)
     # get the extension grid we wnt...
@@ -99,7 +95,8 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
     shifts = [fec_system.W_at_f(f) for f in [249, 149]]
     gs = gridspec.GridSpec(nrows=1,ncols=1)
     ax1, means, stdevs = \
-        make_retinal_subplot(gs,landscpes_with_error,shifts)
+        make_retinal_subplot(gs,landscpes_with_error,shifts,
+                             limit_plot=limit_plot)
     # get the with-retinal max
     ax1 = plt.subplot(gs[0])
     # get the max of the last point (the retinal energy landscape is greater)
@@ -107,7 +104,7 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
     q_no_PEG_start =  max(q_interp)
     q_nm_no_PEG = G_no_peg.q_nm + q_no_PEG_start
     G_err_kcal_no_PEG = G_no_peg.G_err_kcal
-    for i,G_offset in enumerate(offsets):
+    for i,G_offset in enumerate(offsets[:limit_plot]):
         G_kcal = G_no_peg.G0_kcal_per_mol + G_offset
         mean_err = np.mean(G_err_kcal_no_PEG)
         idx_errorbar = q_nm_no_PEG.size//2
@@ -151,21 +148,25 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
     offset_boxes_nm = -25
     FigureUtil.add_helical_boxes(ax=ax1,ymax_box=0.97,box_height=0.07,
                                  constant_offset=offset_boxes_nm,clip_on=True)
-    str_text = " $\mathbf{\Delta\Delta}G_{\mathbf{Total}}$"
     delta_delta_G_total = np.abs(np.diff(offsets))[0]
-    min_o = min(offsets)
-    xy = q_no_PEG_start, min_o
-    xy_end = q_no_PEG_start, min_o + delta_delta_G_total
-    labelled_arrow(ax1,str_text,xy,xy_end)
-    str_dd = " $\mathbf{\Delta\Delta}G_{\mathbf{Linker}}$"
-    xlim = plt.xlim()
-    x0 = np.mean(xlim) + (xlim[1] - xlim[0]) * 0.2
     delta_delta_G_linker = np.abs(np.diff(shifts))[0]
-    y0 = min_o
-    y1 = min_o + delta_delta_G_linker
-    xy2 = x0, y0
-    xy_end2 = x0, y1
-    labelled_arrow(ax1,str_dd,xy2,xy_end2,color_arrow='r')
+    if add_annotations:
+        str_text = " $\mathbf{\Delta\Delta}G_{\mathbf{Total}}$"
+        min_o = min(offsets)
+        xy = q_no_PEG_start, min_o
+        xy_end = q_no_PEG_start, min_o + delta_delta_G_total
+        labelled_arrow(ax1,str_text,xy,xy_end)
+        str_dd = " $\mathbf{\Delta\Delta}G_{\mathbf{Linker}}$"
+        xlim = plt.xlim()
+        x_range = (xlim[1] - xlim[0])
+        x0 = np.mean(xlim) + x_range * 0.05
+        y0 = min_o
+        y1 = min_o + delta_delta_G_linker
+        xy2 = x0, y0
+        xy_end2 = x0, y1
+        labelled_arrow(ax1,str_dd,xy2,xy_end2,color_arrow='r',
+                       y_text_fudge=0.0)
+    # # save out the data
     X = np.array([delta_delta_G_total,delta_delta_G_linker]).reshape((1,-1))
     np.savetxt(fname="ddG.csv", X=X, fmt=["%.1f","%.1f"],delimiter = ",",
                header = "ddG_total (kcal/mol), ddG_linker (kcal/mol)")
@@ -187,6 +188,7 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset):
 
 
 def labelled_arrow(ax1,str_text,xy,xy_end,x_text=None,y_text=None,
+                   y_text_fudge=0.2,
                    arrow_props=None,color_arrow=None,color_text=None):
     if color_arrow is None:
         color_arrow = 'k'
@@ -197,7 +199,7 @@ def labelled_arrow(ax1,str_text,xy,xy_end,x_text=None,y_text=None,
                            mutation_scale=7,shrinkA=0, shrinkB=0)
     if y_text is None:
         ys = [xy_end[1], xy[1]]
-        y_text = np.mean(ys) + (max(ys) - min(ys)) * 0.2
+        y_text = np.mean(ys) + (max(ys) - min(ys)) * y_text_fudge
     if x_text is None:
         xs = [xy_end[0], xy[0]]
         x_text = np.mean(xs)
@@ -254,10 +256,17 @@ def run():
         CheckpointUtilities.getCheckpoint("./cache.pkl",read_data,
                                           force,input_dir)
     G_no_peg = FigureUtil.read_non_peg_landscape()
-    _giant_debugging_plot(out_dir, energy_list_arr)
-    fig = PlotUtilities.figure(figsize=(3,3))
-    make_comparison_plot(q_interp,energy_list_arr,G_no_peg,q_offset_nm)
-    PlotUtilities.save_tom(fig,out_dir + "FigureX_LandscapeComparison")
+    #_giant_debugging_plot(out_dir, energy_list_arr)
+    base = out_dir + "FigureX_LandscapeComparison"
+    kw_name_arr = [ [dict(add_annotations=True),base],
+                    [dict(add_annotations=False),base + "0"],
+                    [dict(add_annotations=False,limit_plot=1), base + "1"],
+                    ]
+    for kw,name in kw_name_arr:
+        fig = PlotUtilities.figure(figsize=(3, 3))
+        make_comparison_plot(q_interp,energy_list_arr,G_no_peg,**kw)
+        PlotUtilities.savefig(fig,name + ".png")
+
 
 
 
