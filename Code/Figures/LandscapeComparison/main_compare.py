@@ -167,12 +167,15 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,
         labelled_arrow(ax1,str_dd,xy2,xy_end2,color_arrow='r',
                        y_text_fudge=0.0)
     # # save out the data
+    preamble = "FigureS6"
     X = np.array([delta_delta_G_total,delta_delta_G_linker]).reshape((1,-1))
-    np.savetxt(fname="ddG.csv", X=X, fmt=["%.1f","%.1f"],delimiter = ",",
+    np.savetxt(fname=preamble + "_ddG.csv", X=X, fmt=["%.1f","%.1f"],
+               delimiter = ",",
                header = "ddG_total (kcal/mol), ddG_linker (kcal/mol)")
     # save out the landscapes
-    x_y_yerr_name = [ [q_interp,landscpes_with_error[0],"FigureSX_BR"],
-                      [q_interp, landscpes_with_error[1],"FigureSX_BO"]]
+    x_y_yerr_name = [ [q_interp,landscpes_with_error[0],preamble + "_BR"],
+                      [q_interp, landscpes_with_error[1],
+                       preamble + "_BO"]]
     for x,l,name in x_y_yerr_name:
         y = l.G0_kcal_per_mol
         yerr = l.G_err_kcal
@@ -182,7 +185,7 @@ def make_comparison_plot(q_interp,energy_list_arr,G_no_peg,
     # save out the remainder of the BO
     G_kcal_PEG_tmp = G_no_peg.G0_kcal_per_mol + max(offsets)
     Record.save_csv(dict(x=q_nm_no_PEG, y=[G_kcal_PEG_tmp, G_err_kcal_no_PEG],
-                        save_name="./FigureSX_JCP_no_PEG", x_name="q",
+                        save_name=preamble + "_JCP_no_PEG", x_name="q",
                          x_units="nm",y_name=["Energy", "Energy Error"],
                          y_units="kcal/mol"))
 
@@ -257,15 +260,16 @@ def run():
                                           force,input_dir)
     G_no_peg = FigureUtil.read_non_peg_landscape()
     #_giant_debugging_plot(out_dir, energy_list_arr)
-    base = out_dir + "FigureX_LandscapeComparison"
+    base = out_dir + "FigureS6_LandscapeComparison"
     kw_name_arr = [ [dict(add_annotations=True),base],
-                    [dict(add_annotations=False),base + "0"],
-                    [dict(add_annotations=False,limit_plot=1), base + "1"],
+                    [dict(add_annotations=False),base + "_0"],
+                    [dict(add_annotations=False,limit_plot=1), base + "_1"],
                     ]
     for kw,name in kw_name_arr:
         fig = PlotUtilities.figure(figsize=(3, 3))
         make_comparison_plot(q_interp,energy_list_arr,G_no_peg,**kw)
-        PlotUtilities.savefig(fig,name + ".png")
+        base = name
+        PlotUtilities.save_twice(fig,base +".jpeg",base+".svg")
 
 
 
