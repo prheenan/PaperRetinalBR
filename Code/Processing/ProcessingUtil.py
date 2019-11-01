@@ -130,7 +130,7 @@ def _cache_individual(d,out_dir,f,force,*args,**kw):
     return data
 
 
-def _aligned_plot(d,f_x,xlim,ylim,use_shift=False,plot_components=True):
+def _aligned_plot(d,f_x,xlim,ylim,i,use_shift=False,plot_components=True):
     # get the fit
     # convert to reasonable units for plotting
     # get the fit
@@ -152,7 +152,7 @@ def _aligned_plot(d,f_x,xlim,ylim,use_shift=False,plot_components=True):
             ext_plot = (ext - component_offset) * 1e9
             plt.plot(ext_plot,f_plot_pred,label=label,linestyle='--')
     # plot the data
-    plot_single_fec(d, f_x, xlim, ylim)
+    plot_single_fec(d, f_x, xlim, ylim,i=i)
 
 def make_aligned_plot(base_dir,step,data,xlim=None,post="",**kw):
     plot_subdir = Pipeline._plot_subdir(base_dir, step)
@@ -160,7 +160,7 @@ def make_aligned_plot(base_dir,step,data,xlim=None,post="",**kw):
     xlim_tmp, ylim = nm_and_pN_limits(data,f_x)
     xlim = [xlim[0],200] if xlim is None else xlim
     name_func = FEC_Util.fec_name_func
-    for d in data:
+    for i,d in enumerate(data):
         f = PlotUtilities.figure()
-        _aligned_plot(d, f_x, xlim, ylim,**kw)
+        _aligned_plot(d, f_x, xlim, ylim,i=i,**kw)
         PlotUtilities.savefig(f, plot_subdir + name_func(0, d) + post + ".png")

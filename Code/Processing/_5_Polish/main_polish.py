@@ -94,16 +94,19 @@ def run():
     plot_subdir = Pipeline._plot_subdir(base_dir, step)
     name_func = FEC_Util.fec_name_func
     _, ylim = ProcessingUtil.nm_and_pN_limits(data,f_x)
-    for d_unpolish,d_polish in zip(data_unpolished,data):
+    for i,(d_unpolish,d_polish) in enumerate(zip(data_unpolished,data)):
+        kw_plot = dict(d_unpolish=d_unpolish,
+                       d_polish=d_polish,
+                       xlim=xlim,ylim=ylim,i=i)
         fig = PlotUtilities.figure((6,6))
         # make the Separation column
         ax1,ax2 = plt.subplot(2,2,1), plt.subplot(2,2,3)
-        polish_plot(ax1, ax2, d_unpolish, d_polish, xlim, ylim,
-                    f_x = lambda x: x.Separation,plot_components_1=True)
+        polish_plot(ax1, ax2, f_x = lambda x: x.Separation,
+                    plot_components_1=True,**kw_plot)
         # make the ZSnsr column
         ax3,ax4 = plt.subplot(2,2,2), plt.subplot(2,2,4)
-        polish_plot(ax3, ax4, d_unpolish, d_polish, xlim, ylim,
-                    f_x = lambda x: x.ZSnsr,plot_components_1=False)
+        polish_plot(ax3, ax4, f_x = lambda x: x.ZSnsr,plot_components_1=False,
+                    **kw_plot)
         PlotUtilities.xlabel("Stage Position (nm)", ax=ax4)
         for a in [ax3,ax4]:
             PlotUtilities.no_y_label(ax=a)
@@ -111,15 +114,16 @@ def run():
         name = plot_subdir + name_func(0, d_polish) + ".png"
         PlotUtilities.savefig(fig,name)
 
-def polish_plot(ax1,ax2,d_unpolish,d_polish,xlim,ylim,f_x,plot_components_1):
+def polish_plot(ax1,ax2,d_unpolish,d_polish,xlim,ylim,f_x,plot_components_1,i):
     plt.sca(ax1)
-    ProcessingUtil._aligned_plot(d_unpolish, f_x, xlim, ylim, use_shift=True,
-                                 plot_components=plot_components_1)
+    kw_plot = dict(f_x=f_x,xlim=xlim,ylim=ylim,use_shift=True,i=i)
+    ProcessingUtil._aligned_plot(d_unpolish, plot_components=plot_components_1,
+                                 **kw_plot)
     PlotUtilities.xlabel("")
     PlotUtilities.no_x_label(ax1)
     plt.sca(ax2)
-    ProcessingUtil._aligned_plot(d_polish, f_x, xlim, ylim, use_shift=True,
-                                 plot_components=False)
+    ProcessingUtil._aligned_plot(d_polish, plot_components=False,
+                                 **kw_plot)
 
 
 if __name__ == "__main__":

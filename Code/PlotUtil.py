@@ -24,9 +24,10 @@ from Processing import ProcessingUtil
 def _feather_plot(data,plot_subdir,f_x = lambda x: x.Separation,
                   xlim=[-20, 150]):
     _, ylim = ProcessingUtil.nm_and_pN_limits(data, f_x=f_x)
-    for d in data:
+    for i,d in enumerate(data):
         fig = PlotUtilities.figure()
-        ProcessingUtil.plot_single_fec(d, f_x, xlim, ylim, markevery=1)
+        ProcessingUtil.plot_single_fec(d, f_x, xlim, ylim, markevery=1,
+                                       i=i)
         x = f_x(d) * 1e9
         for i in d.info_feather.event_idx:
             plt.axvline(x[i])

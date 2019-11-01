@@ -61,7 +61,7 @@ def run():
     in_dir = Pipeline._cache_dir(base=base_dir, enum=Pipeline.Step.CORRECTED)
     out_dir = Pipeline._cache_dir(base=base_dir,enum=step)
     force = True
-    max_n_pool = multiprocessing.cpu_count() - 1
+    max_n_pool = 6
     n_pool = max_n_pool
     kw_feather = RetinalUtil._def_kw_FEATHER()
     data = align_data(in_dir,out_dir,force=force,n_pool=n_pool,

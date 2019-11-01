@@ -19,3 +19,6 @@
 [submodule "Code/Lib/AppFJC"]
 	path = Code/Lib/AppFJC
 	url = https://github.com/prheenan/AppFJC.git
+[submodule "Code/Lib/UtilBash"]
+	path = Code/Lib/UtilBash
+	url = https://github.com/prheenan/UtilBash.git

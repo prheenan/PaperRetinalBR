@@ -199,7 +199,7 @@ def _sanitize_iwt(data,in_dir):
              np.mean(spring_constants)
     if (K_diff > 1e-2):
         msg = "For {:s}, not all spring constants ({:s}) the same. Replace <K>". \
-            format(in_dir, spring_constants)
+            format(str(in_dir), str(spring_constants))
         warnings.warn(msg)
         # average all the time each K appears
         weighted_mean = np.mean(spring_constants)
@@ -392,7 +392,8 @@ def feather_single(d,force_no_adhesion=False,**kw):
     expected_gf_m = 20e-9
     if ((len(pred_info.event_idx) == 0) or (expected_surface_m > expected_gf_m)):
         f_refs = [Detector.delta_mask_function]
-        pred_info,tau_n = _detect_retract_FEATHER(f_refs=f_refs,**feather_kw)
+        pred_info,tau_n = _detect_retract_FEATHER(f_refs=f_refs,
+                                                  **feather_kw)
     pred_info.tau_n = tau_n
     assert len(pred_info.event_idx) > 0 , "FEATHER can't find an event..."
     # POST: found at least one event.
