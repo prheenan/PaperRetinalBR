@@ -180,7 +180,7 @@ def run():
     input_dir = "../../../../Data/FECs180307/"
     out_dir = "./"
     q_offset_nm = 100
-    q_interp, energy_list_arr = FigureUtil.\
+    q_interp, energy_list_arr, _ = FigureUtil.\
         _read_energy_list_and_q_interp(input_dir, q_offset=q_offset_nm,
                                        min_fecs=9)
     # read in some example data

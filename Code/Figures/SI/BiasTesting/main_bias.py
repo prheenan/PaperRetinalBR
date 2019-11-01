@@ -233,7 +233,7 @@ def run():
     """
     input_dir = "../../../../Data/FECs180307/"
     q_target_nm = RetinalUtil.q_GF_nm_plot() - 2
-    q_interp, energy_list_arr = FigureUtil.\
+    q_interp, energy_list_arr, _ = FigureUtil.\
         _read_energy_list_and_q_interp(input_dir, q_offset=q_target_nm,
                                        min_fecs=4,remove_noisy=True)
     step = Pipeline.Step.ALIGNED

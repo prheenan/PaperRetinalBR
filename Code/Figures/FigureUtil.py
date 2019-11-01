@@ -125,7 +125,7 @@ def _plot_fec_list(list_v,xlim,ylim,label=None,color=None,linewidth=0.3,**kw):
         ProcessingUtil.plot_single_fec(d, f_x, xlim, ylim,label=label_tmp,
                                        style_data=dict(color=color, alpha=0.3,
                                                        linewidth=linewidth),
-                                       **kw)
+                                       i=i,**kw)
 def _limits(_all_fecs):
     xlim = [-20,120]
     max_y = np.max([max(f.Force) for f in _all_fecs]) * 1e12

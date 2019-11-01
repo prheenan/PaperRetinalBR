@@ -22,7 +22,12 @@ import RetinalUtil
 def slice_data(in_dir,min_sep=40e-9,max_sep=140e-9):
     data = CheckpointUtilities.lazy_multi_load(in_dir)
     for d in data:
-        _, _, to_ret = RetinalUtil._slice_single(d,min_sep,max_ext_m=max_sep)
+        try:
+            _, _, to_ret = RetinalUtil._slice_single(d,min_sep,max_ext_m=max_sep)
+        except AssertionError as e:
+            print(e)
+            print("Couldn't use {:s} in {:s}".format(d.Meta.Name,in_dir))
+            continue
         yield to_ret
 
 
